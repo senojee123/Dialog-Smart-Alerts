@@ -13,6 +13,7 @@ import json
 import os
 import socket
 import uuid
+from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import AsyncGenerator
@@ -36,7 +37,16 @@ UPLOADS_DIR = BASE_DIR / "uploads"
 UPLOADS_DIR.mkdir(exist_ok=True)
 
 # ── App ──────────────────────────────────────────────────────────────────────
-app = FastAPI(title="Dialog Smart Alerts", version="2.0.0")
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    seed.run()
+    _print_local_ip()
+    task = asyncio.create_task(_decay_tick())
+    yield
+    task.cancel()
+
+
+app = FastAPI(title="Dialog Smart Alerts", version="2.0.0", lifespan=lifespan)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"], allow_methods=["*"], allow_headers=["*"]
@@ -57,14 +67,6 @@ def broadcast(event_type: str, payload: dict):
 
 def _now() -> str:
     return datetime.now(timezone.utc).isoformat()
-
-
-# ── Startup ──────────────────────────────────────────────────────────────────
-@app.on_event("startup")
-async def startup():
-    seed.run()
-    _print_local_ip()
-    asyncio.create_task(_decay_tick())
 
 
 # Last broadcast sign states — so we only emit when something actually changes.
