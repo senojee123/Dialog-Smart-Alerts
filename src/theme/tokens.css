@@ -1,0 +1,27 @@
+:root {
+  --bg:             #FFFFFF;
+  --surface:        #F7F8FA;
+  --surface-2:      #F2F4F7;
+  --border:         #E4E7EC;
+  --text:           #1A1A1A;
+  --text-muted:     #667085;
+  --brand:          #DA1F26;
+  --brand-hover:    #B81A20;
+  --accent-orange:  #F2841C;
+  --accent-maroon:  #7B1E28;
+
+  --sev-critical:   #D92D20;
+  --sev-high:       #F2841C;
+  --sev-medium:     #F5B70A;
+  --sev-low:        #12B76A;
+
+  --state-dispatched: #667085;
+  --state-delivered:  #12B76A;
+  --state-failed:     #D92D20;
+
+  --hw-on:       #12B76A;
+  --hw-off:      #98A2B3;
+  --hw-offline:  #D92D20;
+  --hw-error:    #D92D20;
+  --hw-manual:   #7B1E28;
+}
