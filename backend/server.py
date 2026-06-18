@@ -21,6 +21,7 @@ import seed
 import data_store
 import rule_engine
 import notifier
+import spatial
 
 from fastapi import FastAPI, HTTPException, Request, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
@@ -63,6 +64,31 @@ def _now() -> str:
 async def startup():
     seed.run()
     _print_local_ip()
+    asyncio.create_task(_decay_tick())
+
+
+# Last broadcast sign states — so we only emit when something actually changes.
+_last_sign_states: dict = {}
+
+
+async def _decay_tick():
+    """
+    Every few seconds, recompute actuator states. Because RED/AMBER/GREEN
+    depend on elapsed time, signs fade on their own even with no new events.
+    Broadcasts only the signs whose state changed.
+    """
+    global _last_sign_states
+    while True:
+        await asyncio.sleep(5)
+        try:
+            states = _compute_sign_states()
+            changed = {sid: st for sid, st in states.items()
+                       if _last_sign_states.get(sid) != st}
+            if changed:
+                _last_sign_states = states
+                broadcast("signs_state", {"states": states, "changed": list(changed.keys())})
+        except Exception as e:
+            print(f"[DECAY] tick error: {e}")
 
 
 def _print_local_ip():
@@ -247,23 +273,23 @@ async def delete_rule(id: str):
 # ROAD SIGNS
 # ════════════════════════════════════════════════════════════════════════════
 
+def _compute_sign_states() -> dict:
+    """Returns { sign_id: state } using the spatial engine."""
+    return spatial.compute_states(
+        signs      = _list("road_signs"),
+        use_cases  = _list("use_cases"),
+        zones      = _list("zones"),
+        events     = _list("detection_events"),
+        incidents  = _list("incidents"),
+    )
+
+
 @app.get("/api/road-signs")
 async def list_road_signs():
-    signs = _list("road_signs")
-    incidents = [i for i in _list("incidents") if i.get("status") in ("ACTIVE", "OPERATOR_REVIEW")]
+    signs  = _list("road_signs")
+    states = _compute_sign_states()
     for sign in signs:
-        if not sign.get("online", True):
-            sign["state"] = "OFFLINE"
-        elif sign.get("forced_state"):
-            sign["state"] = sign["forced_state"]
-        else:
-            nearby = [i for i in incidents if i.get("zone_id") == sign.get("zone_id")]
-            if any(i.get("severity") == "CRITICAL" for i in nearby):
-                sign["state"] = "WARNING"
-            elif any(i.get("severity") in ("HIGH", "MEDIUM") for i in nearby):
-                sign["state"] = "CAUTION"
-            else:
-                sign["state"] = "CLEAR"
+        sign["state"] = states.get(sign["id"], "CLEAR")
     return signs
 
 @app.post("/api/road-signs")
@@ -344,6 +370,10 @@ async def intake_event(req: Request):
         "confidence":  float(body.get("confidence", 0)),
         "image_url":   body.get("image_url"),
         "raw_payload": body.get("raw_payload"),
+        # Location is copied from the device so the spatial engine can light
+        # nearby actuators (a drone could also send its own lat/lng here).
+        "lat":         body.get("lat", device.get("lat")),
+        "lng":         body.get("lng", device.get("lng")),
         "received_at": _now(),
         "processed":   False,
     })
@@ -351,11 +381,20 @@ async def intake_event(req: Request):
 
     incident = _run_rule_engine(event, device)
     broadcast("event_received", {**event, "incident_id": incident["id"] if incident else None})
+    _broadcast_sign_states()
 
     return {
         "event_id":    event["id"],
         "incident_id": incident["id"] if incident else None,
     }
+
+
+def _broadcast_sign_states():
+    """Recompute + push sign states immediately (used after a new event)."""
+    global _last_sign_states
+    states = _compute_sign_states()
+    _last_sign_states = states
+    broadcast("signs_state", {"states": states, "changed": list(states.keys())})
 
 
 def _run_rule_engine(event: dict, device: dict) -> dict | None:
@@ -442,16 +481,19 @@ async def legacy_upload(file: UploadFile = File(...)):
         "device_id":   device_id,
         "device_name": device.get("name", ""),
         "use_case_id": device.get("use_case_id", "UC-001"),
-        "zone_id":     device.get("zone_id", "ZONE-B43-N"),
+        "zone_id":     device.get("zone_id", "ZONE-B43"),
         "object_type": "elephant",
         "confidence":  88.0,
         "image_url":   image_url,
+        "lat":         device.get("lat"),
+        "lng":         device.get("lng"),
         "received_at": _now(),
         "processed":   False,
     })
     data_store.update("devices", device_id, {"last_seen": _now(), "online": True})
     incident = _run_rule_engine(event, device)
     broadcast("event_received", {**event, "incident_id": incident["id"] if incident else None})
+    _broadcast_sign_states()
 
     return {
         "event_id":    event["id"],

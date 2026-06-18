@@ -5,3 +5,9 @@ dist/
 .env*.local
 *.log
 .DS_Store
+
+# Backend runtime artifacts
+backend/__pycache__/
+backend/data/
+backend/uploads/
+.claude/settings.local.json

@@ -1,9 +1,17 @@
 """
 Seed the data store with the Elephant Detection use case.
 Runs once on server startup when data/ is empty.
+
+Geography note: the B43 corridor is laid out as a real line of points running
+roughly north along longitude 81.4800. Signs are ~55 m apart (0.0005°) and
+cameras are interleaved every ~165 m. With a 120 m propagation radius, one
+detection lights ~2 signs on each side — and a detection moving camera→camera
+makes the lit region travel up the road.
 """
 
 import data_store
+
+LNG = 81.4800  # B43 corridor runs along this longitude
 
 
 def run():
@@ -12,35 +20,41 @@ def run():
 
     print("[SEED] Initialising Elephant Detection use case...")
 
-    # ── Use Case ────────────────────────────────────────────────────────────
+    # ── Use Case (with spatial actuation config) ────────────────────────────
     data_store.upsert("use_cases", {
         "id":          "UC-001",
         "name":        "Elephant Detection – Road Corridor",
         "description": "Detect elephants near road corridors and alert stakeholders. "
-                       "Triggers road-sign warnings and notifies rangers, traffic control, and police.",
+                       "Nearby LED boards light automatically by proximity to the detection.",
         "active":      True,
         "icon":        "elephant",
         "color":       "#D92D20",
+        "spatial": {
+            "mode":                 "radius",
+            "propagation_radius_m": 120,   # signs within this of a detection react
+            "red_hold_s":           90,    # RED while last detection < 90s ago
+            "amber_hold_s":         420,   # AMBER until 7 min after last detection
+            "min_confidence":       55,    # ignore weak detections
+        },
     })
 
     # ── Zones ───────────────────────────────────────────────────────────────
     zones = [
-        {"id": "ZONE-B43-N", "name": "B43 Yala Road – North",    "use_case_id": "UC-001", "road": "B43", "lat": 6.4050, "lng": 81.4800},
-        {"id": "ZONE-B43-S", "name": "B43 Yala Road – South",    "use_case_id": "UC-001", "road": "B43", "lat": 6.3200, "lng": 81.4600},
-        {"id": "ZONE-A2",    "name": "A2 Southern Highway",       "use_case_id": "UC-001", "road": "A2",  "lat": 6.2800, "lng": 81.3900},
-        {"id": "ZONE-KTR",   "name": "Kataragama Road",           "use_case_id": "UC-001", "road": "KTR", "lat": 6.3700, "lng": 81.3300},
-        {"id": "ZONE-TISSA", "name": "Tissa–Yala Road",           "use_case_id": "UC-001", "road": "TYR", "lat": 6.2900, "lng": 81.2500},
+        {"id": "ZONE-B43", "name": "B43 Yala Road Corridor", "use_case_id": "UC-001", "road": "B43", "lat": 6.3818, "lng": LNG},
+        {"id": "ZONE-A2",  "name": "A2 Southern Highway",     "use_case_id": "UC-001", "road": "A2",  "lat": 6.2812, "lng": 81.3902},
+        {"id": "ZONE-KTR", "name": "Kataragama Road",         "use_case_id": "UC-001", "road": "KTR", "lat": 6.3720, "lng": 81.3310},
     ]
     for z in zones:
         data_store.upsert("zones", z)
 
-    # ── Devices (Camera Traps) ──────────────────────────────────────────────
+    # ── Devices ──────────────────────────────────────────────────────────────
+    # Three sensors interleaved along the B43 corridor, plus two on other roads.
     devices = [
-        {"id": "DEV-001", "name": "Camera Trap – B43 North Gate",  "type": "camera", "zone_id": "ZONE-B43-N", "use_case_id": "UC-001", "lat": 6.4012, "lng": 81.4820, "api_key": "dev-key-001", "online": True},
-        {"id": "DEV-002", "name": "Camera Trap – B43 South Gate",  "type": "camera", "zone_id": "ZONE-B43-S", "use_case_id": "UC-001", "lat": 6.3268, "lng": 81.4601, "api_key": "dev-key-002", "online": True},
-        {"id": "DEV-003", "name": "Thermal Sensor – A2 Junction",  "type": "thermal","zone_id": "ZONE-A2",    "use_case_id": "UC-001", "lat": 6.2812, "lng": 81.3902, "api_key": "dev-key-003", "online": True},
-        {"id": "DEV-004", "name": "Camera Trap – Kataragama Rd",   "type": "camera", "zone_id": "ZONE-KTR",   "use_case_id": "UC-001", "lat": 6.3720, "lng": 81.3310, "api_key": "dev-key-004", "online": False},
-        {"id": "DEV-005", "name": "Camera Trap – Tissa Road",      "type": "camera", "zone_id": "ZONE-TISSA", "use_case_id": "UC-001", "lat": 6.2920, "lng": 81.2490, "api_key": "dev-key-005", "online": True},
+        {"id": "DEV-001", "name": "Camera Trap – B43 km 1.0",  "type": "camera",  "zone_id": "ZONE-B43", "use_case_id": "UC-001", "lat": 6.3805, "lng": LNG,     "api_key": "dev-key-001", "online": True},
+        {"id": "DEV-002", "name": "Camera Trap – B43 km 1.2",  "type": "camera",  "zone_id": "ZONE-B43", "use_case_id": "UC-001", "lat": 6.3820, "lng": LNG,     "api_key": "dev-key-002", "online": True},
+        {"id": "DEV-003", "name": "Thermal Sensor – B43 km 1.4","type": "thermal", "zone_id": "ZONE-B43", "use_case_id": "UC-001", "lat": 6.3835, "lng": LNG,     "api_key": "dev-key-003", "online": True},
+        {"id": "DEV-004", "name": "Camera Trap – A2 Junction",  "type": "camera",  "zone_id": "ZONE-A2",  "use_case_id": "UC-001", "lat": 6.2812, "lng": 81.3902, "api_key": "dev-key-004", "online": True},
+        {"id": "DEV-005", "name": "Camera Trap – Kataragama Rd","type": "camera",  "zone_id": "ZONE-KTR", "use_case_id": "UC-001", "lat": 6.3720, "lng": 81.3310, "api_key": "dev-key-005", "online": False},
     ]
     for d in devices:
         data_store.upsert("devices", d)
@@ -90,21 +104,33 @@ def run():
     for s in stakeholders:
         data_store.upsert("stakeholders", s)
 
-    # ── Road Signs ──────────────────────────────────────────────────────────
-    road_signs = [
-        {"id": "RS-001", "name": "B43 North – Board 1",  "zone_id": "ZONE-B43-N", "road": "B43 Yala Road",       "km_marker": 12, "lat": 6.4020, "lng": 81.4810, "online": True},
-        {"id": "RS-002", "name": "B43 North – Board 2",  "zone_id": "ZONE-B43-N", "road": "B43 Yala Road",       "km_marker": 15, "lat": 6.3900, "lng": 81.4750, "online": True},
-        {"id": "RS-003", "name": "B43 South – Board 1",  "zone_id": "ZONE-B43-S", "road": "B43 Yala Road",       "km_marker": 28, "lat": 6.3300, "lng": 81.4620, "online": True},
-        {"id": "RS-004", "name": "A2 Junction – Board 1","zone_id": "ZONE-A2",    "road": "A2 Southern Highway", "km_marker": 44, "lat": 6.2850, "lng": 81.3950, "online": True},
-        {"id": "RS-005", "name": "A2 Junction – Board 2","zone_id": "ZONE-A2",    "road": "A2 Southern Highway", "km_marker": 47, "lat": 6.2780, "lng": 81.3870, "online": True},
-        {"id": "RS-006", "name": "Kataragama – Board 1", "zone_id": "ZONE-KTR",   "road": "Kataragama Road",     "km_marker": 6,  "lat": 6.3710, "lng": 81.3320, "online": True},
-        {"id": "RS-007", "name": "Tissa Road – Board 1", "zone_id": "ZONE-TISSA", "road": "Tissa–Yala Road",     "km_marker": 3,  "lat": 6.2930, "lng": 81.2510, "online": True},
-        {"id": "RS-008", "name": "Tissa Road – Board 2", "zone_id": "ZONE-TISSA", "road": "Tissa–Yala Road",     "km_marker": 7,  "lat": 6.2910, "lng": 81.2480, "online": False},
+    # ── Road Signs (LED boards) ──────────────────────────────────────────────
+    # 8 boards along B43 at ~55 m spacing (0.0005° lat), interleaved with cameras.
+    road_signs = []
+    for i in range(8):
+        lat = round(6.3800 + i * 0.0005, 5)
+        road_signs.append({
+            "id":        f"RS-{i+1:03d}",
+            "name":      f"B43 LED Board {i+1}",
+            "zone_id":   "ZONE-B43",
+            "road":      "B43 Yala Road",
+            "km_marker": round(1.0 + i * 0.055, 2),
+            "lat":       lat,
+            "lng":       LNG,
+            "online":    True,
+        })
+    # Other roads (sparse)
+    road_signs += [
+        {"id": "RS-009", "name": "A2 LED Board 1",        "zone_id": "ZONE-A2",  "road": "A2 Southern Highway", "km_marker": 44, "lat": 6.2815, "lng": 81.3905, "online": True},
+        {"id": "RS-010", "name": "A2 LED Board 2",        "zone_id": "ZONE-A2",  "road": "A2 Southern Highway", "km_marker": 45, "lat": 6.2808, "lng": 81.3899, "online": True},
+        {"id": "RS-011", "name": "Kataragama LED Board 1","zone_id": "ZONE-KTR", "road": "Kataragama Road",     "km_marker": 6,  "lat": 6.3722, "lng": 81.3312, "online": False},
     ]
     for s in road_signs:
         data_store.upsert("road_signs", s)
 
     # ── Rules ────────────────────────────────────────────────────────────────
+    # Rules drive INCIDENTS + NOTIFICATIONS. Sign lighting is handled by the
+    # spatial engine (radius mode), so rules no longer force sign states.
     rules = [
         {
             "id":           "RULE-001",
@@ -125,8 +151,8 @@ def run():
                     "notify_stakeholder_ids": ["SH-001", "SH-004"],
                     "actuate_sign_ids":       [],
                     "sign_state":             "CAUTION",
-                    "message_template":       "[HIGH] Possible elephant detected near {zone_name} by {device_name}. "
-                                              "Confidence: {confidence}%. Please verify. Incident: {incident_id}",
+                    "message_template":       "[HIGH] Possible elephant near {zone_name} ({device_name}). "
+                                              "Confidence {confidence}%. Please verify. Incident {incident_id}",
                 },
             },
         },
@@ -134,7 +160,7 @@ def run():
             "id":           "RULE-002",
             "use_case_id":  "UC-001",
             "name":         "Dual Confirmation – Critical Alert",
-            "description":  "Two or more devices in the same zone detect an elephant within 15 minutes.",
+            "description":  "Two or more detections in the same zone within 15 minutes.",
             "priority":     2,
             "active":       True,
             "conditions": [
@@ -153,16 +179,16 @@ def run():
                     "notify_stakeholder_ids": ["SH-001"],
                     "actuate_sign_ids":       [],
                     "sign_state":             "CAUTION",
-                    "message_template":       "[HIGH] Elephant detected near {zone_name}. Awaiting confirmation. Incident: {incident_id}",
+                    "message_template":       "[HIGH] Elephant near {zone_name}. Awaiting confirmation. Incident {incident_id}",
                 },
                 "on_confirm": {
                     "create_incident":        True,
                     "incident_severity":      "CRITICAL",
                     "notify_stakeholder_ids": ["SH-001", "SH-002", "SH-003", "SH-004"],
-                    "actuate_sign_ids":       ["RS-001", "RS-002", "RS-003"],
+                    "actuate_sign_ids":       [],
                     "sign_state":             "WARNING",
-                    "message_template":       "[CRITICAL] CONFIRMED: Elephant on {zone_name}. Multiple detections. "
-                                              "All units respond. Road signs activated. Incident: {incident_id}",
+                    "message_template":       "[CRITICAL] CONFIRMED elephant on {zone_name}. Multiple detections. "
+                                              "All units respond. Incident {incident_id}",
                 },
             },
         },
@@ -170,7 +196,8 @@ def run():
     for r in rules:
         data_store.upsert("rules", r)
 
-    print("[SEED] Done — Elephant Detection use case loaded.")
+    print("[SEED] Done — Elephant Detection use case loaded "
+          "(3 sensors, 11 LED boards, radius actuation).")
 
 
 if __name__ == "__main__":

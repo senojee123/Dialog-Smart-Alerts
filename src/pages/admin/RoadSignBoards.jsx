@@ -1,98 +1,73 @@
 import { useState, useRef } from 'react'
 import { MapContainer, TileLayer, Marker, Popup, useMapEvents } from 'react-leaflet'
 import L from 'leaflet'
-import { Plus, Pencil, Trash2, MapPin, RotateCcw } from 'lucide-react'
-import { useRoadSigns } from '../../hooks/useRoadSigns.js'
+import { Pencil, Trash2, MapPin } from 'lucide-react'
+import { useApi } from '../../hooks/useApi.js'
 import ConfirmDialog from '../../components/common/ConfirmDialog.jsx'
-import { relativeTime } from '../../lib/format.js'
 
-const ZONES = ['Yala North', 'Yala South', 'Yala East', 'Yala Central', 'Yala West']
-
-const EMPTY_FORM = { name: '', road: '', km_marker: '', zone: ZONES[0], lat: '', lng: '', online: true }
+const EMPTY_FORM = { name: '', road: '', km_marker: '', zone_id: '', lat: '', lng: '', online: true }
 
 function pinIcon(color = '#DA1F26') {
   return L.divIcon({
     html: `<div style="width:14px;height:14px;background:${color};border-radius:50%;border:2px solid white;box-shadow:0 1px 4px rgba(0,0,0,.5)"></div>`,
-    className: '',
-    iconSize: [14, 14],
-    iconAnchor: [7, 7],
+    className: '', iconSize: [14, 14], iconAnchor: [7, 7],
   })
 }
-
 function placingIcon() {
   return L.divIcon({
-    html: `<div style="width:18px;height:18px;background:#DA1F26;border-radius:50%;border:3px solid white;box-shadow:0 0 0 3px rgba(218,31,38,0.4);animation:none"></div>`,
-    className: '',
-    iconSize: [18, 18],
-    iconAnchor: [9, 9],
+    html: `<div style="width:18px;height:18px;background:#DA1F26;border-radius:50%;border:3px solid white;box-shadow:0 0 0 3px rgba(218,31,38,0.4)"></div>`,
+    className: '', iconSize: [18, 18], iconAnchor: [9, 9],
   })
 }
-
 function MapClickHandler({ placing, onPick }) {
-  useMapEvents({
-    click(e) {
-      if (placing) onPick(e.latlng)
-    },
-  })
+  useMapEvents({ click(e) { if (placing) onPick(e.latlng) } })
   return null
 }
 
 export default function AdminRoadSignBoards() {
-  const { signs, addSign, updateSign, deleteSign, resetToDefaults } = useRoadSigns()
+  const { data: signs, create, update, remove } = useApi('/api/road-signs')
+  const { data: zones } = useApi('/api/zones')
 
   const [placing, setPlacing]       = useState(false)
   const [pendingLatLng, setPending] = useState(null)
   const [editing, setEditing]       = useState(null)   // null | 'new' | sign.id
   const [form, setForm]             = useState(EMPTY_FORM)
   const [confirmDelete, setDelete]  = useState(null)
-  const [confirmReset, setReset]    = useState(false)
+  const [busy, setBusy]             = useState(false)
   const mapRef = useRef()
 
-  function startPlace() {
-    setPlacing(true)
-    setPending(null)
-    setEditing(null)
-  }
+  const zoneName = id => zones.find(z => z.id === id)?.name || id
+
+  function startPlace() { setPlacing(true); setPending(null); setEditing(null) }
 
   function handleMapPick(latlng) {
-    setPending(latlng)
-    setPlacing(false)
-    setForm({ ...EMPTY_FORM, lat: latlng.lat.toFixed(5), lng: latlng.lng.toFixed(5) })
+    setPending(latlng); setPlacing(false)
+    setForm({ ...EMPTY_FORM, zone_id: zones[0]?.id || '', lat: latlng.lat.toFixed(5), lng: latlng.lng.toFixed(5) })
     setEditing('new')
   }
 
   function openEdit(sign) {
     setEditing(sign.id)
     setForm({
-      name: sign.name, road: sign.road, km_marker: String(sign.km_marker),
-      zone: sign.zone, lat: String(sign.lat), lng: String(sign.lng), online: sign.online,
+      name: sign.name, road: sign.road, km_marker: String(sign.km_marker ?? ''),
+      zone_id: sign.zone_id || '', lat: String(sign.lat), lng: String(sign.lng), online: sign.online,
     })
   }
 
-  function save() {
+  async function save() {
     const data = {
-      name: form.name,
-      road: form.road,
-      km_marker: Number(form.km_marker),
-      zone: form.zone,
-      lat: parseFloat(form.lat),
-      lng: parseFloat(form.lng),
-      online: form.online,
+      name: form.name, road: form.road, km_marker: Number(form.km_marker),
+      zone_id: form.zone_id, lat: parseFloat(form.lat), lng: parseFloat(form.lng), online: form.online,
     }
-    if (editing === 'new') {
-      addSign(data)
-    } else {
-      updateSign(editing, data)
-    }
-    setEditing(null)
-    setPending(null)
+    setBusy(true)
+    try {
+      if (editing === 'new') await create(data)
+      else await update(editing, data)
+      setEditing(null); setPending(null)
+    } finally { setBusy(false) }
   }
 
-  function cancelEdit() {
-    setEditing(null)
-    setPending(null)
-    setPlacing(false)
-  }
+  function cancelEdit() { setEditing(null); setPending(null); setPlacing(false) }
 
   const mapCursor = placing ? 'crosshair' : 'grab'
 
@@ -105,23 +80,12 @@ export default function AdminRoadSignBoards() {
             <h1 className="font-semibold text-ink">Road Sign Boards</h1>
             <p className="text-xs text-ink-muted mt-0.5">{signs.length} boards configured</p>
           </div>
-          <div className="flex gap-2">
-            <button
-              onClick={() => setReset(true)}
-              className="p-2 text-ink-muted hover:text-ink border border-line rounded"
-              title="Reset to defaults"
-            >
-              <RotateCcw size={14} />
-            </button>
-            <button
-              onClick={startPlace}
-              className={`flex items-center gap-1.5 px-3 py-1.5 text-sm rounded font-medium transition-colors
-                ${placing ? 'bg-orange text-white' : 'bg-brand text-white hover:bg-brand-hover'}`}
-            >
-              <MapPin size={14} />
-              {placing ? 'Click map to place…' : 'Add Board'}
-            </button>
-          </div>
+          <button onClick={startPlace}
+            className={`flex items-center gap-1.5 px-3 py-1.5 text-sm rounded font-medium transition-colors
+              ${placing ? 'bg-orange text-white' : 'bg-brand text-white hover:bg-brand-hover'}`}>
+            <MapPin size={14} />
+            {placing ? 'Click map to place…' : 'Add Board'}
+          </button>
         </div>
 
         {placing && (
@@ -148,16 +112,13 @@ export default function AdminRoadSignBoards() {
                     <div className="text-xs text-ink-muted font-mono">{s.id}</div>
                   </td>
                   <td className="px-3 py-2.5 text-xs text-ink-muted">
-                    <div>{s.road}</div>
-                    <div>km {s.km_marker}</div>
+                    <div>{s.road}</div><div>km {s.km_marker}</div>
                   </td>
-                  <td className="px-3 py-2.5 text-xs text-ink-muted">{s.zone}</td>
+                  <td className="px-3 py-2.5 text-xs text-ink-muted">{zoneName(s.zone_id)}</td>
                   <td className="px-3 py-2.5">
-                    <button
-                      onClick={() => updateSign(s.id, { online: !s.online })}
+                    <button onClick={() => update(s.id, { online: !s.online })}
                       className={`w-8 h-4 rounded-full transition-colors ${s.online ? 'bg-sev-low' : 'bg-line'}`}
-                      title={s.online ? 'Click to take offline' : 'Click to bring online'}
-                    >
+                      title={s.online ? 'Click to take offline' : 'Click to bring online'}>
                       <span className={`block w-3 h-3 rounded-full bg-white shadow transition-transform mx-0.5 ${s.online ? 'translate-x-4' : ''}`} />
                     </button>
                   </td>
@@ -179,17 +140,10 @@ export default function AdminRoadSignBoards() {
 
       {/* Right: map */}
       <div className="flex-1 relative" style={{ cursor: mapCursor }}>
-        <MapContainer
-          ref={mapRef}
-          center={[6.35, 81.42]}
-          zoom={11}
-          style={{ height: '100%', width: '100%' }}
-          className="z-0"
-        >
+        <MapContainer ref={mapRef} center={[6.3818, 81.48]} zoom={14} style={{ height: '100%', width: '100%' }} className="z-0">
           <TileLayer
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-          />
+            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
           <MapClickHandler placing={placing} onPick={handleMapPick} />
 
           {signs.map(s => (
@@ -198,10 +152,7 @@ export default function AdminRoadSignBoards() {
                 <div className="text-xs min-w-[140px]">
                   <div className="font-semibold">{s.name}</div>
                   <div className="text-ink-muted">{s.road} · km {s.km_marker}</div>
-                  <div className="text-ink-muted">{s.zone}</div>
-                  <div className="mt-1 text-xs">
-                    {s.lat.toFixed(4)}, {s.lng.toFixed(4)}
-                  </div>
+                  <div className="text-ink-muted">{zoneName(s.zone_id)}</div>
                   <div className="flex gap-2 mt-2">
                     <button onClick={() => openEdit(s)} className="text-brand underline text-xs">Edit</button>
                     <button onClick={() => setDelete(s)} className="text-sev-critical underline text-xs">Delete</button>
@@ -210,10 +161,7 @@ export default function AdminRoadSignBoards() {
               </Popup>
             </Marker>
           ))}
-
-          {pendingLatLng && (
-            <Marker position={pendingLatLng} icon={placingIcon()} />
-          )}
+          {pendingLatLng && <Marker position={pendingLatLng} icon={placingIcon()} />}
         </MapContainer>
 
         {placing && (
@@ -223,34 +171,28 @@ export default function AdminRoadSignBoards() {
         )}
       </div>
 
-      {/* Edit/create form modal */}
+      {/* Edit/create modal */}
       {editing && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
           <div className="bg-white rounded-xl shadow-xl p-6 w-[400px] mx-4">
-            <h3 className="font-semibold text-ink mb-4">
-              {editing === 'new' ? 'Add Board' : 'Edit Board'}
-            </h3>
+            <h3 className="font-semibold text-ink mb-4">{editing === 'new' ? 'Add Board' : 'Edit Board'}</h3>
             <div className="space-y-3 text-sm">
-              <FormField label="Name"      value={form.name}       onChange={v => setForm(f => ({ ...f, name: v }))} placeholder="Board A-01" />
-              <FormField label="Road"      value={form.road}       onChange={v => setForm(f => ({ ...f, road: v }))} placeholder="B43 Yala Road" />
-              <FormField label="KM Marker" value={form.km_marker}  onChange={v => setForm(f => ({ ...f, km_marker: v }))} placeholder="3" type="number" />
+              <FormField label="Name"      value={form.name}      onChange={v => setForm(f => ({ ...f, name: v }))} placeholder="B43 LED Board 9" />
+              <FormField label="Road"      value={form.road}      onChange={v => setForm(f => ({ ...f, road: v }))} placeholder="B43 Yala Road" />
+              <FormField label="KM Marker" value={form.km_marker} onChange={v => setForm(f => ({ ...f, km_marker: v }))} placeholder="1.5" type="number" />
               <div>
                 <label className="block text-xs text-ink-muted mb-1">Zone</label>
-                <select
-                  className="w-full border border-line rounded px-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-brand"
-                  value={form.zone}
-                  onChange={e => setForm(f => ({ ...f, zone: e.target.value }))}
-                >
-                  {ZONES.map(z => <option key={z}>{z}</option>)}
+                <select className="w-full border border-line rounded px-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-brand"
+                  value={form.zone_id} onChange={e => setForm(f => ({ ...f, zone_id: e.target.value }))}>
+                  <option value="">Select zone…</option>
+                  {zones.map(z => <option key={z.id} value={z.id}>{z.name}</option>)}
                 </select>
               </div>
               <div className="grid grid-cols-2 gap-3">
-                <FormField label="Latitude"  value={form.lat} onChange={v => setForm(f => ({ ...f, lat: v }))} placeholder="6.34200" type="number" />
-                <FormField label="Longitude" value={form.lng} onChange={v => setForm(f => ({ ...f, lng: v }))} placeholder="81.48500" type="number" />
+                <FormField label="Latitude"  value={form.lat} onChange={v => setForm(f => ({ ...f, lat: v }))} placeholder="6.38200" type="number" />
+                <FormField label="Longitude" value={form.lng} onChange={v => setForm(f => ({ ...f, lng: v }))} placeholder="81.48000" type="number" />
               </div>
-              {pendingLatLng && editing === 'new' && (
-                <p className="text-xs text-sev-low">📍 Coordinates picked from map</p>
-              )}
+              {pendingLatLng && editing === 'new' && <p className="text-xs text-sev-low">📍 Coordinates picked from map</p>}
               <div className="flex items-center gap-2">
                 <input type="checkbox" id="online" checked={form.online} onChange={e => setForm(f => ({ ...f, online: e.target.checked }))} className="accent-brand" />
                 <label htmlFor="online" className="text-sm text-ink">Board is online</label>
@@ -258,12 +200,9 @@ export default function AdminRoadSignBoards() {
             </div>
             <div className="flex justify-end gap-2 mt-5">
               <button onClick={cancelEdit} className="px-4 py-2 text-sm border border-line rounded hover:bg-surface-alt">Cancel</button>
-              <button
-                onClick={save}
-                disabled={!form.name || !form.lat || !form.lng}
-                className="px-4 py-2 text-sm bg-brand text-white rounded hover:bg-brand-hover disabled:opacity-40"
-              >
-                Save Board
+              <button onClick={save} disabled={!form.name || !form.lat || !form.lng || !form.zone_id || busy}
+                className="px-4 py-2 text-sm bg-brand text-white rounded hover:bg-brand-hover disabled:opacity-40">
+                {busy ? 'Saving…' : 'Save Board'}
               </button>
             </div>
           </div>
@@ -274,20 +213,9 @@ export default function AdminRoadSignBoards() {
         open={!!confirmDelete}
         title="Delete board"
         message={`Remove ${confirmDelete?.name} (${confirmDelete?.id})? This cannot be undone.`}
-        confirmLabel="Delete"
-        danger
-        onConfirm={() => { deleteSign(confirmDelete.id); setDelete(null) }}
+        confirmLabel="Delete" danger
+        onConfirm={async () => { await remove(confirmDelete.id); setDelete(null) }}
         onCancel={() => setDelete(null)}
-      />
-
-      <ConfirmDialog
-        open={confirmReset}
-        title="Reset to defaults"
-        message="This will replace all your boards with the original 8 default boards. Any added boards will be lost."
-        confirmLabel="Reset"
-        danger
-        onConfirm={() => { resetToDefaults(); setReset(false) }}
-        onCancel={() => setReset(false)}
       />
     </div>
   )
@@ -297,14 +225,9 @@ function FormField({ label, value, onChange, placeholder, type = 'text' }) {
   return (
     <div>
       <label className="block text-xs text-ink-muted mb-1">{label}</label>
-      <input
-        type={type}
+      <input type={type} step="any"
         className="w-full border border-line rounded px-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-brand"
-        value={value}
-        onChange={e => onChange(e.target.value)}
-        placeholder={placeholder}
-        step="any"
-      />
+        value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder} />
     </div>
   )
 }

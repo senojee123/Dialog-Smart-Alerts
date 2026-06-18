@@ -49,8 +49,15 @@ def _matches_conditions(event: dict, conditions: list) -> bool:
 
 def evaluate_event(event: dict) -> tuple[dict | None, str | None]:
     """
-    Returns (rule, action_key) or (None, None).
-    action_key: 'on_trigger' | 'on_confirm'
+    Evaluate the event against all active rules for its use case and return the
+    single best (rule, action_key) to act on.
+
+    Selection precedence (so a pending confirmation rule never blocks an
+    immediate rule):
+      1. Highest-priority rule whose confirmation threshold is now met → on_confirm
+      2. Else highest-priority immediate rule (no confirmation block)   → on_trigger
+      3. Else highest-priority rule still awaiting confirmation         → pending
+      4. Else                                                           → (None, None)
     """
     use_case_id = event.get("use_case_id")
     if not use_case_id:
@@ -61,47 +68,45 @@ def evaluate_event(event: dict) -> tuple[dict | None, str | None]:
         if r.get("use_case_id") == use_case_id
         and r.get("active", True)
     ]
-    # Higher priority number checked first
-    rules.sort(key=lambda r: -int(r.get("priority", 0)))
+    rules.sort(key=lambda r: -int(r.get("priority", 0)))  # highest priority first
 
-    now = datetime.fromisoformat(event.get("received_at", datetime.now(timezone.utc).isoformat()))
+    now = _parse_dt(event.get("received_at")) or datetime.now(timezone.utc)
     all_events = data_store.get_all("detection_events")
 
+    confirmed, immediate, pending = [], [], []
+
     for rule in rules:
-        conditions = rule.get("conditions", [])
-        if not _matches_conditions(event, conditions):
+        if not _matches_conditions(event, rule.get("conditions", [])):
             continue
 
         confirmation = rule.get("confirmation")
-
         if not confirmation:
-            return rule, "on_trigger"
+            immediate.append(rule)
+            continue
 
-        # Confirmation required: count recent matching events
         window_s = int(confirmation.get("window_seconds", 900))
-        cutoff = now - timedelta(seconds=window_s)
-
+        cutoff   = now - timedelta(seconds=window_s)
         matching_past = [
             e for e in all_events
             if e.get("id") != event.get("id")
             and _parse_dt(e.get("received_at")) >= cutoff
-            and _matches_conditions(e, conditions)
             and e.get("use_case_id") == use_case_id
-            and (
-                not confirmation.get("same_zone")
-                or e.get("zone_id") == event.get("zone_id")
-            )
+            and _matches_conditions(e, rule.get("conditions", []))
+            and (not confirmation.get("same_zone")
+                 or e.get("zone_id") == event.get("zone_id"))
         ]
-
         required = int(confirmation.get("required_count", 2))
-        # Current event counts as 1, plus past matching events
-        if len(matching_past) + 1 >= required:
-            return rule, "on_confirm"
+        if len(matching_past) + 1 >= required:   # current event counts as 1
+            confirmed.append(rule)
         else:
-            # Conditions matched but confirmation not yet met — still useful
-            # to return rule so caller can create a pending/watch incident
-            return rule, "pending"
+            pending.append(rule)
 
+    if confirmed:
+        return confirmed[0], "on_confirm"
+    if immediate:
+        return immediate[0], "on_trigger"
+    if pending:
+        return pending[0], "pending"
     return None, None
 
 
