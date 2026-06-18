@@ -3,7 +3,7 @@ import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet'
 import L from 'leaflet'
 import { TriangleAlert, CheckCircle, WifiOff, Map, LayoutGrid } from 'lucide-react'
 import RoadSignCard, { SIGN_STATE } from '../components/roadsigns/RoadSignCard.jsx'
-import { MOCK_ROAD_SIGNS } from '../mock/roadsigns.js'
+import { useRoadSigns } from '../hooks/useRoadSigns.js'
 import { useIncidents } from '../hooks/useIncidents.js'
 import { relativeTime } from '../lib/format.js'
 
@@ -41,9 +41,10 @@ const SUMMARY_ITEMS = [
 ]
 
 export default function RoadSigns() {
+  const { signs: ROAD_SIGNS } = useRoadSigns()
   const { incidents } = useIncidents()
   const [selected, setSelected]     = useState(null)
-  const [viewMode, setViewMode]     = useState('grid')  // 'grid' | 'map'
+  const [viewMode, setViewMode]     = useState('grid')
   const [filterState, setFilter]    = useState('ALL')
 
   const activeIncidents = useMemo(
@@ -138,7 +139,7 @@ export default function RoadSigns() {
               )}
             </div>
           ) : (
-            <MapContainer center={[6.9, 79.85]} zoom={11} style={{ height: '100%', width: '100%' }}>
+            <MapContainer center={[6.35, 81.42]} zoom={11} style={{ height: '100%', width: '100%' }}>
               <TileLayer
                 attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
                 url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"

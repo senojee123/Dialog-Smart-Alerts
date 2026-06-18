@@ -30,7 +30,7 @@ function AutoPan({ incidents, selectedId }) {
 }
 
 export default function MapPanel({ incidents = [], selectedId, onSelectIncident }) {
-  const center = [6.9, 79.85]
+  const center = [6.35, 81.42]
 
   return (
     <MapContainer

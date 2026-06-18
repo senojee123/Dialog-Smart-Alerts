@@ -1,5 +1,6 @@
 import { WifiOff, AlertTriangle } from 'lucide-react'
 import { relativeTime } from '../../lib/format.js'
+import ElephantIcon from '../../lib/ElephantIcon.jsx'
 
 export const SIGN_STATE = {
   WARNING: {
@@ -67,17 +68,16 @@ export default function RoadSignCard({ sign, derivedState, nearbyIncident, onSel
         )}
 
         {/* Elephant silhouette */}
-        <div
-          className={cfg.pulse ? 'animate-pulse-sev' : ''}
-          style={{
-            filter: isLit ? `drop-shadow(0 0 16px ${cfg.color}) drop-shadow(0 0 6px ${cfg.color})` : 'none',
-            color: isLit ? cfg.color : '#2a2a2a',
-            fontSize: '56px',
-            lineHeight: 1,
-            userSelect: 'none',
-          }}
-        >
-          🐘
+        <div className={cfg.pulse ? 'animate-pulse-sev' : ''}>
+          <ElephantIcon
+            size={56}
+            color={isLit ? cfg.color : '#2e2e2e'}
+            style={{
+              filter: isLit
+                ? `drop-shadow(0 0 10px ${cfg.color}) drop-shadow(0 0 4px ${cfg.color})`
+                : 'none',
+            }}
+          />
         </div>
 
         {/* State label */}

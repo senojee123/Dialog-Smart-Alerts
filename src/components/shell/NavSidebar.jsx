@@ -10,6 +10,7 @@ const NAV = [
   null,
   { to: '/admin/stakeholders', icon: Users,      label: 'Stakeholders' },
   { to: '/admin/rules',        icon: GitBranch,  label: 'Rules' },
+  { to: '/admin/road-signs',   icon: MonitorDot, label: 'Sign Boards' },
   { to: '/admin/escalation',   icon: Settings,   label: 'Escalation' },
   { to: '/admin/templates',    icon: Settings,   label: 'Templates' },
 ]

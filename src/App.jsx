@@ -9,6 +9,7 @@ import AdminStakeholders from './pages/admin/Stakeholders.jsx'
 import AdminRules from './pages/admin/Rules.jsx'
 import AdminEscalation from './pages/admin/EscalationPolicies.jsx'
 import AdminTemplates from './pages/admin/Templates.jsx'
+import AdminRoadSignBoards from './pages/admin/RoadSignBoards.jsx'
 
 export default function App() {
   return (
@@ -25,6 +26,7 @@ export default function App() {
           <Route path="/admin/rules" element={<AdminRules />} />
           <Route path="/admin/escalation" element={<AdminEscalation />} />
           <Route path="/admin/templates" element={<AdminTemplates />} />
+          <Route path="/admin/road-signs" element={<AdminRoadSignBoards />} />
         </Route>
       </Routes>
     </BrowserRouter>
