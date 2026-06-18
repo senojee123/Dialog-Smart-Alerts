@@ -53,12 +53,12 @@ export default function RoadSigns() {
   )
 
   const enriched = useMemo(() =>
-    MOCK_ROAD_SIGNS.map(sign => ({
+    ROAD_SIGNS.map(sign => ({
       sign,
       state:   deriveState(sign, activeIncidents),
       nearby:  nearestIncident(sign, activeIncidents),
     })),
-    [activeIncidents]
+    [ROAD_SIGNS, activeIncidents]
   )
 
   const counts = useMemo(() => {
@@ -79,7 +79,7 @@ export default function RoadSigns() {
           <div>
             <h1 className="text-xl font-semibold text-ink">Road Sign Boards</h1>
             <p className="text-sm text-ink-muted mt-0.5">
-              {MOCK_ROAD_SIGNS.length} boards · states auto-update from active incidents
+              {ROAD_SIGNS.length} boards · states auto-update from active incidents
             </p>
           </div>
 
