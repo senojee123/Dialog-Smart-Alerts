@@ -1,11 +1,12 @@
 import { NavLink } from 'react-router-dom'
-import { AlertTriangle, Map, Camera, Cpu, Users, GitBranch, Settings } from 'lucide-react'
+import { AlertTriangle, Map, Camera, Cpu, Users, GitBranch, Settings, MonitorDot } from 'lucide-react'
 
 const NAV = [
-  { to: '/incidents', icon: AlertTriangle, label: 'Live Incidents' },
-  { to: '/map',       icon: Map,           label: 'Map' },
-  { to: '/devices',   icon: Camera,        label: 'Devices' },
-  { to: '/hardware',  icon: Cpu,           label: 'Hardware Units' },
+  { to: '/incidents',  icon: AlertTriangle, label: 'Live Incidents' },
+  { to: '/map',        icon: Map,           label: 'Map' },
+  { to: '/road-signs', icon: MonitorDot,    label: 'Road Signs' },
+  { to: '/devices',    icon: Camera,        label: 'Devices' },
+  { to: '/hardware',   icon: Cpu,           label: 'Hardware Units' },
   null,
   { to: '/admin/stakeholders', icon: Users,      label: 'Stakeholders' },
   { to: '/admin/rules',        icon: GitBranch,  label: 'Rules' },

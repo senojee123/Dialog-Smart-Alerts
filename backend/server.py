@@ -139,6 +139,39 @@ async def stream_incidents():
     )
 
 
+ROAD_SIGNS = [
+    {"id": f"RS-{str(i).zfill(3)}", "name": f"Board {chr(65+i//2)}-{str(i+1).zfill(2)}",
+     "road": r, "km_marker": km, "zone": z, "lat": lat, "lng": lng, "online": True}
+    for i, (r, km, z, lat, lng) in enumerate([
+        ("B435 Highway", 12, "Yala North",   6.9271, 79.8612),
+        ("B435 Highway",  9, "Yala North",   6.9200, 79.8500),
+        ("A2 Road",       7, "Yala South",   6.8500, 79.7900),
+        ("B447",          3, "Yala Central", 6.9100, 79.8200),
+        ("A2 Road",      14, "Yala East",    6.9400, 79.8800),
+        ("B402",          6, "Yala South",   6.8700, 79.8100),
+        ("B435 Highway",  2, "Yala North",   6.9350, 79.8700),
+        ("B447",         11, "Yala Central", 6.9050, 79.8300),
+    ])
+]
+ROAD_SIGNS[6]["online"] = False  # one board offline for demo
+
+
+def derive_sign_state(sign):
+    if not sign["online"]:
+        return "OFFLINE"
+    active = [i for i in INCIDENTS if i["status"] in ("ACTIVE", "OPERATOR_REVIEW") and i.get("zone") == sign["zone"]]
+    if any(i["severity"] == "CRITICAL" for i in active):
+        return "WARNING"
+    if any(i["severity"] in ("HIGH", "MEDIUM") for i in active):
+        return "CAUTION"
+    return "CLEAR"
+
+
+@app.get("/api/road-signs")
+async def get_road_signs():
+    return [{"sign": s, "state": derive_sign_state(s)} for s in ROAD_SIGNS]
+
+
 @app.post("/api/incidents/{incident_id}/close")
 async def close_incident(incident_id: str):
     for inc in INCIDENTS:
