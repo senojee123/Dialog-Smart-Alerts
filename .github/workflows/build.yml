@@ -23,7 +23,6 @@ jobs:
       - name: Build
         run: npm run build
         env:
-          VITE_USE_MOCK: "true"
           VITE_ENV: "prod"
 
       - name: Upload dist

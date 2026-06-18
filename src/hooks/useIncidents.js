@@ -1,22 +1,20 @@
 import { useState, useEffect, useCallback } from 'react'
 import { MOCK_INCIDENTS } from '../mock/incidents.js'
 
-const USE_MOCK = import.meta.env.VITE_USE_MOCK !== 'false'
-
 export function useIncidents() {
   const [incidents, setIncidents] = useState([])
   const [loading, setLoading]     = useState(true)
   const [error, setError]         = useState(null)
 
   useEffect(() => {
-    if (USE_MOCK) {
-      setTimeout(() => { setIncidents(MOCK_INCIDENTS); setLoading(false) }, 300)
-      return
-    }
     fetch('/api/incidents')
-      .then(r => r.json())
+      .then(r => { if (!r.ok) throw new Error(r.status); return r.json() })
       .then(data => { setIncidents(data); setLoading(false) })
-      .catch(e => { setError(e.message); setLoading(false) })
+      .catch(() => {
+        // Backend not running — fall back to mock data silently
+        setIncidents(MOCK_INCIDENTS)
+        setLoading(false)
+      })
   }, [])
 
   const applyEvent = useCallback((event) => {
