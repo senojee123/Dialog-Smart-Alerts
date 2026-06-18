@@ -12,9 +12,18 @@ import asyncio
 import json
 import os
 import socket
+import sys
 import uuid
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
+
+# Windows consoles default to cp1252, which can't encode characters like the
+# arrow used in log lines — force UTF-8 so logging never crashes a request.
+for _stream in (sys.stdout, sys.stderr):
+    try:
+        _stream.reconfigure(encoding="utf-8")
+    except Exception:
+        pass
 from pathlib import Path
 from typing import AsyncGenerator
 
@@ -668,3 +677,12 @@ async def spa_fallback(full_path: str):
     if index.exists():
         return _FileResponse(str(index))
     return JSONResponse({"detail": "Not Found"}, status_code=404)
+
+
+# ════════════════════════════════════════════════════════════════════════════
+# ENTRY POINT  —  run with:  python server.py
+# ════════════════════════════════════════════════════════════════════════════
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000)
