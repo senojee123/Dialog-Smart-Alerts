@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet'
 import L from 'leaflet'
-import { TriangleAlert, CheckCircle, WifiOff, Map, LayoutGrid } from 'lucide-react'
+import { AlertTriangle, CheckCircle, WifiOff, Map, Grid } from 'lucide-react'
 import RoadSignCard, { SIGN_STATE } from '../components/roadsigns/RoadSignCard.jsx'
 import { useRoadSigns } from '../hooks/useRoadSigns.js'
 import { useIncidents } from '../hooks/useIncidents.js'
@@ -34,8 +34,8 @@ function signIcon(state) {
 }
 
 const SUMMARY_ITEMS = [
-  { state: 'WARNING', label: 'Warning',  Icon: TriangleAlert, color: 'text-sev-critical' },
-  { state: 'CAUTION', label: 'Caution',  Icon: TriangleAlert, color: 'text-orange' },
+  { state: 'WARNING', label: 'Warning',  Icon: AlertTriangle, color: 'text-sev-critical' },
+  { state: 'CAUTION', label: 'Caution',  Icon: AlertTriangle, color: 'text-orange' },
   { state: 'CLEAR',   label: 'Clear',    Icon: CheckCircle,   color: 'text-sev-low' },
   { state: 'OFFLINE', label: 'Offline',  Icon: WifiOff,       color: 'text-ink-muted' },
 ]
@@ -104,7 +104,7 @@ export default function RoadSigns() {
                 onClick={() => setViewMode('grid')}
                 className={`px-3 py-1.5 text-sm flex items-center gap-1.5 ${viewMode === 'grid' ? 'bg-brand text-white' : 'text-ink-muted hover:bg-surface-alt'}`}
               >
-                <LayoutGrid size={14} /> Grid
+                <Grid size={14} /> Grid
               </button>
               <button
                 onClick={() => setViewMode('map')}
