@@ -20,6 +20,9 @@ import AdminRoadSignBoards from './pages/admin/RoadSignBoards.jsx'
 import AdminEscalation from './pages/admin/EscalationPolicies.jsx'
 import AdminTemplates from './pages/admin/Templates.jsx'
 
+// Setup
+import SetupWizard from './pages/SetupWizard.jsx'
+
 function Wrap({ children }) {
   return <ErrorBoundary>{children}</ErrorBoundary>
 }
@@ -30,6 +33,9 @@ export default function App() {
       <Routes>
         <Route element={<AppShell />}>
           <Route index element={<Navigate to="/incidents" replace />} />
+
+          {/* Setup */}
+          <Route path="/setup" element={<Wrap><SetupWizard /></Wrap>} />
 
           {/* Operations */}
           <Route path="/incidents"  element={<Wrap><LiveIncidents /></Wrap>} />

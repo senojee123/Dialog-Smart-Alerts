@@ -1,7 +1,7 @@
 import { NavLink } from 'react-router-dom'
 import {
   AlertTriangle, Map, Camera, Cpu, Users, GitBranch,
-  Settings, Monitor, Layers, Bell,
+  Settings, Monitor, Layers, Bell, Rocket,
 } from 'lucide-react'
 
 const NAV = [
@@ -17,6 +17,7 @@ const NAV = [
 
   // Configuration
   { section: 'Configuration' },
+  { to: '/setup',             icon: Rocket,        label: 'Setup Wizard' },
   { to: '/admin/use-cases',   icon: Layers,        label: 'Use Cases' },
   { to: '/admin/rules',       icon: GitBranch,     label: 'Rules Engine' },
   { to: '/admin/stakeholders',icon: Users,         label: 'Stakeholders' },
