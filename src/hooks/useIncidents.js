@@ -29,8 +29,23 @@ export function useIncidents() {
     })
   }, [])
 
-  const updateIncident = useCallback((id, patch) => {
+  const updateIncident = useCallback(async (id, patch) => {
+    // Optimistic local update first…
     setIncidents(prev => prev.map(i => i.incident_id === id ? { ...i, ...patch } : i))
+    // …then persist to the backend (id === incident_id) and adopt its response.
+    try {
+      const res = await fetch(`/api/incidents/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(patch),
+      })
+      if (res.ok) {
+        const updated = await res.json()
+        setIncidents(prev => prev.map(i => i.incident_id === id ? updated : i))
+      }
+    } catch {
+      // Backend unavailable — keep the optimistic update
+    }
   }, [])
 
   return { incidents, loading, error, applyEvent, updateIncident }

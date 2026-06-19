@@ -320,11 +320,101 @@ async def delete_road_sign(id: str):
 # INCIDENTS
 # ════════════════════════════════════════════════════════════════════════════
 
+def _rules_triggered(inc: dict) -> list:
+    rid = inc.get("rule_id")
+    if not rid:
+        return []
+    rule = data_store.get_by_id("rules", rid) or {}
+    return [{"name": rule.get("name", rid), "severity": inc.get("severity", "")}]
+
+
+def _enrich_incident(inc: dict) -> dict:
+    """
+    Map a stored incident into the richer shape the dashboard UI expects:
+    incident_id alias, zone name, timeline (from events + notifications),
+    notified stakeholders, and AI summary fields.
+    """
+    if not inc:
+        return inc
+
+    iid  = inc.get("id")
+    zone = data_store.get_by_id("zones", inc.get("zone_id", "")) or {}
+    zone_name = inc.get("zone_name") or zone.get("name") or inc.get("zone_id", "")
+
+    event_ids = set(inc.get("event_ids", []))
+    events = [e for e in data_store.get_all("detection_events") if e.get("id") in event_ids]
+    notifs = [n for n in data_store.get_all("notifications") if n.get("incident_id") == iid]
+
+    # Stakeholders grouped from the notifications actually sent
+    # (dedupe channels by type — a contact may be notified across several rounds)
+    by_sh = {}
+    for n in notifs:
+        sid = n.get("stakeholder_id")
+        if sid not in by_sh:
+            full = data_store.get_by_id("stakeholders", sid) or {}
+            by_sh[sid] = {"id": sid, "name": n.get("stakeholder_name", ""),
+                          "role": full.get("role", ""), "channels": {}}
+        by_sh[sid]["channels"][n.get("channel")] = {
+            "type": n.get("channel"), "status": "delivered", "ack": None,
+        }
+    stakeholders = [{**s, "channels": list(s["channels"].values())} for s in by_sh.values()]
+
+    # Timeline
+    timeline = [{"ts": inc.get("opened_at"), "event": f"Incident opened ({inc.get('source', 'auto')})"}]
+    for e in sorted(events, key=lambda e: e.get("received_at", "")):
+        timeline.append({
+            "ts": e.get("received_at"),
+            "event": f"Detection by {e.get('device_name') or e.get('device_id')} "
+                     f"— {round(float(e.get('confidence', 0)))}% confidence",
+        })
+    if notifs:
+        first = min(notifs, key=lambda n: n.get("sent_at", ""))
+        timeline.append({"ts": first.get("sent_at"),
+                         "event": f"Stakeholders notified ({len(by_sh)} contacts, {len(notifs)} channels)"})
+    if inc.get("status") in ("CLOSED", "RESOLVED"):
+        timeline.append({"ts": inc.get("updated_at"), "event": f"Incident {inc.get('status').lower()}"})
+    timeline.sort(key=lambda t: t.get("ts") or "")
+
+    raw_conf   = float(inc.get("confidence", 0) or 0)
+    confidence = raw_conf / 100 if raw_conf > 1 else raw_conf   # UI expects 0–1
+    loc = {**(inc.get("location") or {}), "description": zone_name}
+
+    return {
+        **inc,
+        "incident_id":        iid,
+        "zone":               zone_name,
+        "location":           loc,
+        "object":             inc.get("object", "unknown"),
+        "herd_size":          inc.get("herd_size", 1),
+        "confidence":         confidence,
+        "ai_confirmed":       confidence >= 0.6,
+        "ai_summary":         inc.get("ai_summary") or
+                              f"{str(inc.get('object', 'Object')).capitalize()} detected with "
+                              f"{round(raw_conf)}% confidence in {zone_name}.",
+        "risk_factors":       inc.get("risk_factors", []),
+        "distance_to_road_m": inc.get("distance_to_road_m"),
+        "is_night":           inc.get("is_night", False),
+        "detections_in_zone": len(events),
+        "incident_media":     inc.get("image_url"),
+        "rules_triggered":    _rules_triggered(inc),
+        "stakeholders":       stakeholders,
+        "hardware":           inc.get("hardware") or {"unit_id": None, "name": None, "state": None, "expires_at": None},
+        "timeline":           timeline,
+        "updated_at":         inc.get("updated_at", inc.get("opened_at")),
+        "operator_notes":     inc.get("operator_notes", ""),
+    }
+
+
+def _broadcast_incident(kind: str, inc: dict):
+    """Broadcast an incident over SSE in the enriched (UI-ready) shape."""
+    broadcast(kind, _enrich_incident(inc))
+
+
 @app.get("/api/incidents")
 async def list_incidents():
     incidents = _list("incidents")
     incidents.sort(key=lambda i: i.get("opened_at", ""), reverse=True)
-    return incidents
+    return [_enrich_incident(i) for i in incidents]
 
 @app.post("/api/incidents")
 async def create_incident_manual(req: Request):
@@ -333,19 +423,19 @@ async def create_incident_manual(req: Request):
     body.setdefault("status", "ACTIVE")
     body.setdefault("source", "manual")
     incident = _create("incidents", body)
-    broadcast("incident_new", incident)
-    return incident
+    _broadcast_incident("incident_new", incident)
+    return _enrich_incident(incident)
 
 @app.get("/api/incidents/{id}")
 async def get_incident(id: str):
-    return _get("incidents", id)
+    return _enrich_incident(_get("incidents", id))
 
 @app.put("/api/incidents/{id}")
 async def update_incident(id: str, req: Request):
     body = await req.json()
     incident = _update("incidents", id, body)
-    broadcast("incident_updated", incident)
-    return incident
+    _broadcast_incident("incident_updated", incident)
+    return _enrich_incident(incident)
 
 @app.delete("/api/incidents/{id}")
 async def delete_incident(id: str):
@@ -434,11 +524,14 @@ def _run_rule_engine(event: dict, device: dict) -> dict | None:
 
     if open_incidents:
         incident = open_incidents[0]
+        # Always link the new event; escalate severity if this rule is higher
+        merged_event_ids = list(dict.fromkeys((incident.get("event_ids") or []) + [event["id"]]))
+        patch = {"event_ids": merged_event_ids}
         if sev_order.get(severity, 0) > sev_order.get(incident.get("severity"), 0):
-            incident = data_store.update("incidents", incident["id"], {
-                "severity": severity, "rule_id": matched_rule["id"]
-            })
-            broadcast("incident_updated", incident)
+            patch["severity"] = severity
+            patch["rule_id"]  = matched_rule["id"]
+        incident = data_store.update("incidents", incident["id"], patch)
+        _broadcast_incident("incident_updated", incident)
     else:
         zone = data_store.get_by_id("zones", event["zone_id"]) or {}
         incident = data_store.create("incidents", {
@@ -458,7 +551,7 @@ def _run_rule_engine(event: dict, device: dict) -> dict | None:
             "source":      "auto",
             "event_ids":   [event["id"]],
         })
-        broadcast("incident_new", incident)
+        _broadcast_incident("incident_new", incident)
 
     notifications = notifier.dispatch(incident, matched_rule, ak, event)
     actuated = notifier.actuate_signs(matched_rule, ak)

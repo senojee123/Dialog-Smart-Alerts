@@ -1,0 +1,32 @@
+fix: reconcile incident schema + live SSE between backend and dashboard (Phase A)
+
+Integration debt cleanup so the detection -> incident -> notification loop
+displays correctly with the real backend.
+
+Backend (server.py):
+- _enrich_incident(): maps stored incidents into the shape the dashboard reads
+  - incident_id alias, zone name, location.description
+  - confidence normalised to 0-1, ai_confirmed, ai_summary
+  - stakeholders built from notifications actually sent (channels deduped by type)
+  - timeline assembled from opened + detections + notifications + closure
+  - rules_triggered from the firing rule
+- GET /api/incidents and /api/incidents/{id} now return enriched incidents
+- incident_new / incident_updated SSE frames now carry the enriched shape
+- escalation path links every new event to the open incident (event_ids)
+
+Frontend:
+- api/stream.js: connect to /api/stream (was /api/stream/incidents) and unwrap
+  the {type, data} envelope, forwarding only incident_new/incident_updated
+- useIncidents.updateIncident: persists via PUT (close now sticks) with
+  optimistic local update + backend response adoption
+- pages/Devices.jsx: live device registry (was static mock) with zone names,
+  type icons, and a 10s heartbeat poll
+
+Cleanup:
+- removed orphaned src/hooks/useRoadSigns.js and src/mock/roadsigns.js
+
+Verified end-to-end via HTTP: two detections create + escalate one incident to
+CRITICAL with 4 stakeholders / deduped channels, full timeline, and persisted
+close.
+
+Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>
