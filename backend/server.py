@@ -309,9 +309,14 @@ async def get_kiosk_status(device_id: str):
         device = data_store.get_by_id("devices", inc.get("device_id", ""))
         if device and device.get("external_id"):
             ext = device["external_id"]
-            if "_" in ext:
-                station_id = ext.split("_")[0]
-                station_match = station_id in kiosk_station_ids
+            if "_cam_" in ext:
+                station_id = ext.split("_cam_")[0]
+            elif "_" in ext:
+                parts = ext.rsplit("_", 2)
+                station_id = parts[0] if len(parts) >= 2 else ext.split("_")[0]
+            else:
+                station_id = ext
+            station_match = station_id in kiosk_station_ids
         
         if zone_match or station_match:
             return {
