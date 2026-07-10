@@ -1,0 +1,111 @@
+[
+  {
+    "id": "SH-001",
+    "name": "Park Warden – Yala",
+    "role": "Wildlife Officer",
+    "org": "Department of Wildlife Conservation",
+    "use_case_ids": [
+      "UC-001"
+    ],
+    "channels": [
+      {
+        "type": "sms",
+        "address": "+94771000001",
+        "language": "en"
+      },
+      {
+        "type": "whatsapp",
+        "address": "+94771000001",
+        "language": "en"
+      }
+    ],
+    "on_call": true,
+    "created_at": "2026-06-19T10:01:43.958257+00:00",
+    "updated_at": "2026-06-19T10:01:43.958268+00:00"
+  },
+  {
+    "id": "SH-002",
+    "name": "Traffic Control – Southern Province",
+    "role": "Traffic Controller",
+    "org": "Road Development Authority",
+    "use_case_ids": [
+      "UC-001"
+    ],
+    "channels": [
+      {
+        "type": "sms",
+        "address": "+94771000002",
+        "language": "en"
+      },
+      {
+        "type": "email",
+        "address": "traffic@rda.lk",
+        "language": "en"
+      }
+    ],
+    "on_call": true,
+    "created_at": "2026-06-19T10:01:43.965936+00:00",
+    "updated_at": "2026-06-19T10:01:43.965952+00:00"
+  },
+  {
+    "id": "SH-003",
+    "name": "Police – Tissamaharama",
+    "role": "Law Enforcement",
+    "org": "Sri Lanka Police",
+    "use_case_ids": [
+      "UC-001"
+    ],
+    "channels": [
+      {
+        "type": "sms",
+        "address": "+94771000003",
+        "language": "en"
+      }
+    ],
+    "on_call": false,
+    "created_at": "2026-06-19T10:01:43.973916+00:00",
+    "updated_at": "2026-06-19T10:01:43.973927+00:00"
+  },
+  {
+    "id": "SH-004",
+    "name": "DWC Operations Centre",
+    "role": "Operations",
+    "org": "Department of Wildlife Conservation",
+    "use_case_ids": [
+      "UC-001"
+    ],
+    "channels": [
+      {
+        "type": "sms",
+        "address": "+94771000004",
+        "language": "en"
+      },
+      {
+        "type": "whatsapp",
+        "address": "+94771000004",
+        "language": "en"
+      }
+    ],
+    "on_call": true,
+    "created_at": "2026-06-19T10:01:43.981505+00:00",
+    "updated_at": "2026-06-19T10:01:43.981516+00:00"
+  },
+  {
+    "name": "Yasiru",
+    "role": "Makavita",
+    "use_case_ids": [
+      "USE-3F0702"
+    ],
+    "on_call": true,
+    "channels": [
+      {
+        "type": "sms",
+        "address": "777338364",
+        "language": "en"
+      }
+    ],
+    "id": "STA-121712",
+    "created_at": "2026-06-19T10:22:27.079272+00:00",
+    "updated_at": "2026-06-19T10:22:27.079283+00:00"
+  }
+]

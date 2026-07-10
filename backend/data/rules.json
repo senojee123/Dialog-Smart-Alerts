@@ -1,0 +1,123 @@
+[
+  {
+    "id": "RULE-001",
+    "use_case_id": "UC-001",
+    "name": "Single Detection – High Alert",
+    "description": "Any device detects an elephant with ≥60% confidence.",
+    "priority": 1,
+    "active": true,
+    "conditions": [
+      {
+        "field": "object_type",
+        "op": "eq",
+        "value": "elephant"
+      },
+      {
+        "field": "confidence",
+        "op": "gte",
+        "value": 60
+      }
+    ],
+    "confirmation": null,
+    "actions": {
+      "on_trigger": {
+        "create_incident": true,
+        "incident_severity": "HIGH",
+        "notify_stakeholder_ids": [
+          "SH-001",
+          "SH-004"
+        ],
+        "actuate_sign_ids": [],
+        "sign_state": "CAUTION",
+        "message_template": "[HIGH] Possible elephant near {zone_name} ({device_name}). Confidence {confidence}%. Please verify. Incident {incident_id}"
+      }
+    },
+    "created_at": "2026-06-19T10:01:44.065247+00:00",
+    "updated_at": "2026-06-19T10:01:44.065253+00:00"
+  },
+  {
+    "id": "RULE-002",
+    "use_case_id": "UC-001",
+    "name": "Dual Confirmation – Critical Alert",
+    "description": "Two or more detections in the same zone within 15 minutes.",
+    "priority": 2,
+    "active": true,
+    "conditions": [
+      {
+        "field": "object_type",
+        "op": "eq",
+        "value": "elephant"
+      },
+      {
+        "field": "confidence",
+        "op": "gte",
+        "value": 70
+      }
+    ],
+    "confirmation": {
+      "required_count": 2,
+      "window_seconds": 900,
+      "same_zone": true
+    },
+    "actions": {
+      "on_trigger": {
+        "create_incident": true,
+        "incident_severity": "HIGH",
+        "notify_stakeholder_ids": [
+          "SH-001"
+        ],
+        "actuate_sign_ids": [],
+        "sign_state": "CAUTION",
+        "message_template": "[HIGH] Elephant near {zone_name}. Awaiting confirmation. Incident {incident_id}"
+      },
+      "on_confirm": {
+        "create_incident": true,
+        "incident_severity": "CRITICAL",
+        "notify_stakeholder_ids": [
+          "SH-001",
+          "SH-002",
+          "SH-003",
+          "SH-004"
+        ],
+        "actuate_sign_ids": [],
+        "sign_state": "WARNING",
+        "message_template": "[CRITICAL] CONFIRMED elephant on {zone_name}. Multiple detections. All units respond. Incident {incident_id}"
+      }
+    },
+    "created_at": "2026-06-19T10:01:44.074762+00:00",
+    "updated_at": "2026-06-19T10:01:44.074782+00:00"
+  },
+  {
+    "use_case_id": "USE-3F0702",
+    "name": "elephanth detection",
+    "description": "Created by setup wizard",
+    "priority": 1,
+    "active": true,
+    "conditions": [
+      {
+        "field": "object_type",
+        "op": "eq",
+        "value": "elephanth"
+      },
+      {
+        "field": "confidence",
+        "op": "gte",
+        "value": 99
+      }
+    ],
+    "confirmation": null,
+    "actions": {
+      "on_trigger": {
+        "create_incident": true,
+        "incident_severity": "HIGH",
+        "notify_stakeholder_ids": [
+          "STA-121712"
+        ],
+        "message_template": "[HIGH] elephanth detected in {zone_name} ({device_name}). Confidence {confidence}%. Incident {incident_id}"
+      }
+    },
+    "id": "RUL-1F4BA5",
+    "created_at": "2026-06-19T10:22:56.860883+00:00",
+    "updated_at": "2026-06-19T10:22:56.860897+00:00"
+  }
+]

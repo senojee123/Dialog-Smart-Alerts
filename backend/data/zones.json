@@ -1,0 +1,50 @@
+[
+  {
+    "id": "ZONE-B43",
+    "name": "B43 Yala Road Corridor",
+    "use_case_id": "UC-001",
+    "road": "B43",
+    "lat": 6.3818,
+    "lng": 81.48,
+    "created_at": "2026-06-19T10:01:43.906408+00:00",
+    "updated_at": "2026-06-19T10:01:43.906415+00:00"
+  },
+  {
+    "id": "ZONE-A2",
+    "name": "A2 Southern Highway",
+    "use_case_id": "UC-001",
+    "road": "A2",
+    "lat": 6.2812,
+    "lng": 81.3902,
+    "created_at": "2026-06-19T10:01:43.914666+00:00",
+    "updated_at": "2026-06-19T10:01:43.914685+00:00"
+  },
+  {
+    "id": "ZONE-KTR",
+    "name": "Kataragama Road",
+    "use_case_id": "UC-001",
+    "road": "KTR",
+    "lat": 6.372,
+    "lng": 81.331,
+    "created_at": "2026-06-19T10:01:43.922074+00:00",
+    "updated_at": "2026-06-19T10:01:43.922089+00:00"
+  },
+  {
+    "name": "Elephant Detection at Yala area",
+    "use_case_id": "USE-E1C5F1",
+    "lat": 6.401241,
+    "lng": 81.386571,
+    "id": "ZON-AF1CEC",
+    "created_at": "2026-06-19T10:04:20.784399+00:00",
+    "updated_at": "2026-06-19T10:04:20.784410+00:00"
+  },
+  {
+    "name": "Elephant detection in Yala area",
+    "use_case_id": "USE-3F0702",
+    "lat": 6.387901,
+    "lng": 81.418476,
+    "id": "ZON-C588B8",
+    "created_at": "2026-06-19T10:21:49.337034+00:00",
+    "updated_at": "2026-06-19T10:21:49.337056+00:00"
+  }
+]

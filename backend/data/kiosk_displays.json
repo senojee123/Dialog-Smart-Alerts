@@ -1,0 +1,26 @@
+[
+  {
+    "id": "pi-001",
+    "name": "Yala North Corridor Kiosk",
+    "station_ids": ["st_01"],
+    "zone_ids": ["ZONE-B43"]
+  },
+  {
+    "id": "pi-002",
+    "name": "Kataragama Rd Crossing Kiosk",
+    "station_ids": ["st_03"],
+    "zone_ids": ["ZONE-KTR"]
+  },
+  {
+    "id": "pi-003",
+    "name": "A2 Southern Highway Kiosk",
+    "station_ids": ["st_02"],
+    "zone_ids": ["ZONE-A2"]
+  },
+  {
+    "id": "pi-004",
+    "name": "Kataragama Road Buffer Kiosk",
+    "station_ids": ["st_04"],
+    "zone_ids": ["ZONE-KTR"]
+  }
+]
