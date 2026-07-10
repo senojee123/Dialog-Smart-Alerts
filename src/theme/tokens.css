@@ -1,27 +1,49 @@
+/*
+ * Design tokens — CSS-variable mirror of tailwind.config.js (the source of truth).
+ * Use Tailwind classes (bg-brand, text-ink-muted, …) in components. These vars
+ * exist only for the few contexts Tailwind can't reach: Leaflet div-icon HTML,
+ * inline SVG fills, and dynamic style strings.
+ */
 :root {
-  --bg:             #FFFFFF;
-  --surface:        #F7F8FA;
-  --surface-2:      #F2F4F7;
-  --border:         #E4E7EC;
-  --text:           #1A1A1A;
-  --text-muted:     #667085;
+  /* Brand chrome */
   --brand:          #DA1F26;
   --brand-hover:    #B81A20;
-  --accent-orange:  #F2841C;
-  --accent-maroon:  #7B1E28;
+  --brand-subtle:   #FDECEC;
+  --maroon:         #7B1E28;
+  --orange:         #F2841C;
 
+  /* Neutrals */
+  --bg:             #FFFFFF;
+  --surface:        #F7F8FA;
+  --surface-alt:    #F2F4F7;
+  --surface-sunken: #EDEFF3;
+  --line:           #E4E7EC;
+  --line-strong:    #D0D5DD;
+  --ink:            #1A1A1A;
+  --ink-muted:      #667085;
+  --ink-subtle:     #98A2B3;
+
+  /* Severity */
   --sev-critical:   #D92D20;
   --sev-high:       #F2841C;
   --sev-medium:     #F5B70A;
   --sev-low:        #12B76A;
 
+  /* Notification delivery states */
   --state-dispatched: #667085;
   --state-delivered:  #12B76A;
   --state-failed:     #D92D20;
 
+  /* Hardware / actuator states */
   --hw-on:       #12B76A;
   --hw-off:      #98A2B3;
   --hw-offline:  #D92D20;
   --hw-error:    #D92D20;
   --hw-manual:   #7B1E28;
+
+  /* Road-sign actuator states (RED / AMBER / GREEN model) */
+  --sign-warning: #D92D20;
+  --sign-caution: #F2841C;
+  --sign-clear:   #12B76A;
+  --sign-offline: #667085;
 }

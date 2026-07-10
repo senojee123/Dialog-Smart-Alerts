@@ -14,8 +14,6 @@ const BLANK_ACTION = {
   create_incident:        true,
   incident_severity:      'HIGH',
   notify_stakeholder_ids: [],
-  actuate_sign_ids:       [],
-  sign_state:             'CAUTION',
   message_template:       'Alert [{severity}]: {object_type} detected in {zone_name} by {device_name}. Confidence: {confidence}%. Incident: {incident_id}',
 }
 
@@ -79,15 +77,11 @@ function SectionHeader({ title, open, onToggle }) {
   )
 }
 
-function ActionBlock({ label, action, onChange, stakeholders, roadSigns }) {
+function ActionBlock({ label, action, onChange, stakeholders }) {
   function set(k, v) { onChange({ ...action, [k]: v }) }
   function toggleSH(id) {
     const ids = action.notify_stakeholder_ids || []
     set('notify_stakeholder_ids', ids.includes(id) ? ids.filter(x => x !== id) : [...ids, id])
-  }
-  function toggleSign(id) {
-    const ids = action.actuate_sign_ids || []
-    set('actuate_sign_ids', ids.includes(id) ? ids.filter(x => x !== id) : [...ids, id])
   }
 
   return (
@@ -120,30 +114,10 @@ function ActionBlock({ label, action, onChange, stakeholders, roadSigns }) {
         </div>
       </Field>
 
-      {roadSigns.length > 0 && (
-        <Field label="Actuate Road Signs">
-          <div className="grid grid-cols-2 gap-1 mt-1">
-            {roadSigns.map(rs => (
-              <label key={rs.id} className="flex items-center gap-2 cursor-pointer">
-                <input type="checkbox"
-                       checked={(action.actuate_sign_ids || []).includes(rs.id)}
-                       onChange={() => toggleSign(rs.id)}
-                       className="rounded border-line accent-brand" />
-                <span className="text-xs text-ink">{rs.name}</span>
-              </label>
-            ))}
-          </div>
-          {(action.actuate_sign_ids || []).length > 0 && (
-            <Field label="Sign State" hint="State applied to selected signs when this action fires">
-              <Select value={action.sign_state || 'WARNING'} onChange={e => set('sign_state', e.target.value)}>
-                <option value="WARNING">WARNING (red)</option>
-                <option value="CAUTION">CAUTION (amber)</option>
-                <option value="CLEAR">CLEAR (dark)</option>
-              </Select>
-            </Field>
-          )}
-        </Field>
-      )}
+      <div className="text-xs text-ink-muted bg-surface-alt rounded p-2 leading-relaxed">
+        Road-sign lighting is automatic — boards light by proximity to detections (spatial engine),
+        so rules don't actuate signs directly.
+      </div>
 
       <Field label="Message Template" hint="Placeholders: {severity} {object_type} {zone_name} {device_name} {confidence} {incident_id}">
         <Textarea value={action.message_template || ''} onChange={e => set('message_template', e.target.value)} rows={3} />
@@ -158,7 +132,6 @@ export default function Rules() {
   const { data, loading, error, create, update, remove } = useApi('/api/rules')
   const { data: useCases }    = useApi('/api/use-cases')
   const { data: stakeholders } = useApi('/api/stakeholders')
-  const { data: roadSigns }   = useApi('/api/road-signs')
 
   const [slideOpen, setSlideOpen]   = useState(false)
   const [editing, setEditing]       = useState(null)
@@ -259,13 +232,6 @@ export default function Rules() {
   const filteredSH = form.use_case_id
     ? stakeholders.filter(s => (s.use_case_ids || []).includes(form.use_case_id))
     : stakeholders
-
-  const filteredSigns = form.use_case_id
-    ? roadSigns.filter(rs => {
-        const zone = rs.zone_id
-        return true // signs belong to zones; show all for simplicity
-      })
-    : roadSigns
 
   const columns = [
     { key: 'name', label: 'Rule',
@@ -446,7 +412,6 @@ export default function Rules() {
                   action={form.actions?.on_trigger || BLANK_ACTION}
                   onChange={block => setAction('on_trigger', block)}
                   stakeholders={filteredSH}
-                  roadSigns={filteredSigns}
                 />
 
                 {showConfirmBlock && (
@@ -469,7 +434,6 @@ export default function Rules() {
                           action={form.actions?.on_confirm || { ...BLANK_ACTION, incident_severity: 'CRITICAL' }}
                           onChange={block => setAction('on_confirm', block)}
                           stakeholders={filteredSH}
-                          roadSigns={filteredSigns}
                         />
                       </>
                     )}

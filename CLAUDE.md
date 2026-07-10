@@ -24,8 +24,29 @@ The platform is **use-case driven** — the elephant scenario is seeded data, no
 - Commit trailer: `Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>`.
 - History note: the old dev laptop had no npm, so `dist/` was built by GitHub Actions and downloaded. With npm now, build locally (`.github/workflows/build.yml` is optional).
 
+## Design system, simulation & ingestion (added)
+- **Design system "Elevated Dialog"** lives in `src/components/ui/` (single token source =
+  `tailwind.config.js`). Import from `components/ui`. Live reference at route **`/styleguide`**.
+  `components/admin/CrudShell.jsx` + the `components/common/{ConfirmDialog,SeverityChip,StatusBadge,Toast}`
+  are now thin **re-export shims** over `ui/` — don't add logic there.
+- **Ingestion boundary:** every detection enters via `_ingest_event(body, source)` in `server.py`
+  (`POST /api/events`). Events carry `source` = `device|upload|simulation|ingestion`. Real cameras /
+  the future middle layer POST the same contract — nothing downstream changes. The public endpoint
+  **authenticates producers** with the device `api_key` (`X-API-Key`), resolves devices by `device_id`
+  **or** `external_id` (MAC/serial), and de-dups by `client_event_id`. **The platform does NO inference**
+  — inputs (edge cameras / an upstream AI service) send finished detections. Cross-team spec:
+  `docs/integration-contract.md`; pipeline: `docs/architecture.md`.
+- **Simulator** (`/simulator`, `backend/simulator.py`, `/api/simulate/*`): use-case-aware single
+  events + moving-target scenario runs, all `source="simulation"`, with a one-click reset. The wizard's
+  Review step reuses the injector as "Run a test detection". See `docs/simulation.md`.
+- **No more elephant hardcoding:** `/api/upload`, the Road Signs "Simulate", and `RoadSignCard`
+  labels are all object/use-case driven now (upload keeps an elephant *default* only).
+- **Engine precision:** notifications only fire on open / escalation / after `NOTIFY_COOLDOWN_S`
+  (no storms); confirmation ignores events consumed by closed incidents; `/api/system/health`
+  returns liveness fields so the top-bar dot is green when healthy.
+
 ## Current status / next step
-Setup Wizard (`/setup`, 6 steps) is built but its full API sequence was **not yet smoke-tested**
-(laptop switch interrupted it). Next: run dev mode, walk all 6 steps, confirm a wizard-built
-use case drives the engine (simulate a detection on its new devices → boards light, incident fires).
-Low-priority stubs still on local-only state: Hardware Units, Escalation Policies, Templates.
+Setup Wizard rebuilt (`/setup`, 5 steps: Scenario → Sensors → Signs → Response → Review&Test),
+verified end-to-end for a **non-elephant** scenario via API replay (boards light, incident opens).
+Still local-only stubs (fast follow): Hardware Units, Escalation Policies, Templates; admin screens
+still on the CrudShell shim (work, not yet redesigned). Docs in `docs/`.

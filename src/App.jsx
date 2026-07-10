@@ -8,6 +8,7 @@ import MapView from './pages/MapView.jsx'
 import RoadSigns from './pages/RoadSigns.jsx'
 import Devices from './pages/Devices.jsx'
 import HardwareUnits from './pages/HardwareUnits.jsx'
+import Simulator from './pages/Simulator.jsx'
 
 // Admin – configuration
 import AdminUseCases from './pages/admin/UseCases.jsx'
@@ -22,6 +23,9 @@ import AdminTemplates from './pages/admin/Templates.jsx'
 
 // Setup
 import SetupWizard from './pages/SetupWizard.jsx'
+import StyleGuide from './pages/StyleGuide.jsx'
+
+import KioskDisplay from './pages/KioskDisplay.jsx'
 
 function Wrap({ children }) {
   return <ErrorBoundary>{children}</ErrorBoundary>
@@ -31,11 +35,12 @@ export default function App() {
   return (
     <BrowserRouter>
       <Routes>
+        {/* Setup wizard & Kiosk displays — full-screen, outside the dashboard chrome */}
+        <Route path="/setup" element={<Wrap><SetupWizard /></Wrap>} />
+        <Route path="/device/:deviceId" element={<Wrap><KioskDisplay /></Wrap>} />
+
         <Route element={<AppShell />}>
           <Route index element={<Navigate to="/incidents" replace />} />
-
-          {/* Setup */}
-          <Route path="/setup" element={<Wrap><SetupWizard /></Wrap>} />
 
           {/* Operations */}
           <Route path="/incidents"  element={<Wrap><LiveIncidents /></Wrap>} />
@@ -43,6 +48,7 @@ export default function App() {
           <Route path="/road-signs" element={<Wrap><RoadSigns /></Wrap>} />
           <Route path="/devices"    element={<Wrap><Devices /></Wrap>} />
           <Route path="/hardware"   element={<Wrap><HardwareUnits /></Wrap>} />
+          <Route path="/simulator"  element={<Wrap><Simulator /></Wrap>} />
 
           {/* Configuration admin */}
           <Route path="/admin/use-cases"    element={<Wrap><AdminUseCases /></Wrap>} />
@@ -54,6 +60,7 @@ export default function App() {
           {/* System admin */}
           <Route path="/admin/escalation" element={<Wrap><AdminEscalation /></Wrap>} />
           <Route path="/admin/templates"  element={<Wrap><AdminTemplates /></Wrap>} />
+          <Route path="/styleguide"       element={<Wrap><StyleGuide /></Wrap>} />
         </Route>
       </Routes>
     </BrowserRouter>

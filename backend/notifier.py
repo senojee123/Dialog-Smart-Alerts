@@ -1,11 +1,14 @@
 """
 Notification dispatcher — simulates SMS, WhatsApp, Email.
-All sends are logged to notifications.json for the dashboard to display.
+All sends are logged to notifications for the dashboard to display.
+
+Stage B1: async, backed by repo. (Stage B5 will move this to a persisted
+outbox + dispatcher worker with real retries/delivery states.)
 """
 
 import uuid
 from datetime import datetime, timezone
-import data_store
+import repo
 
 
 def _now() -> str:
@@ -19,9 +22,9 @@ def _render(template: str, ctx: dict) -> str:
         return template
 
 
-def _build_context(incident: dict, event: dict) -> dict:
-    zone = data_store.get_by_id("zones", event.get("zone_id", "")) or {}
-    device = data_store.get_by_id("devices", event.get("device_id", "")) or {}
+async def _build_context(incident: dict, event: dict) -> dict:
+    zone = await repo.get_by_id("zones", event.get("zone_id", "")) or {}
+    device = await repo.get_by_id("devices", event.get("device_id", "")) or {}
     return {
         "incident_id":  incident.get("id", ""),
         "zone_name":    zone.get("name", event.get("zone_id", "Unknown Zone")),
@@ -33,11 +36,11 @@ def _build_context(incident: dict, event: dict) -> dict:
     }
 
 
-def dispatch(incident: dict, rule: dict, action_key: str, event: dict) -> list[dict]:
+async def dispatch(incident: dict, rule: dict, action_key: str, event: dict) -> list[dict]:
     """
     Fires notifications for the given action_key ('on_trigger' or 'on_confirm').
     Falls back to 'on_trigger' actions when 'on_confirm' block is absent.
-    Returns list of notification records saved to data store.
+    Returns list of notification records saved to the store.
     """
     actions = rule.get("actions", {})
     action_block = actions.get(action_key) or actions.get("on_trigger", {})
@@ -50,12 +53,12 @@ def dispatch(incident: dict, rule: dict, action_key: str, event: dict) -> list[d
         "Alert [{severity}]: {object_type} detected in {zone_name} by {device_name}. "
         "Confidence: {confidence}%. Incident: {incident_id}"
     )
-    ctx = _build_context(incident, event)
+    ctx = await _build_context(incident, event)
     message = _render(template, ctx)
 
     saved = []
     for sh_id in stakeholder_ids:
-        stakeholder = data_store.get_by_id("stakeholders", sh_id)
+        stakeholder = await repo.get_by_id("stakeholders", sh_id)
         if not stakeholder:
             continue
         for channel in stakeholder.get("channels", []):
@@ -64,7 +67,7 @@ def dispatch(incident: dict, rule: dict, action_key: str, event: dict) -> list[d
             if not address:
                 continue
 
-            record = {
+            record = await repo.create("notifications", {
                 "id":               f"NOTIF-{uuid.uuid4().hex[:8].upper()}",
                 "incident_id":      incident.get("id"),
                 "event_id":         event.get("id"),
@@ -75,30 +78,9 @@ def dispatch(incident: dict, rule: dict, action_key: str, event: dict) -> list[d
                 "message":          message,
                 "status":           "simulated",
                 "sent_at":          _now(),
-            }
-            data_store.create("notifications", record)
+            })
             saved.append(record)
 
-            tag = ch_type.upper()
-            print(f"  [{tag}] → {address}: {message}")
+            print(f"  [{ch_type.upper()}] → {address}: {message}")
 
     return saved
-
-
-def actuate_signs(rule: dict, action_key: str) -> list[str]:
-    """
-    Updates road sign states as specified in rule actions.
-    Returns list of sign IDs that were actuated.
-    """
-    actions = rule.get("actions", {})
-    action_block = actions.get(action_key) or actions.get("on_trigger", {})
-    sign_ids = action_block.get("actuate_sign_ids", [])
-    new_state = action_block.get("sign_state", "WARNING")
-
-    actuated = []
-    for sid in sign_ids:
-        result = data_store.update("road_signs", sid, {"forced_state": new_state})
-        if result:
-            actuated.append(sid)
-            print(f"  [SIGN] {sid} → {new_state}")
-    return actuated

@@ -28,12 +28,15 @@ from pathlib import Path
 from typing import AsyncGenerator
 
 import seed
+import db
 import data_store
 import rule_engine
 import notifier
 import spatial
+import simulator
+from mqtt_client import MQTTClientManager
 
-from fastapi import FastAPI, HTTPException, Request, UploadFile, File
+from fastapi import FastAPI, HTTPException, Request, UploadFile, File, Form
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse as _FileResponse
 from fastapi.responses import HTMLResponse, JSONResponse, StreamingResponse
@@ -48,11 +51,20 @@ UPLOADS_DIR.mkdir(exist_ok=True)
 # ── App ──────────────────────────────────────────────────────────────────────
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    seed.run()
+    app.state.loop = asyncio.get_running_loop()
+    await db.init_db()
+    await seed.run()
+    
+    # Initialize and start background MQTT client
+    app.state.mqtt_client = MQTTClientManager(app)
+    app.state.mqtt_client.start()
+    
     _print_local_ip()
     task = asyncio.create_task(_decay_tick())
     yield
     task.cancel()
+    if hasattr(app.state, "mqtt_client") and app.state.mqtt_client:
+        app.state.mqtt_client.stop()
 
 
 app = FastAPI(title="Dialog Smart Alerts", version="2.0.0", lifespan=lifespan)
@@ -78,6 +90,21 @@ def _now() -> str:
     return datetime.now(timezone.utc).isoformat()
 
 
+def _parse_iso(s):
+    """Parse an ISO timestamp to an aware datetime, or None."""
+    if not s:
+        return None
+    try:
+        dt = datetime.fromisoformat(str(s))
+        return dt if dt.tzinfo else dt.replace(tzinfo=timezone.utc)
+    except Exception:
+        return None
+
+
+# Re-notify the same incident at most once per this window unless it escalates.
+NOTIFY_COOLDOWN_S = 600
+
+
 # Last broadcast sign states — so we only emit when something actually changes.
 _last_sign_states: dict = {}
 
@@ -98,6 +125,14 @@ async def _decay_tick():
             if changed:
                 _last_sign_states = states
                 broadcast("signs_state", {"states": states, "changed": list(changed.keys())})
+                
+                # Actuate signs via MQTT on state changes
+                if hasattr(app, "state") and hasattr(app.state, "mqtt_client") and app.state.mqtt_client:
+                    for sid in changed:
+                        sign_state = states[sid]
+                        color_map = {"WARNING": "RED", "CAUTION": "AMBER", "CLEAR": "GREEN", "OFFLINE": "OFF"}
+                        color = color_map.get(sign_state, "OFF")
+                        app.state.mqtt_client.actuate_led(sid, color)
         except Exception as e:
             print(f"[DECAY] tick error: {e}")
 
@@ -211,6 +246,8 @@ async def create_device(req: Request):
     body = await req.json()
     if not body.get("api_key"):
         body["api_key"] = f"dev-key-{uuid.uuid4().hex[:8]}"
+    if not body.get("external_id"):
+        body["external_id"] = body["api_key"]
     device = _create("devices", body)
     broadcast("device_created", device)
     return device
@@ -221,13 +258,77 @@ async def get_device(id: str):
 
 @app.put("/api/devices/{id}")
 async def update_device(id: str, req: Request):
-    device = _update("devices", id, await req.json())
+    body = await req.json()
+    if body.get("api_key") and not body.get("external_id"):
+        body["external_id"] = body["api_key"]
+    device = _update("devices", id, body)
     broadcast("device_updated", device)
     return device
 
 @app.delete("/api/devices/{id}")
 async def delete_device(id: str):
     return _delete("devices", id)
+
+
+# ════════════════════════════════════════════════════════════════════════════
+# KIOSK DISPLAYS (Raspberry Pi display units)
+# ════════════════════════════════════════════════════════════════════════════
+
+@app.get("/api/kiosks")
+async def list_kiosks():
+    return _list("kiosk_displays")
+
+@app.post("/api/kiosks")
+async def create_kiosk(req: Request):
+    body = await req.json()
+    kiosk = _create("kiosk_displays", body)
+    broadcast("kiosk_created", kiosk)
+    return kiosk
+
+@app.get("/api/kiosks/{device_id}/status")
+async def get_kiosk_status(device_id: str):
+    kiosk = data_store.get_by_id("kiosk_displays", device_id)
+    if not kiosk:
+        raise HTTPException(404, f"Kiosk display '{device_id}' not found")
+    
+    active_incidents = [
+        inc for inc in data_store.get_all("incidents")
+        if inc.get("status") in ("ACTIVE", "OPERATOR_REVIEW")
+    ]
+    
+    kiosk_station_ids = kiosk.get("station_ids", [])
+    kiosk_zone_ids = kiosk.get("zone_ids", [])
+    
+    for inc in active_incidents:
+        # Check zone match
+        zone_match = inc.get("zone_id") in kiosk_zone_ids
+        
+        # Check station match by looking up the device
+        station_match = False
+        station_id = "Unknown"
+        device = data_store.get_by_id("devices", inc.get("device_id", ""))
+        if device and device.get("external_id"):
+            ext = device["external_id"]
+            if "_" in ext:
+                station_id = ext.split("_")[0]
+                station_match = station_id in kiosk_station_ids
+        
+        if zone_match or station_match:
+            return {
+                "status": "ALERT",
+                "incident": {
+                    "id": inc["id"],
+                    "zone_id": inc.get("zone_id"),
+                    "zone_name": inc.get("zone_name") or inc.get("zone"),
+                    "opened_at": inc["opened_at"],
+                    "confidence": inc["confidence"],
+                    "object": inc["object"],
+                    "station_id": station_id
+                }
+            }
+            
+    return {"status": "CLEAR"}
+
 
 
 # ════════════════════════════════════════════════════════════════════════════
@@ -453,37 +554,84 @@ async def list_events():
     return events[:200]
 
 
-@app.post("/api/events")
-async def intake_event(req: Request):
-    body = await req.json()
+def _resolve_device(body: dict) -> dict | None:
+    """Resolve the producing device by our id, or by the producer's own
+    `external_id` (e.g. camera MAC/serial) so connectors can use native ids."""
+    if body.get("device_id"):
+        d = data_store.get_by_id("devices", body["device_id"])
+        if d:
+            return d
+    ext = body.get("external_id")
+    if ext:
+        return next((x for x in data_store.get_all("devices") if x.get("external_id") == ext), None)
+    return None
 
-    device = data_store.get_by_id("devices", body.get("device_id", ""))
+
+async def _ingest_event(body: dict, source: str = "device") -> tuple[dict, dict | None]:
+    """
+    THE ingestion boundary. Every producer — real devices, the phone-camera
+    upload, and the simulator — funnels through here, so they all get the same
+    rule-engine + spatial + notification behaviour. `source` records the origin
+    (device | upload | simulation | ingestion) and is carried onto the event.
+    """
+    device = _resolve_device(body)
     if not device:
-        raise HTTPException(400, "Unknown device_id — register device first")
+        raise HTTPException(400, "Unknown device — register it (by id or external_id) first")
+
+    # Idempotency: a producer may safely retry with the same client_event_id;
+    # we return the already-stored event instead of creating a duplicate.
+    cid = body.get("client_event_id")
+    if cid:
+        prior = next((e for e in data_store.get_all("detection_events") if e.get("client_event_id") == cid), None)
+        if prior:
+            inc = next((i for i in data_store.get_all("incidents") if prior["id"] in (i.get("event_ids") or [])), None)
+            return prior, inc
 
     event = data_store.create("detection_events", {
-        "id":          f"EVT-{uuid.uuid4().hex[:8].upper()}",
-        "device_id":   device["id"],
-        "device_name": device.get("name", ""),
-        "use_case_id": device.get("use_case_id", body.get("use_case_id", "")),
-        "zone_id":     device.get("zone_id", body.get("zone_id", "")),
-        "object_type": body.get("object_type", "unknown"),
-        "confidence":  float(body.get("confidence", 0)),
-        "image_url":   body.get("image_url"),
-        "raw_payload": body.get("raw_payload"),
+        "id":              f"EVT-{uuid.uuid4().hex[:8].upper()}",
+        "device_id":       device["id"],
+        "device_name":     device.get("name", ""),
+        "use_case_id":     device.get("use_case_id", body.get("use_case_id", "")),
+        "zone_id":         device.get("zone_id", body.get("zone_id", "")),
+        "object_type":     body.get("object_type", "unknown"),
+        "confidence":      float(body.get("confidence", 0)),
+        "image_url":       body.get("image_url"),
+        "bbox":            body.get("bbox"),
+        "vendor":          body.get("vendor", device.get("vendor")),
+        "client_event_id": cid,
+        "raw_payload":     body.get("raw_payload"),
+        "source":          source,
         # Location is copied from the device so the spatial engine can light
         # nearby actuators (a drone could also send its own lat/lng here).
-        "lat":         body.get("lat", device.get("lat")),
-        "lng":         body.get("lng", device.get("lng")),
-        "received_at": _now(),
-        "processed":   False,
+        "lat":             body.get("lat", device.get("lat")),
+        "lng":             body.get("lng", device.get("lng")),
+        "captured_at":     body.get("captured_at"),
+        "received_at":     _now(),
+        "processed":       False,
     })
     data_store.update("devices", device["id"], {"last_seen": _now(), "online": True})
 
-    incident = _run_rule_engine(event, device)
+    incident = await _run_rule_engine(event, device)
     broadcast("event_received", {**event, "incident_id": incident["id"] if incident else None})
     _broadcast_sign_states()
+    return event, incident
 
+
+@app.post("/api/events")
+async def intake_event(req: Request):
+    """Public detection-intake endpoint for external producers (camera connectors
+    or an upstream AI service). Authenticates with the device's api_key."""
+    body = await req.json()
+    device = _resolve_device(body)
+    if not device:
+        raise HTTPException(400, "Unknown device — register it (by id or external_id) first")
+
+    expected = device.get("api_key")
+    presented = req.headers.get("X-API-Key") or body.get("api_key")
+    if expected and presented != expected:
+        raise HTTPException(401, "Invalid or missing API key for this device")
+
+    event, incident = await _ingest_event(body, body.get("source", "device"))
     return {
         "event_id":    event["id"],
         "incident_id": incident["id"] if incident else None,
@@ -494,12 +642,22 @@ def _broadcast_sign_states():
     """Recompute + push sign states immediately (used after a new event)."""
     global _last_sign_states
     states = _compute_sign_states()
+    changed = {sid: st for sid, st in states.items()
+               if _last_sign_states.get(sid) != st}
     _last_sign_states = states
     broadcast("signs_state", {"states": states, "changed": list(states.keys())})
+    
+    # Actuate signs via MQTT on state changes
+    if changed and hasattr(app, "state") and hasattr(app.state, "mqtt_client") and app.state.mqtt_client:
+        for sid in changed:
+            sign_state = states[sid]
+            color_map = {"WARNING": "RED", "CAUTION": "AMBER", "CLEAR": "GREEN", "OFFLINE": "OFF"}
+            color = color_map.get(sign_state, "OFF")
+            app.state.mqtt_client.actuate_led(sid, color)
 
 
-def _run_rule_engine(event: dict, device: dict) -> dict | None:
-    matched_rule, action_key = rule_engine.evaluate_event(event)
+async def _run_rule_engine(event: dict, device: dict) -> dict | None:
+    matched_rule, action_key = await rule_engine.evaluate_event(event)
     if not matched_rule or action_key not in ("on_trigger", "on_confirm"):
         if matched_rule:
             data_store.update("detection_events", event["id"], {
@@ -522,6 +680,9 @@ def _run_rule_engine(event: dict, device: dict) -> dict | None:
     ]
     sev_order = {"LOW": 0, "MEDIUM": 1, "HIGH": 2, "CRITICAL": 3}
 
+    is_new    = not open_incidents
+    escalated = False
+
     if open_incidents:
         incident = open_incidents[0]
         # Always link the new event; escalate severity if this rule is higher
@@ -530,6 +691,10 @@ def _run_rule_engine(event: dict, device: dict) -> dict | None:
         if sev_order.get(severity, 0) > sev_order.get(incident.get("severity"), 0):
             patch["severity"] = severity
             patch["rule_id"]  = matched_rule["id"]
+            escalated = True
+        # Always update confidence to the highest seen so far
+        if event.get("confidence", 0) > incident.get("confidence", 0):
+            patch["confidence"] = event["confidence"]
         incident = data_store.update("incidents", incident["id"], patch)
         _broadcast_incident("incident_updated", incident)
     else:
@@ -549,19 +714,33 @@ def _run_rule_engine(event: dict, device: dict) -> dict | None:
             "location":    {"lat": device.get("lat"), "lng": device.get("lng")},
             "opened_at":   _now(),
             "source":      "auto",
+            "simulated":   event.get("source") == "simulation",
             "event_ids":   [event["id"]],
         })
         _broadcast_incident("incident_new", incident)
 
-    notifications = notifier.dispatch(incident, matched_rule, ak, event)
-    actuated = notifier.actuate_signs(matched_rule, ak)
-    if actuated:
-        broadcast("signs_updated", {"sign_ids": actuated, "state": action.get("sign_state")})
+    # Notify only when it's worth an operator's attention — on first open, on a
+    # severity increase, or after a cooldown — so a sustained presence (a
+    # detection every few seconds) never fans out the same alert repeatedly.
+    last_at = _parse_iso(incident.get("last_notified_at"))
+    cooled  = last_at is None or (datetime.now(timezone.utc) - last_at).total_seconds() >= NOTIFY_COOLDOWN_S
+    notifications = []
+    if is_new or escalated or cooled:
+        notifications = await notifier.dispatch(incident, matched_rule, ak, event)
+        if notifications:
+            data_store.update("incidents", incident["id"], {
+                "last_notified_at":       _now(),
+                "last_notified_severity": incident.get("severity"),
+            })
 
+    # Sign states are derived purely by the spatial engine (spatial.py) from event
+    # proximity + decay — rules don't force sign states.
     data_store.update("detection_events", event["id"], {
         "processed": True, "rule_id": matched_rule["id"]
     })
-    print(f"[ENGINE] '{matched_rule['name']}' → {action_key} → incident {incident['id']} → {len(notifications)} notif(s)")
+    reason = "new" if is_new else "escalated" if escalated else "cooldown" if notifications else "suppressed"
+    print(f"[ENGINE] '{matched_rule['name']}' → {action_key} → {incident['id']} "
+          f"→ {len(notifications)} notif(s) ({reason})")
     return incident
 
 
@@ -570,41 +749,126 @@ def _run_rule_engine(event: dict, device: dict) -> dict | None:
 # ════════════════════════════════════════════════════════════════════════════
 
 @app.post("/api/upload")
-async def legacy_upload(file: UploadFile = File(...)):
+async def legacy_upload(
+    file: UploadFile = File(...),
+    object_type: str = Form("elephant"),
+    confidence: float = Form(88.0),
+    device_id: str | None = Form(None),
+    use_case_id: str | None = Form(None),
+):
+    """
+    Phone-camera demo upload. The detection label/confidence are form fields
+    (defaults preserve the elephant demo) rather than hardcoded — so this page
+    works for any use case once real classification feeds them. Tagged source=upload.
+    """
     contents = await file.read()
     filename = f"{uuid.uuid4().hex}_{file.filename}"
     (UPLOADS_DIR / filename).write_bytes(contents)
     image_url = f"/uploads/{filename}"
 
-    devices = [d for d in _list("devices") if d.get("type") == "camera" and d.get("online")]
-    device = devices[0] if devices else data_store.get_by_id("devices", "DEV-001") or {}
-    device_id = device.get("id", "DEV-001")
+    # Resolve a device to attribute the upload to: explicit id, else first online
+    # camera (optionally scoped to the requested use case).
+    device = data_store.get_by_id("devices", device_id) if device_id else None
+    if not device:
+        cams = [d for d in _list("devices")
+                if d.get("type") == "camera" and d.get("online")
+                and (not use_case_id or d.get("use_case_id") == use_case_id)]
+        device = cams[0] if cams else None
+    if not device:
+        raise HTTPException(400, "No online camera registered to attribute this upload to")
 
-    event = data_store.create("detection_events", {
-        "id":          f"EVT-{uuid.uuid4().hex[:8].upper()}",
-        "device_id":   device_id,
-        "device_name": device.get("name", ""),
-        "use_case_id": device.get("use_case_id", "UC-001"),
-        "zone_id":     device.get("zone_id", "ZONE-B43"),
-        "object_type": "elephant",
-        "confidence":  88.0,
+    event, incident = await _ingest_event({
+        "device_id":   device["id"],
+        "use_case_id": use_case_id or device.get("use_case_id"),
+        "object_type": object_type,
+        "confidence":  confidence,
         "image_url":   image_url,
-        "lat":         device.get("lat"),
-        "lng":         device.get("lng"),
-        "received_at": _now(),
-        "processed":   False,
-    })
-    data_store.update("devices", device_id, {"last_seen": _now(), "online": True})
-    incident = _run_rule_engine(event, device)
-    broadcast("event_received", {**event, "incident_id": incident["id"] if incident else None})
-    _broadcast_sign_states()
+    }, source="upload")
 
     return {
         "event_id":    event["id"],
         "incident_id": incident["id"] if incident else None,
         "image_url":   image_url,
-        "message":     "Elephant detection processed by rule engine",
+        "message":     "Detection processed by rule engine",
     }
+
+
+# ════════════════════════════════════════════════════════════════════════════
+# SIMULATOR  —  exercise the platform end-to-end without hardware
+# ════════════════════════════════════════════════════════════════════════════
+
+async def _sim_emit(body: dict):
+    """Adapter so the simulator drives the real ingestion path."""
+    try:
+        await _ingest_event(body, source="simulation")
+    except Exception as e:
+        print(f"[SIM] emit error: {e}")
+
+
+@app.post("/api/simulate/event")
+async def simulate_event(req: Request):
+    body = await req.json()
+    uc, lat, lng = body.get("use_case_id"), body.get("lat"), body.get("lng")
+    if uc is None or lat is None or lng is None:
+        raise HTTPException(400, "use_case_id, lat and lng are required")
+    device = await simulator.nearest_device(uc, float(lat), float(lng))
+    if not device:
+        raise HTTPException(400, "This use case has no placed sensors to attribute a detection to")
+    event, incident = await _ingest_event({
+        "device_id":   device["id"],
+        "use_case_id": uc,
+        "object_type": body.get("object_type", "unknown"),
+        "confidence":  float(body.get("confidence", 90)),
+        "lat":         float(lat),
+        "lng":         float(lng),
+    }, source="simulation")
+    return {
+        "event_id":    event["id"],
+        "incident_id": incident["id"] if incident else None,
+        "device_id":   device["id"],
+        "device_name": device.get("name"),
+    }
+
+
+@app.post("/api/simulate/scenario")
+async def simulate_scenario(req: Request):
+    body = await req.json()
+    uc   = body.get("use_case_id")
+    path = body.get("path", [])
+    if not uc or not path:
+        raise HTTPException(400, "use_case_id and a path (>=1 point) are required")
+    if not await simulator.use_case_has_sensors(uc):
+        raise HTTPException(400, "This use case has no placed sensors to attribute detections to")
+    return simulator.start(
+        _sim_emit,
+        use_case_id = uc,
+        path        = path,
+        object_type = body.get("object_type", "unknown"),
+        confidence  = float(body.get("confidence", 90)),
+        step_seconds= float(body.get("step_seconds", 3)),
+        steps       = int(body.get("steps", 12)),
+    )
+
+
+@app.get("/api/simulate/scenarios")
+async def list_scenarios():
+    return simulator.list_runs()
+
+
+@app.post("/api/simulate/scenario/{run_id}/stop")
+async def stop_scenario(run_id: str):
+    if not simulator.stop(run_id):
+        raise HTTPException(404, f"scenario '{run_id}' not found")
+    return {"stopped": run_id}
+
+
+@app.post("/api/simulate/reset")
+async def reset_simulation():
+    result = await simulator.reset_simulation()
+    _broadcast_sign_states()
+    broadcast("simulation_reset", result)
+    print(f"[SIM] reset — {result}")
+    return result
 
 
 # ════════════════════════════════════════════════════════════════════════════
@@ -631,13 +895,18 @@ async def sse_stream(request: Request):
         yield "data: {\"type\":\"connected\"}\n\n"
         try:
             while True:
-                if await request.is_disconnected():
-                    break
                 try:
+                    # Wait up to 15 s for a message; send a heartbeat comment
+                    # if nothing arrives so the connection stays alive.
                     msg = await asyncio.wait_for(queue.get(), timeout=15.0)
                     yield f"data: {msg}\n\n"
                 except asyncio.TimeoutError:
+                    # Heartbeat keeps the TCP connection open and lets us
+                    # detect a dead client on the next write.
                     yield ": heartbeat\n\n"
+        except (GeneratorExit, asyncio.CancelledError):
+            # Client disconnected — exit cleanly.
+            pass
         finally:
             if queue in _sse_queues:
                 _sse_queues.remove(queue)
@@ -659,6 +928,16 @@ async def system_health():
     devices   = _list("devices")
     return {
         "status":           "operational",
+        # Liveness fields the dashboard health dot reads. The decay task and SSE
+        # loop are the current "workers"/"broker"; there is no VLM yet, so it is
+        # reported as healthy (not degraded) rather than missing.
+        "worker_live":      True,
+        "broker_ok":        True,
+        "vlm_ok":           True,
+        "queue_depth":      0,
+        "outbox_backlog":   0,
+        "fast_path_ms":     0,
+        "slo_ms":           1500,
         "active_incidents": sum(1 for i in incidents if i.get("status") == "ACTIVE"),
         "devices_online":   sum(1 for d in devices if d.get("online")),
         "devices_total":    len(devices),

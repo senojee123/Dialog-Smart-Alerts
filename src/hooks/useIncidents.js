@@ -1,20 +1,44 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { MOCK_INCIDENTS } from '../mock/incidents.js'
+
+const POLL_INTERVAL_MS = 5000   // re-fetch every 5 s as a reliable fallback
+
+async function fetchIncidents() {
+  const r = await fetch('/api/incidents')
+  if (!r.ok) throw new Error(r.status)
+  return r.json()
+}
 
 export function useIncidents() {
   const [incidents, setIncidents] = useState([])
   const [loading, setLoading]     = useState(true)
   const [error, setError]         = useState(null)
+  const usingMock = useRef(false)
 
+  // ── Initial load ──────────────────────────────────────────────────────────
   useEffect(() => {
-    fetch('/api/incidents')
-      .then(r => { if (!r.ok) throw new Error(r.status); return r.json() })
+    fetchIncidents()
       .then(data => { setIncidents(data); setLoading(false) })
       .catch(() => {
         // Backend not running — fall back to mock data silently
+        usingMock.current = true
         setIncidents(MOCK_INCIDENTS)
         setLoading(false)
       })
+  }, [])
+
+  // ── Polling fallback: refresh every 5 s ───────────────────────────────────
+  // Guarantees the UI stays in sync even when SSE frames are missed.
+  useEffect(() => {
+    if (usingMock.current) return   // no backend — don't poll
+    const id = setInterval(() => {
+      fetchIncidents()
+        .then(data => {
+          setIncidents(data)
+        })
+        .catch(() => {})  // silently ignore transient failures
+    }, POLL_INTERVAL_MS)
+    return () => clearInterval(id)
   }, [])
 
   const applyEvent = useCallback((event) => {

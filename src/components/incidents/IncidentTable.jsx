@@ -4,7 +4,7 @@ import IncidentRow from './IncidentRow.jsx'
 import { SkeletonRow } from '../common/Skeleton.jsx'
 import { sevOrder } from '../../lib/severity.js'
 
-const COLS = ['Severity', 'Incident', 'Time', 'Area / Location', 'Object', 'AI', 'Notify', 'Hardware', 'State']
+const COLS = ['Severity', 'Incident', 'Time', 'Area / Location', 'Object', 'Conf.', 'Notify', 'Hardware', 'State']
 
 const SEVERITIES = ['ALL', 'CRITICAL', 'HIGH', 'MEDIUM', 'LOW']
 const STATUSES   = ['ALL', 'ACTIVE', 'OPERATOR_REVIEW', 'RESOLVED', 'CLOSED']

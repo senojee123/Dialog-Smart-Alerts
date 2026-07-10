@@ -83,9 +83,13 @@ python server.py       # serves dist/ + API on http://localhost:8000
    light RED, then fade AMBER → GREEN.
 4. Two detections in the same zone escalate the incident to **CRITICAL** and fan out
    notifications (logged in the backend terminal).
-5. **Phone camera:** open `http://<your-ip>:8000/upload` on a phone on the same Wi-Fi
-   (the backend prints the URL on startup), take an elephant photo → triggers the pipeline.
-6. **Setup Wizard** (`/setup`): build a brand-new use case end-to-end.
+5. **Simulator** (`/simulator`): pick a use case, drop a single detection, or draw a path and
+   play a **moving target** — watch the RED→AMBER→GREEN trail travel and incidents escalate.
+   "Reset sim data" wipes simulated data only.
+6. **Phone camera:** open `http://<your-ip>:8000/upload` on a phone on the same Wi-Fi
+   (the backend prints the URL on startup), take a photo → triggers the pipeline.
+7. **Setup Wizard** (`/setup`): build a brand-new (e.g. non-elephant) use case end-to-end, then
+   hit **Run a test detection** in the Review step to watch it drive the engine before activating.
 
 To reset all runtime data: delete `backend/data/` and restart (it re-seeds).
 
@@ -113,20 +117,25 @@ src/
 
 ## Status (handoff)
 
-**Working & verified end-to-end (via HTTP):**
-- General rule engine (single-trigger HIGH → dual-confirm CRITICAL escalation)
+**Working & verified end-to-end:**
+- General rule engine (single-trigger HIGH → dual-confirm CRITICAL escalation) with
+  **no alert storms** (notify on open / escalation / cooldown only)
 - Spatial radius + time-decay sign actuation (movement trail emerges automatically)
+- **Design system "Elevated Dialog"** (`src/components/ui/`) + live reference at `/styleguide`
+- **Scenario Simulator** (`/simulator`): single + moving-target detections through the real
+  pipeline, with one-click reset — demo without hardware
+- **Setup Wizard** (`/setup`) rebuilt — 5 steps: Scenario → Sensors → Signs → Response →
+  Review & Test; **verified end-to-end for a non-elephant scenario** (it builds a use case
+  that drives the engine, and self-tests in the Review step)
+- Live Incidents (enriched schema, SSE), Devices/Road Signs on the live registry
 - Full CRUD admin pages: Use Cases, Devices, Stakeholders, Rules, Sign Boards
-- Live Incidents page wired to backend (enriched incident schema, live SSE, persisted close)
-- Ops Devices page on live registry
-- **Setup Wizard** (`/setup`) — 6 steps: Use Case → Inputs → Outputs → Spatial → Notifications → Review
 
-**Next / pending:**
-- Smoke-test the Setup Wizard's full API sequence on the new machine (was about to verify
-  when the laptop switch happened) — run dev mode, walk all 6 steps, confirm a wizard-built
-  use case drives the engine (simulate a detection on its devices).
-- Low-priority stubs not yet wired to backend: **Hardware Units**, **Escalation Policies**,
-  **Templates** pages.
+**Architecture docs:** `docs/architecture.md` · `docs/simulation.md` · `docs/design-system.md`
+
+**Next / pending (fast follow):**
+- Real hardware / the middle ingestion layer POST to the same `/api/events` contract (`source` field)
+- Local-only stubs not yet wired to backend: **Hardware Units**, **Escalation Policies**, **Templates**
+- Admin screens still render via the CrudShell→`ui/` shim (functional; not yet fully redesigned)
 
 ---
 

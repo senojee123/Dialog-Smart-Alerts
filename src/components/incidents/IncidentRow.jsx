@@ -1,4 +1,4 @@
-import { CheckCircle, Clock, XCircle } from 'lucide-react'
+import { Clock } from 'lucide-react'
 import SeverityChip from '../common/SeverityChip.jsx'
 import StatusBadge from '../common/StatusBadge.jsx'
 import { relativeTime } from '../../lib/format.js'
@@ -15,10 +15,11 @@ function DeliveryCell({ stakeholders = [] }) {
   return <span className={`text-xs font-medium ${color}`}>{delivered}/{total}</span>
 }
 
-function AiCell({ ai_confirmed }) {
-  if (ai_confirmed === true)  return <CheckCircle size={14} className="text-sev-low" />
-  if (ai_confirmed === false) return <XCircle size={14} className="text-sev-critical" />
-  return <Clock size={14} className="text-ink-muted" />
+function ConfidenceCell({ confidence }) {
+  if (confidence == null) return <Clock size={14} className="text-ink-muted" />
+  const pct = Math.round(confidence * 100)
+  const color = pct >= 80 ? 'text-sev-low' : pct >= 60 ? 'text-ink' : 'text-ink-muted'
+  return <span className={`text-xs font-semibold ${color}`}>{pct}%</span>
 }
 
 export default function IncidentRow({ incident, selected, onClick }) {
@@ -36,16 +37,13 @@ export default function IncidentRow({ incident, selected, onClick }) {
         <SeverityChip severity={incident.severity} pulse={isCritical} />
       </td>
       <td className="px-3 py-3 font-mono text-xs text-ink-muted whitespace-nowrap">{incident.incident_id}</td>
-      <td className="px-3 py-3 text-ink-muted whitespace-nowrap">{relativeTime(incident.opened_at)}</td>
+      <td className="px-3 py-3 text-ink-muted whitespace-nowrap" title={`Opened: ${incident.opened_at}`}>{relativeTime(incident.updated_at || incident.opened_at)}</td>
       <td className="px-3 py-3">
         <div className="text-ink">{incident.zone}</div>
         <div className="text-xs text-ink-muted truncate max-w-[120px]">{incident.location?.description}</div>
       </td>
-      <td className="px-3 py-3 capitalize">
-        {incident.object}
-        {incident.herd_size > 1 && <span className="text-xs text-ink-muted ml-1">×{incident.herd_size}</span>}
-      </td>
-      <td className="px-3 py-3"><AiCell ai_confirmed={incident.ai_confirmed} /></td>
+      <td className="px-3 py-3 capitalize">{incident.object}</td>
+      <td className="px-3 py-3"><ConfidenceCell confidence={incident.confidence} /></td>
       <td className="px-3 py-3"><DeliveryCell stakeholders={incident.stakeholders} /></td>
       <td className="px-3 py-3">
         {incident.hardware?.state

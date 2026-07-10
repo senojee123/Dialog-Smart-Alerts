@@ -67,19 +67,19 @@ export default function IncidentDetail({ incident, onClose, onCloseIncident, onH
           }
         </section>
 
-        {/* AI Panel */}
+        {/* Detection panel — confidence + generated summary (no fabricated VLM verdict) */}
         <section className="p-4">
-          <h4 className="text-xs font-semibold text-ink-muted uppercase tracking-wide mb-3">AI Analysis</h4>
+          <h4 className="text-xs font-semibold text-ink-muted uppercase tracking-wide mb-3">Detection</h4>
           <div className="space-y-2 text-sm">
             <div className="flex items-center gap-2">
               {aiIcon}
               <span className="font-medium text-ink">
-                {incident.ai_confirmed === true ? 'Confirmed'
-                  : incident.ai_confirmed === false ? 'Not confirmed'
+                {incident.ai_confirmed === true ? 'Above alert threshold'
+                  : incident.ai_confirmed === false ? 'Below alert threshold'
                   : 'Pending'}
               </span>
               {incident.confidence != null && (
-                <span className="text-ink-muted ml-1">({Math.round(incident.confidence * 100)}%)</span>
+                <span className="text-ink-muted ml-1">({Math.round(incident.confidence * 100)}% confidence)</span>
               )}
             </div>
             {incident.ai_summary && <p className="text-ink-muted leading-relaxed">{incident.ai_summary}</p>}
@@ -93,16 +93,14 @@ export default function IncidentDetail({ incident, onClose, onCloseIncident, onH
           </div>
         </section>
 
-        {/* Derived facts */}
+        {/* Derived facts — only what's actually computed today */}
         <section className="p-4">
           <h4 className="text-xs font-semibold text-ink-muted uppercase tracking-wide mb-3">Detection Context</h4>
           <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
-            <Fact label="Object" value={`${incident.object}${incident.herd_size > 1 ? ` ×${incident.herd_size}` : ''}`} />
-            <Fact label="Distance to road" value={formatDistance(incident.distance_to_road_m)} />
-            <Fact label="Night" value={incident.is_night ? 'Yes' : 'No'} />
+            <Fact label="Object" value={incident.object} />
             <Fact label="Detections in zone" value={String(incident.detections_in_zone ?? '—')} />
             <Fact label="Zone" value={incident.zone} />
-            <Fact label="Coordinates" value={incident.location ? `${incident.location.lat.toFixed(4)}, ${incident.location.lng.toFixed(4)}` : '—'} />
+            <Fact label="Coordinates" value={incident.location?.lat != null ? `${incident.location.lat.toFixed(4)}, ${incident.location.lng.toFixed(4)}` : '—'} />
           </dl>
         </section>
 

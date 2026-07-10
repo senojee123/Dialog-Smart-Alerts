@@ -20,9 +20,11 @@ export function useSystemHealth() {
     return () => clearInterval(id)
   }, [])
 
+  // Only an explicit `false` is degraded — a field the backend doesn't report
+  // must not turn the dot red (the old bug: real /health omitted these fields).
   const dot = !health ? 'amber'
-    : (!health.worker_live || !health.broker_ok || !health.vlm_ok) ? 'red'
-    : (health.queue_depth > 50 || health.fast_path_ms > health.slo_ms) ? 'amber'
+    : (health.worker_live === false || health.broker_ok === false || health.vlm_ok === false) ? 'red'
+    : (health.queue_depth > 50 || (health.fast_path_ms && health.slo_ms && health.fast_path_ms > health.slo_ms)) ? 'amber'
     : 'green'
 
   return { health, dot }

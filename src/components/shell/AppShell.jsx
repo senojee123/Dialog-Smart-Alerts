@@ -36,7 +36,7 @@ export default function AppShell() {
       />
       <div className="flex flex-1 overflow-hidden">
         <NavSidebar />
-        <main className="flex-1 overflow-auto bg-white">
+        <main className="flex-1 overflow-auto bg-surface">
           <Outlet context={{ playCriticalCue, muteAlerts }} />
         </main>
       </div>

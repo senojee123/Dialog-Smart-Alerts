@@ -1,23 +1,17 @@
 import { useEffect, useMemo, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { MapContainer, TileLayer, Marker, Popup, Circle, useMapEvents } from 'react-leaflet'
 import L from 'leaflet'
-import { AlertTriangle, CheckCircle, WifiOff, Map, Crosshair } from 'lucide-react'
+import { AlertTriangle, CheckCircle, WifiOff, Map, Crosshair, Plus } from 'lucide-react'
 import RoadSignCard, { SIGN_STATE } from '../components/roadsigns/RoadSignCard.jsx'
+import { SegmentedControl, Button, EmptyState } from '../components/ui'
 import { useApi } from '../hooks/useApi.js'
 import { useIncidents } from '../hooks/useIncidents.js'
 import { relativeTime } from '../lib/format.js'
+import { simulateEvent, deriveTestDefaults } from '../lib/sim.js'
+import { haversineM } from '../lib/geo.js'
 
 // ── helpers ──────────────────────────────────────────────────────────────────
-
-function haversineM(lat1, lng1, lat2, lng2) {
-  const R = 6371000
-  const toRad = d => (d * Math.PI) / 180
-  const dPhi = toRad(lat2 - lat1)
-  const dLmb = toRad(lng2 - lng1)
-  const a = Math.sin(dPhi / 2) ** 2 +
-    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLmb / 2) ** 2
-  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
-}
 
 function signIcon(state) {
   const color = state === 'WARNING' ? '#D92D20'
@@ -47,9 +41,11 @@ function MapClickHandler({ active, onPick }) {
 // ── page ──────────────────────────────────────────────────────────────────────
 
 export default function RoadSigns() {
+  const navigate = useNavigate()
   const { data: signs, fetchAll } = useApi('/api/road-signs')
   const { data: zones }   = useApi('/api/zones')
   const { data: devices } = useApi('/api/devices')
+  const { data: rules }   = useApi('/api/rules')
   const { incidents } = useIncidents()
 
   const [selected, setSelected]   = useState(null)
@@ -98,17 +94,15 @@ export default function RoadSigns() {
       const dist = haversineM(latlng.lat, latlng.lng, d.lat, d.lng)
       if (dist < best) { best = dist; nearest = d }
     }
+    // Fire a detection that actually matches the nearest device's use case —
+    // no hardcoded object/confidence. Routed through the simulation endpoint.
     try {
-      const res = await fetch('/api/events', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          device_id: nearest.id, object_type: 'elephant', confidence: 90,
-          lat: latlng.lat, lng: latlng.lng,
-        }),
+      const { object_type, confidence } = deriveTestDefaults(rules, nearest.use_case_id)
+      const data = await simulateEvent({
+        use_case_id: nearest.use_case_id, object_type, confidence,
+        lat: latlng.lat, lng: latlng.lng,
       })
-      const data = await res.json()
-      setToast(`Detection sent via ${nearest.name}${data.incident_id ? ` · ${data.incident_id}` : ''}`)
+      setToast(`Detection sent via ${data.device_name || nearest.name}${data.incident_id ? ` · ${data.incident_id}` : ''}`)
       setTimeout(fetchAll, 400)
       setTimeout(() => setToast(null), 4000)
     } catch (e) {
@@ -142,16 +136,11 @@ export default function RoadSigns() {
               </button>
             ))}
 
-            <div className="flex border border-line rounded-lg overflow-hidden">
-              <button onClick={() => setViewMode('grid')}
-                className={`px-3 py-1.5 text-sm ${viewMode === 'grid' ? 'bg-brand text-white' : 'text-ink-muted hover:bg-surface-alt'}`}>
-                Grid
-              </button>
-              <button onClick={() => setViewMode('map')}
-                className={`px-3 py-1.5 text-sm flex items-center gap-1.5 ${viewMode === 'map' ? 'bg-brand text-white' : 'text-ink-muted hover:bg-surface-alt'}`}>
-                <Map size={14} /> Map
-              </button>
-            </div>
+            <SegmentedControl
+              options={[{ value: 'grid', label: 'Grid' }, { value: 'map', label: 'Map', icon: Map }]}
+              value={viewMode} onChange={setViewMode} />
+
+            <Button onClick={() => navigate('/admin/road-signs')}><Plus size={14} /> Add / manage boards</Button>
           </div>
         </div>
       </div>
@@ -166,21 +155,21 @@ export default function RoadSigns() {
                   onSelect={() => setSelected(id => id === sign.id ? null : sign.id)} />
               ))}
               {filtered.length === 0 && (
-                <div className="col-span-4 py-16 text-center text-ink-muted text-sm">No boards match this filter.</div>
+                <div className="col-span-2 lg:col-span-3 xl:col-span-4">
+                  <EmptyState icon={Map} title="No boards match this filter"
+                    description="Adjust the state filter above, or add LED boards in the Setup Wizard." />
+                </div>
               )}
             </div>
           ) : (
             <>
               {/* Simulate control */}
               <div className="absolute top-3 left-1/2 -translate-x-1/2 z-[1000] flex flex-col items-center gap-2">
-                <button
-                  onClick={() => setSimulating(s => !s)}
-                  className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium shadow-lg transition-colors
-                    ${simulating ? 'bg-orange text-white' : 'bg-white text-ink border border-line hover:bg-surface-alt'}`}
-                >
+                <Button variant={simulating ? 'subtle' : 'primary'} className="shadow-modal"
+                        onClick={() => setSimulating(s => !s)}>
                   <Crosshair size={14} />
                   {simulating ? 'Click the map to drop a detection…' : 'Simulate detection'}
-                </button>
+                </Button>
                 {toast && (
                   <div className="bg-ink text-white text-xs px-3 py-1.5 rounded-full shadow">{toast}</div>
                 )}

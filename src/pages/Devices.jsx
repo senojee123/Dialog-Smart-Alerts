@@ -1,6 +1,8 @@
 import { useEffect, useMemo } from 'react'
-import { Wifi, WifiOff, Camera, Thermometer, Plane, Radio, Activity } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
+import { Wifi, WifiOff, Camera, Thermometer, Plane, Radio, Activity, Plus } from 'lucide-react'
 import { useApi } from '../hooks/useApi.js'
+import { Button } from '../components/ui'
 import { relativeTime } from '../lib/format.js'
 
 const TYPE_ICON = {
@@ -9,6 +11,7 @@ const TYPE_ICON = {
 }
 
 export default function Devices() {
+  const navigate = useNavigate()
   const { data: devices, loading, fetchAll } = useApi('/api/devices')
   const { data: zones } = useApi('/api/zones')
 
@@ -33,6 +36,7 @@ export default function Devices() {
             {onlineCount}/{devices.length} online · live from device registry
           </p>
         </div>
+        <Button onClick={() => navigate('/admin/devices')}><Plus size={14} /> Add / manage devices</Button>
       </div>
 
       {loading && devices.length === 0 && <p className="text-sm text-ink-muted">Loading…</p>}
@@ -70,7 +74,7 @@ export default function Devices() {
           })}
           {!loading && devices.length === 0 && (
             <tr><td colSpan={6} className="px-4 py-10 text-center text-ink-muted text-sm">
-              No devices registered. Add them in Configuration → Devices.
+              No devices registered. Use “Add / manage devices” above, or Configuration → Device Registry.
             </td></tr>
           )}
         </tbody>

@@ -1,7 +1,7 @@
 import { NavLink } from 'react-router-dom'
 import {
   AlertTriangle, Map, Camera, Cpu, Users, GitBranch,
-  Settings, Monitor, Layers, Bell, Rocket,
+  Settings, Monitor, Layers, Bell, Rocket, Palette, PlayCircle,
 } from 'lucide-react'
 
 const NAV = [
@@ -12,6 +12,7 @@ const NAV = [
   { to: '/road-signs',  icon: Monitor,       label: 'Road Signs' },
   { to: '/devices',     icon: Camera,        label: 'Devices' },
   { to: '/hardware',    icon: Cpu,           label: 'Hardware Units' },
+  { to: '/simulator',   icon: PlayCircle,    label: 'Simulator' },
 
   null, // divider
 
@@ -21,8 +22,8 @@ const NAV = [
   { to: '/admin/use-cases',   icon: Layers,        label: 'Use Cases' },
   { to: '/admin/rules',       icon: GitBranch,     label: 'Rules Engine' },
   { to: '/admin/stakeholders',icon: Users,         label: 'Stakeholders' },
-  { to: '/admin/devices',     icon: Camera,        label: 'Devices' },
-  { to: '/admin/road-signs',  icon: Monitor,       label: 'Sign Boards' },
+  { to: '/admin/devices',     icon: Camera,        label: 'Device Registry' },
+  { to: '/admin/road-signs',  icon: Monitor,       label: 'Sign Board Registry' },
 
   null, // divider
 
@@ -30,6 +31,7 @@ const NAV = [
   { section: 'System' },
   { to: '/admin/escalation',  icon: Bell,     label: 'Escalation' },
   { to: '/admin/templates',   icon: Settings, label: 'Templates' },
+  { to: '/styleguide',        icon: Palette,  label: 'Design System' },
 ]
 
 export default function NavSidebar() {
