@@ -6,7 +6,7 @@ import react from '@vitejs/plugin-react'
 // with hot-reload. In production the backend serves the built dist/ directly.
 export default defineConfig({
   plugins: [react()],
-  base: './',
+  base: '/',
   server: {
     proxy: {
       // SSE stream — must NOT buffer; configure http-proxy to flush headers
