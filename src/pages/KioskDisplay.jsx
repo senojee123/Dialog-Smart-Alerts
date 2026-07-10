@@ -141,6 +141,11 @@ export default function KioskDisplay() {
   const openedDate = incident ? new Date(incident.opened_at) : null
   const localTime = openedDate ? openedDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }) : ''
 
+  // Prepend backend host to absolute /uploads path so Vercel resolves the image hosted on Railway
+  const apiBase = import.meta.env.VITE_API_BASE || ''
+  const backendHost = apiBase.endsWith('/api') ? apiBase.slice(0, -4) : ''
+  const imageAbsoluteUrl = `${backendHost}/uploads/elephant_warning.jpg`
+
   return (
     <div className="flex flex-col min-h-screen bg-rose-950 font-sans select-none overflow-hidden animate-pulse-emergency">
       {/* 1. Safety Message Top Banner */}
@@ -156,7 +161,7 @@ export default function KioskDisplay() {
           {/* Main Elephant Image */}
           <div 
             className="absolute inset-0 bg-cover bg-center scale-105"
-            style={{ backgroundImage: `url('/uploads/elephant_warning.jpg')` }}
+            style={{ backgroundImage: `url('${imageAbsoluteUrl}')` }}
           />
           {/* Dark Overlay + Blur Effect */}
           <div className="absolute inset-0 bg-black/45 backdrop-blur-[2px]" />
