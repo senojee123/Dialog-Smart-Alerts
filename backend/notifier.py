@@ -39,10 +39,21 @@ def _build_context(incident: dict, event: dict) -> dict:
     }
 
 
-def _post_sms(url, token, body_dict):
+def _post_sms(url, token, recipient_num, sender_port, sender_name, message, client_correlator):
+    payload = {
+        "outboundSMSMessageRequest": {
+            "address": [recipient_num],
+            "senderAddress": sender_port,
+            "outboundSMSTextMessage": {
+                "message": message
+            },
+            "clientCorrelator": client_correlator,
+            "senderName": sender_name
+        }
+    }
     req = urllib.request.Request(
         url,
-        data=json.dumps(body_dict).encode("utf-8"),
+        data=json.dumps(payload).encode("utf-8"),
         headers={
             "Content-Type": "application/json",
             "Accept": "application/json",
@@ -105,21 +116,18 @@ async def dispatch(incident: dict, rule: dict, action_key: str, event: dict) -> 
                 else:
                     recipient_num = f"tel:+94{clean_num}"
                 
-                payload = {
-                    "outboundSMSMessageRequest": {
-                        "address": [recipient_num],
-                        "senderAddress": sender_port,
-                        "outboundSMSTextMessage": {
-                            "message": message
-                        },
-                        "clientCorrelator": incident.get("id", "123456"),
-                        "senderName": sender_name
-                    }
-                }
-                
                 try:
-                    # Run blocking network call in thread executor to keep FastAPI responsive
-                    res_data = await asyncio.to_thread(_post_sms, api_url, api_token, payload)
+                    # Run blocking network call in thread executor with isolated parameters to prevent race conditions
+                    res_data = await asyncio.to_thread(
+                        _post_sms, 
+                        api_url, 
+                        api_token, 
+                        recipient_num, 
+                        sender_port, 
+                        sender_name, 
+                        message, 
+                        incident.get("id", "123456")
+                    )
                     if "serverReferenceCode" in res_data.get("outboundSMSMessageRequest", {}):
                         status = "sent"
                         print(f"  [SMS] → {address}: Successfully sent via Ideabiz (Ref: {res_data['outboundSMSMessageRequest']['serverReferenceCode']})")
