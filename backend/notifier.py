@@ -116,6 +116,19 @@ async def dispatch(incident: dict, rule: dict, action_key: str, event: dict) -> 
                 else:
                     recipient_num = f"tel:+94{clean_num}"
                 
+                # Ideabiz Sandbox constraints: message must contain "test message" or "test SMS" and be <= 60 characters.
+                # If the template message doesn't meet these requirements, we format a compliant sandbox message.
+                sms_body = message
+                if len(sms_body) > 60 or ("test message" not in sms_body.lower() and "test sms" not in sms_body.lower()):
+                    sev = incident.get("severity", "ALERT")
+                    zone_name = ctx.get("zone_name", "Zone")
+                    if len(zone_name) > 15:
+                        zone_name = zone_name[:12] + "..."
+                    inc_id = incident.get("id", "INC-XXXX")
+                    sms_body = f"test message: {sev} alert - {zone_name}. {inc_id}"
+                    if len(sms_body) > 60:
+                        sms_body = sms_body[:60]
+                
                 try:
                     # Run blocking network call in thread executor with isolated parameters to prevent race conditions
                     res_data = await asyncio.to_thread(
@@ -125,7 +138,7 @@ async def dispatch(incident: dict, rule: dict, action_key: str, event: dict) -> 
                         recipient_num, 
                         sender_port, 
                         sender_name, 
-                        message, 
+                        sms_body, 
                         incident.get("id", "123456")
                     )
                     if "serverReferenceCode" in res_data.get("outboundSMSMessageRequest", {}):
