@@ -46,7 +46,8 @@ def _post_sms(url, token, body_dict):
         headers={
             "Content-Type": "application/json",
             "Accept": "application/json",
-            "Authorization": f"Bearer {token}"
+            "Authorization": f"Bearer {token}",
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
         },
         method="POST"
     )
