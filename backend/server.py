@@ -1038,20 +1038,6 @@ async function upload() {
 # STATIC FILES + SPA FALLBACK (must be last)
 # ════════════════════════════════════════════════════════════════════════════
 
-@app.get("/api/debug/env")
-async def debug_env():
-    import os
-    token = os.environ.get("IDEABIZ_TOKEN")
-    return {
-        "token_len": len(token) if token else 0,
-        "token_start": token[:4] if token else "",
-        "token_end": token[-4:] if token else "",
-        "IDEABIZ_API_URL": os.environ.get("IDEABIZ_API_URL"),
-        "IDEABIZ_SENDER_PORT": os.environ.get("IDEABIZ_SENDER_PORT"),
-        "IDEABIZ_SENDER_NAME": os.environ.get("IDEABIZ_SENDER_NAME"),
-    }
-
-
 if UPLOADS_DIR.exists():
     app.mount("/uploads", StaticFiles(directory=str(UPLOADS_DIR)), name="uploads")
 
