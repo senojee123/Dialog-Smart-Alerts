@@ -1,14 +1,17 @@
 """
-Notification dispatcher — simulates SMS, WhatsApp, Email.
+Notification dispatcher — simulates SMS, WhatsApp, Email, and connects to Ideabiz SMS API.
 All sends are logged to notifications for the dashboard to display.
 
-Stage B1: async, backed by repo. (Stage B5 will move this to a persisted
-outbox + dispatcher worker with real retries/delivery states.)
+Stage B1: backed by data_store (JSON files) to ensure full consistency with the UI.
 """
 
 import uuid
+import os
+import json
+import urllib.request
+import asyncio
 from datetime import datetime, timezone
-import repo
+import data_store
 
 
 def _now() -> str:
@@ -22,9 +25,9 @@ def _render(template: str, ctx: dict) -> str:
         return template
 
 
-async def _build_context(incident: dict, event: dict) -> dict:
-    zone = await repo.get_by_id("zones", event.get("zone_id", "")) or {}
-    device = await repo.get_by_id("devices", event.get("device_id", "")) or {}
+def _build_context(incident: dict, event: dict) -> dict:
+    zone = data_store.get_by_id("zones", event.get("zone_id", "")) or {}
+    device = data_store.get_by_id("devices", event.get("device_id", "")) or {}
     return {
         "incident_id":  incident.get("id", ""),
         "zone_name":    zone.get("name", event.get("zone_id", "Unknown Zone")),
@@ -34,6 +37,21 @@ async def _build_context(incident: dict, event: dict) -> dict:
         "severity":     incident.get("severity", ""),
         "road":         zone.get("road", ""),
     }
+
+
+def _post_sms(url, token, body_dict):
+    req = urllib.request.Request(
+        url,
+        data=json.dumps(body_dict).encode("utf-8"),
+        headers={
+            "Content-Type": "application/json",
+            "Accept": "application/json",
+            "Authorization": f"Bearer {token}"
+        },
+        method="POST"
+    )
+    with urllib.request.urlopen(req, timeout=5) as response:
+        return json.loads(response.read().decode("utf-8"))
 
 
 async def dispatch(incident: dict, rule: dict, action_key: str, event: dict) -> list[dict]:
@@ -53,12 +71,12 @@ async def dispatch(incident: dict, rule: dict, action_key: str, event: dict) -> 
         "Alert [{severity}]: {object_type} detected in {zone_name} by {device_name}. "
         "Confidence: {confidence}%. Incident: {incident_id}"
     )
-    ctx = await _build_context(incident, event)
+    ctx = _build_context(incident, event)
     message = _render(template, ctx)
 
     saved = []
     for sh_id in stakeholder_ids:
-        stakeholder = await repo.get_by_id("stakeholders", sh_id)
+        stakeholder = data_store.get_by_id("stakeholders", sh_id)
         if not stakeholder:
             continue
         for channel in stakeholder.get("channels", []):
@@ -69,11 +87,6 @@ async def dispatch(incident: dict, rule: dict, action_key: str, event: dict) -> 
 
             status = "simulated"
             if ch_type == "sms":
-                import os
-                import json
-                import urllib.request
-                import asyncio
-                
                 # Fetch credentials (defaulting to your production credentials)
                 api_url = os.environ.get("IDEABIZ_API_URL", "https://ideabiz.lk/apicall/smsmessaging/v3/outbound/87798/requests")
                 api_token = os.environ.get("IDEABIZ_TOKEN", "aec2bd31-f3ba-38e0-a4ae-3785b6af1638")
@@ -103,20 +116,6 @@ async def dispatch(incident: dict, rule: dict, action_key: str, event: dict) -> 
                     }
                 }
                 
-                def _post_sms(url, token, body_dict):
-                    req = urllib.request.Request(
-                        url,
-                        data=json.dumps(body_dict).encode("utf-8"),
-                        headers={
-                            "Content-Type": "application/json",
-                            "Accept": "application/json",
-                            "Authorization": f"Bearer {token}"
-                        },
-                        method="POST"
-                    )
-                    with urllib.request.urlopen(req, timeout=5) as response:
-                        return json.loads(response.read().decode("utf-8"))
-                
                 try:
                     # Run blocking network call in thread executor to keep FastAPI responsive
                     res_data = await asyncio.to_thread(_post_sms, api_url, api_token, payload)
@@ -132,7 +131,7 @@ async def dispatch(incident: dict, rule: dict, action_key: str, event: dict) -> 
             else:
                 print(f"  [{ch_type.upper()}] (SIMULATED) → {address}: {message}")
 
-            record = await repo.create("notifications", {
+            record = data_store.create("notifications", {
                 "id":               f"NOTIF-{uuid.uuid4().hex[:8].upper()}",
                 "incident_id":      incident.get("id"),
                 "event_id":         event.get("id"),
@@ -147,4 +146,3 @@ async def dispatch(incident: dict, rule: dict, action_key: str, event: dict) -> 
             saved.append(record)
 
     return saved
-
