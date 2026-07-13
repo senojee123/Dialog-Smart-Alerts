@@ -124,11 +124,17 @@ async def dispatch(incident: dict, rule: dict, action_key: str, event: dict) -> 
                         status = "sent"
                         print(f"  [SMS] → {address}: Successfully sent via Ideabiz (Ref: {res_data['outboundSMSMessageRequest']['serverReferenceCode']})")
                     else:
-                        status = "failed"
+                        status = f"failed: {res_data}"
                         print(f"  [SMS] → {address}: Failed to send via Ideabiz (Response: {res_data})")
                 except Exception as e:
-                    status = "failed"
-                    print(f"  [SMS] → {address}: Error dispatching via Ideabiz API: {e}")
+                    err_msg = str(e)
+                    if hasattr(e, 'read'):
+                        try:
+                            err_msg += f" - Response: {e.read().decode('utf-8')}"
+                        except Exception:
+                            pass
+                    status = f"failed: {err_msg}"
+                    print(f"  [SMS] → {address}: Error dispatching via Ideabiz API: {err_msg}")
             else:
                 print(f"  [{ch_type.upper()}] (SIMULATED) → {address}: {message}")
 
