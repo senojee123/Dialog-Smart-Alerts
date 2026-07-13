@@ -67,6 +67,71 @@ async def dispatch(incident: dict, rule: dict, action_key: str, event: dict) -> 
             if not address:
                 continue
 
+            status = "simulated"
+            if ch_type == "sms":
+                import os
+                import json
+                import urllib.request
+                import asyncio
+                
+                # Fetch credentials (defaulting to your production credentials)
+                api_url = os.environ.get("IDEABIZ_API_URL", "https://ideabiz.lk/apicall/smsmessaging/v3/outbound/87798/requests")
+                api_token = os.environ.get("IDEABIZ_TOKEN", "aec2bd31-f3ba-38e0-a4ae-3785b6af1638")
+                sender_port = os.environ.get("IDEABIZ_SENDER_PORT", "tel:87798")
+                sender_name = os.environ.get("IDEABIZ_SENDER_NAME", "smartalerts")
+                
+                # Normalize to tel:+94... format required by Ideabiz
+                clean_num = "".join(c for c in address if c.isdigit() or c == "+")
+                if clean_num.startswith("+"):
+                    recipient_num = f"tel:{clean_num}"
+                elif clean_num.startswith("94"):
+                    recipient_num = f"tel:+{clean_num}"
+                elif clean_num.startswith("0"):
+                    recipient_num = f"tel:+94{clean_num[1:]}"
+                else:
+                    recipient_num = f"tel:+94{clean_num}"
+                
+                payload = {
+                    "outboundSMSMessageRequest": {
+                        "address": [recipient_num],
+                        "senderAddress": sender_port,
+                        "outboundSMSTextMessage": {
+                            "message": message
+                        },
+                        "clientCorrelator": incident.get("id", "123456"),
+                        "senderName": sender_name
+                    }
+                }
+                
+                def _post_sms(url, token, body_dict):
+                    req = urllib.request.Request(
+                        url,
+                        data=json.dumps(body_dict).encode("utf-8"),
+                        headers={
+                            "Content-Type": "application/json",
+                            "Accept": "application/json",
+                            "Authorization": f"Bearer {token}"
+                        },
+                        method="POST"
+                    )
+                    with urllib.request.urlopen(req, timeout=5) as response:
+                        return json.loads(response.read().decode("utf-8"))
+                
+                try:
+                    # Run blocking network call in thread executor to keep FastAPI responsive
+                    res_data = await asyncio.to_thread(_post_sms, api_url, api_token, payload)
+                    if "serverReferenceCode" in res_data.get("outboundSMSMessageRequest", {}):
+                        status = "sent"
+                        print(f"  [SMS] → {address}: Successfully sent via Ideabiz (Ref: {res_data['outboundSMSMessageRequest']['serverReferenceCode']})")
+                    else:
+                        status = "failed"
+                        print(f"  [SMS] → {address}: Failed to send via Ideabiz (Response: {res_data})")
+                except Exception as e:
+                    status = "failed"
+                    print(f"  [SMS] → {address}: Error dispatching via Ideabiz API: {e}")
+            else:
+                print(f"  [{ch_type.upper()}] (SIMULATED) → {address}: {message}")
+
             record = await repo.create("notifications", {
                 "id":               f"NOTIF-{uuid.uuid4().hex[:8].upper()}",
                 "incident_id":      incident.get("id"),
@@ -76,11 +141,10 @@ async def dispatch(incident: dict, rule: dict, action_key: str, event: dict) -> 
                 "channel":          ch_type,
                 "address":          address,
                 "message":          message,
-                "status":           "simulated",
+                "status":           status,
                 "sent_at":          _now(),
             })
             saved.append(record)
 
-            print(f"  [{ch_type.upper()}] → {address}: {message}")
-
     return saved
+
