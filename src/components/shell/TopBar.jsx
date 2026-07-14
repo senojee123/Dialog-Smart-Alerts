@@ -1,12 +1,19 @@
-import { Bell, BellOff } from 'lucide-react'
+import { Bell, BellOff, Menu } from 'lucide-react'
 import ModeBadge from './ModeBadge.jsx'
 import HealthDot from './HealthDot.jsx'
 
 const ENV = import.meta.env.VITE_ENV ?? 'dev'
 
-export default function TopBar({ streamStatus, muteAlerts, onToggleMute }) {
+export default function TopBar({ streamStatus, muteAlerts, onToggleMute, onToggleSidebar }) {
   return (
     <header className="h-14 bg-maroon flex items-center px-4 gap-4 shrink-0 z-30">
+      <button
+        onClick={onToggleSidebar}
+        className="text-white/70 hover:text-white mr-1 p-1 hover:bg-white/10 rounded transition-colors"
+        title="Toggle Sidebar"
+      >
+        <Menu size={20} />
+      </button>
       <div className="flex items-center gap-3 min-w-0">
         <div className="w-8 h-8 bg-brand rounded flex items-center justify-center text-white font-bold text-sm select-none">
           D

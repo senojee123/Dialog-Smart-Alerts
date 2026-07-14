@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { ChevronDown } from 'lucide-react'
+import { ChevronDown, Eye, EyeOff } from 'lucide-react'
 import IncidentRow from './IncidentRow.jsx'
 import { SkeletonRow } from '../common/Skeleton.jsx'
 import { sevOrder } from '../../lib/severity.js'
@@ -9,7 +9,7 @@ const COLS = ['Severity', 'Incident', 'Time', 'Area / Location', 'Object', 'Conf
 const SEVERITIES = ['ALL', 'CRITICAL', 'HIGH', 'MEDIUM', 'LOW']
 const STATUSES   = ['ALL', 'ACTIVE', 'OPERATOR_REVIEW', 'RESOLVED', 'CLOSED']
 
-export default function IncidentTable({ incidents, loading, selectedId, onSelect }) {
+export default function IncidentTable({ incidents, loading, selectedId, onSelect, mapOpen, onToggleMap }) {
   const [sevFilter,    setSevFilter]    = useState('ALL')
   const [statusFilter, setStatusFilter] = useState('ALL')
 
@@ -32,7 +32,19 @@ export default function IncidentTable({ incidents, loading, selectedId, onSelect
       <div className="flex items-center gap-3 px-4 py-3 border-b border-line bg-surface shrink-0 flex-wrap">
         <FilterSelect label="Severity" value={sevFilter} onChange={setSevFilter} options={SEVERITIES} />
         <FilterSelect label="Status"   value={statusFilter} onChange={setStatusFilter} options={STATUSES} />
-        <span className="ml-auto text-xs text-ink-muted">{filtered.length} incidents</span>
+        <div className="ml-auto flex items-center gap-3">
+          <span className="text-xs text-ink-muted">{filtered.length} incidents</span>
+          {onToggleMap && (
+            <button
+              onClick={onToggleMap}
+              className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium border border-line rounded bg-surface-alt hover:bg-line text-ink transition-colors"
+              title={mapOpen ? "Hide Map" : "Show Map"}
+            >
+              {mapOpen ? <EyeOff size={14} /> : <Eye size={14} />}
+              <span>{mapOpen ? "Hide Map" : "Show Map"}</span>
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Table */}

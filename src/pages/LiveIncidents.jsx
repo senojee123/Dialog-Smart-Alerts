@@ -33,12 +33,16 @@ export default function LiveIncidents() {
     addToast({ message: `Hardware ${unitId} set to ${state}.`, type: 'success' })
   }
 
+  const [mapOpen, setMapOpen] = useState(true)
   const selectedIncident = incidents.find(i => i.incident_id === selected?.incident_id) ?? null
 
   return (
     <div className="flex h-full overflow-hidden">
-      {/* Left: table ~55% */}
-      <div className="flex flex-col overflow-hidden" style={{ flex: '0 0 55%' }}>
+      {/* Left: table */}
+      <div 
+        className="flex flex-col overflow-hidden transition-all duration-300" 
+        style={mapOpen ? { flex: '0 0 55%' } : { flex: '1 1 100%' }}
+      >
         {error && (
           <div className="px-4 py-2 bg-sev-critical/10 text-sev-critical text-sm border-b border-line">
             Failed to load incidents. <button onClick={() => window.location.reload()} className="underline">Retry</button>
@@ -49,17 +53,21 @@ export default function LiveIncidents() {
           loading={loading}
           selectedId={selectedIncident?.incident_id}
           onSelect={handleSelect}
+          mapOpen={mapOpen}
+          onToggleMap={() => setMapOpen(m => !m)}
         />
       </div>
 
-      {/* Right: map ~45% */}
-      <div className="flex-1 overflow-hidden border-l border-line">
-        <MapPanel
-          incidents={incidents}
-          selectedId={selectedIncident?.incident_id}
-          onSelectIncident={handleSelect}
-        />
-      </div>
+      {/* Right: map */}
+      {mapOpen && (
+        <div className="flex-1 overflow-hidden border-l border-line">
+          <MapPanel
+            incidents={incidents}
+            selectedId={selectedIncident?.incident_id}
+            onSelectIncident={handleSelect}
+          />
+        </div>
+      )}
 
       {/* Detail drawer */}
       {selectedIncident && (

@@ -27,15 +27,18 @@ export default function AppShell() {
     }
   }
 
+  const [sidebarOpen, setSidebarOpen] = useState(true)
+
   return (
     <div className="flex flex-col h-screen overflow-hidden">
       <TopBar
         streamStatus={streamStatus}
         muteAlerts={muteAlerts}
         onToggleMute={() => setMuteAlerts(m => !m)}
+        onToggleSidebar={() => setSidebarOpen(s => !s)}
       />
       <div className="flex flex-1 overflow-hidden">
-        <NavSidebar />
+        {sidebarOpen && <NavSidebar />}
         <main className="flex-1 overflow-auto bg-surface">
           <Outlet context={{ playCriticalCue, muteAlerts }} />
         </main>
