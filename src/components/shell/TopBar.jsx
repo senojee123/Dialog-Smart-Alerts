@@ -7,7 +7,7 @@ const ENV = import.meta.env.VITE_ENV ?? 'dev'
 
 export default function TopBar({ streamStatus, muteAlerts, onToggleMute, onToggleSidebar }) {
   return (
-    <header className="h-14 bg-brand/[0.04] border-b border-line flex items-center px-4 gap-4 shrink-0 z-30">
+    <header className="h-16 bg-brand/[0.04] border-b border-line flex items-center px-4 gap-4 shrink-0 z-30">
       <button
         onClick={onToggleSidebar}
         className="text-ink-muted hover:text-ink mr-1 p-1 hover:bg-line/50 rounded transition-colors"
@@ -15,9 +15,9 @@ export default function TopBar({ streamStatus, muteAlerts, onToggleMute, onToggl
       >
         <Menu size={20} />
       </button>
-      <div className="flex items-center gap-3 min-w-0">
-        <img src={dialogLogo} alt="Dialog Logo" className="h-8 w-8 rounded object-contain bg-white border border-line p-1" />
-        <span className="text-ink font-bold text-base tracking-tight hidden sm:block">
+      <div className="flex items-center gap-3.5 min-w-0">
+        <img src={dialogLogo} alt="Dialog Logo" className="h-10 w-10 rounded object-contain bg-white border border-line p-1" />
+        <span className="text-ink font-bold text-lg tracking-tight hidden sm:block">
           Dialog Smart Alerts
         </span>
       </div>
