@@ -48,19 +48,24 @@ const SEV_COLORS = { LOW: 'text-sev-low', MEDIUM: 'text-sev-medium', HIGH: 'text
 function ConditionRow({ cond, onChange, onRemove, canRemove }) {
   const fieldDef = CONDITION_FIELDS.find(f => f.value === cond.field) || CONDITION_FIELDS[0]
   return (
-    <div className="flex items-center gap-2">
-      <Select value={cond.field} onChange={e => onChange({ ...cond, field: e.target.value, op: 'eq', value: '' })}
-              className="flex-1">
-        {CONDITION_FIELDS.map(f => <option key={f.value} value={f.value}>{f.label}</option>)}
-      </Select>
-      <Select value={cond.op} onChange={e => onChange({ ...cond, op: e.target.value })} className="w-24">
-        {fieldDef.ops.map(op => <option key={op} value={op}>{OP_LABELS[op] || op}</option>)}
-      </Select>
-      <Input value={cond.value} onChange={e => onChange({ ...cond, value: e.target.value })}
-             placeholder={cond.field === 'confidence' ? '70' : 'elephant'} className="flex-1" />
+    <div className="flex items-center gap-2 w-full">
+      <div className="flex-1 min-w-0">
+        <Select value={cond.field} onChange={e => onChange({ ...cond, field: e.target.value, op: 'eq', value: '' })}>
+          {CONDITION_FIELDS.map(f => <option key={f.value} value={f.value}>{f.label}</option>)}
+        </Select>
+      </div>
+      <div className="w-28 shrink-0">
+        <Select value={cond.op} onChange={e => onChange({ ...cond, op: e.target.value })}>
+          {fieldDef.ops.map(op => <option key={op} value={op}>{OP_LABELS[op] || op}</option>)}
+        </Select>
+      </div>
+      <div className="flex-1 min-w-0">
+        <Input value={cond.value} onChange={e => onChange({ ...cond, value: e.target.value })}
+               placeholder={cond.field === 'confidence' ? '70' : 'elephant'} />
+      </div>
       {canRemove && (
-        <button onClick={onRemove} className="text-ink-muted hover:text-sev-critical shrink-0">
-          <Trash2 size={13} />
+        <button onClick={onRemove} className="text-ink-muted hover:text-sev-critical shrink-0 p-1">
+          <Trash2 size={14} />
         </button>
       )}
     </div>
