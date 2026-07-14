@@ -1,6 +1,7 @@
 import { Bell, BellOff, Menu } from 'lucide-react'
 import ModeBadge from './ModeBadge.jsx'
 import HealthDot from './HealthDot.jsx'
+import dialogLogo from '../../assets/dialog-logo.jpg'
 
 const ENV = import.meta.env.VITE_ENV ?? 'dev'
 
@@ -15,9 +16,7 @@ export default function TopBar({ streamStatus, muteAlerts, onToggleMute, onToggl
         <Menu size={20} />
       </button>
       <div className="flex items-center gap-3 min-w-0">
-        <div className="w-8 h-8 bg-brand rounded flex items-center justify-center text-white font-bold text-sm select-none">
-          D
-        </div>
+        <img src={dialogLogo} alt="Dialog 5G Ultra" className="h-8 rounded object-contain bg-white px-2 py-0.5" />
         <span className="text-white font-semibold text-sm tracking-wide hidden sm:block">
           Dialog Smart Alerts
         </span>

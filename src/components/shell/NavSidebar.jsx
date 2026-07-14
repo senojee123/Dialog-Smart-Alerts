@@ -39,11 +39,19 @@ export default function NavSidebar() {
     <nav className="w-52 bg-white border-r border-line flex flex-col py-3 shrink-0 overflow-y-auto shadow-[1px_0_4px_rgba(16,24,40,0.02)]">
       {NAV.map((item, i) => {
         if (item === null) return <div key={i} className="my-2 border-t border-line/60 mx-3" />
-        if (item.section) return (
-          <div key={i} className="px-4 pt-3 pb-1">
-            <span className="text-[10px] font-bold text-ink-muted/50 uppercase tracking-wider">{item.section}</span>
-          </div>
-        )
+        if (item.section) {
+          const isOperations = item.section === 'Operations'
+          return (
+            <div key={i} className="px-4 pt-4 pb-1">
+              <span className={isOperations
+                ? "text-[12px] font-extrabold text-brand uppercase tracking-wider border-b border-brand/20 pb-0.5 inline-block w-full"
+                : "text-[10px] font-bold text-ink-muted/50 uppercase tracking-wider"
+              }>
+                {item.section}
+              </span>
+            </div>
+          )
+        }
         return (
           <NavLink
             key={item.to}
