@@ -16,9 +16,9 @@ export default function TopBar({ streamStatus, muteAlerts, onToggleMute, onToggl
         <Menu size={20} />
       </button>
       <div className="flex items-center gap-3 min-w-0">
-        <img src={dialogLogo} alt="Dialog 5G Ultra" className="h-8 rounded object-contain bg-white border border-line px-2 py-0.5" />
+        <img src={dialogLogo} alt="Dialog Logo" className="h-8 w-8 rounded object-contain bg-white border border-line p-1" />
         <span className="text-ink font-bold text-base tracking-tight hidden sm:block">
-          Smart Alerts
+          Dialog Smart Alerts
         </span>
       </div>
 
@@ -27,9 +27,6 @@ export default function TopBar({ streamStatus, muteAlerts, onToggleMute, onToggl
           <span className="text-xs text-ink bg-line px-2 py-0.5 rounded">
             Reconnecting…
           </span>
-        )}
-        {streamStatus === 'live' && (
-          <span className="text-xs text-ink-muted">● live</span>
         )}
 
         <ModeBadge mode="LIVE" />
