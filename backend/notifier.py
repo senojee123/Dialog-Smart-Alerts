@@ -47,7 +47,6 @@ def _post_sms(url, token, recipient_num, sender_port, sender_name, message, clie
             "outboundSMSTextMessage": {
                 "message": message
             },
-            "clientCorrelator": client_correlator,
             "senderName": sender_name
         }
     }
