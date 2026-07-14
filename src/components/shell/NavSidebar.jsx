@@ -36,17 +36,13 @@ const NAV = [
 
 export default function NavSidebar() {
   return (
-    <nav className="w-52 bg-white border-r border-line flex flex-col py-3 shrink-0 overflow-y-auto shadow-[1px_0_4px_rgba(16,24,40,0.02)]">
+    <nav className="w-56 bg-white border-r border-line flex flex-col gap-1.5 py-4 shrink-0 overflow-y-auto shadow-[1px_0_4px_rgba(16,24,40,0.02)]">
       {NAV.map((item, i) => {
         if (item === null) return <div key={i} className="my-2 border-t border-line/60 mx-3" />
         if (item.section) {
-          const isOperations = item.section === 'Operations'
           return (
-            <div key={i} className="px-4 pt-4 pb-1">
-              <span className={isOperations
-                ? "text-[12px] font-extrabold text-brand uppercase tracking-wider border-b border-brand/20 pb-0.5 inline-block w-full"
-                : "text-[10px] font-bold text-ink-muted/50 uppercase tracking-wider"
-              }>
+            <div key={i} className="px-4 pt-4 pb-1.5">
+              <span className="text-[12px] font-extrabold text-brand uppercase tracking-wider border-b border-brand/20 pb-0.5 inline-block w-full">
                 {item.section}
               </span>
             </div>
@@ -57,7 +53,7 @@ export default function NavSidebar() {
             key={item.to}
             to={item.to}
             className={({ isActive }) =>
-              `group flex items-center gap-3 px-3 py-1.5 text-xs font-medium rounded-md mx-2 transition-all relative
+              `group flex items-center gap-3.5 px-3 py-2.5 text-[13px] font-medium rounded-md mx-3 transition-all relative
                ${isActive
                  ? 'bg-brand/5 text-brand font-semibold'
                  : 'text-ink-muted hover:bg-surface-alt hover:text-ink'}`
@@ -66,9 +62,9 @@ export default function NavSidebar() {
             {({ isActive }) => (
               <>
                 {isActive && (
-                  <span className="absolute left-[-8px] top-1/2 -translate-y-1/2 w-[3px] h-5 bg-brand rounded-r" />
+                  <span className="absolute left-[-12px] top-1/2 -translate-y-1/2 w-[3px] h-6 bg-brand rounded-r" />
                 )}
-                <item.icon size={14} className={isActive ? 'text-brand' : 'text-ink-subtle group-hover:text-ink transition-colors'} />
+                <item.icon size={16} className={isActive ? 'text-brand' : 'text-ink-subtle group-hover:text-ink transition-colors'} />
                 <span>{item.label}</span>
               </>
             )}
