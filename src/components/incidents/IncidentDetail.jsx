@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { X, Image, CheckCircle, XCircle, Clock, AlertTriangle } from 'lucide-react'
+import { X, Image, CheckCircle, XCircle, Clock, AlertTriangle, Trash2 } from 'lucide-react'
 import SeverityChip from '../common/SeverityChip.jsx'
 import StatusBadge from '../common/StatusBadge.jsx'
 import StakeholderStatus from './StakeholderStatus.jsx'
@@ -8,8 +8,9 @@ import HardwareControl from './HardwareControl.jsx'
 import ConfirmDialog from '../common/ConfirmDialog.jsx'
 import { relativeTime, absoluteTime, formatDistance } from '../../lib/format.js'
 
-export default function IncidentDetail({ incident, onClose, onCloseIncident, onHardwareOverride }) {
+export default function IncidentDetail({ incident, onClose, onCloseIncident, onDeleteIncident, onHardwareOverride }) {
   const [confirmClose, setConfirmClose] = useState(false)
+  const [confirmDelete, setConfirmDelete] = useState(false)
   const [notes, setNotes] = useState(incident?.operator_notes ?? '')
 
   if (!incident) return null
@@ -155,16 +156,25 @@ export default function IncidentDetail({ incident, onClose, onCloseIncident, onH
       </div>
 
       {/* Footer actions */}
-      {incident.status !== 'RESOLVED' && incident.status !== 'CLOSED' && (
-        <div className="p-4 border-t border-line flex justify-end">
+      <div className="p-4 border-t border-line flex justify-between items-center gap-3">
+        <button
+          onClick={() => setConfirmDelete(true)}
+          className="flex items-center gap-1.5 px-3 py-2 text-sm rounded border border-line bg-surface-alt hover:bg-line text-ink-muted hover:text-sev-critical font-medium transition-colors"
+          title="Delete incident"
+        >
+          <Trash2 size={15} className="shrink-0" />
+          <span>Delete</span>
+        </button>
+
+        {incident.status !== 'RESOLVED' && incident.status !== 'CLOSED' && (
           <button
             onClick={() => setConfirmClose(true)}
-            className="px-4 py-2 text-sm rounded bg-brand text-white hover:bg-brand-hover font-medium"
+            className="px-4 py-2 text-sm rounded bg-brand text-white hover:bg-brand-hover font-medium ml-auto"
           >
             Close incident
           </button>
-        </div>
-      )}
+        )}
+      </div>
 
       <ConfirmDialog
         open={confirmClose}
@@ -174,6 +184,16 @@ export default function IncidentDetail({ incident, onClose, onCloseIncident, onH
         danger
         onConfirm={() => { onCloseIncident?.(incident.incident_id); setConfirmClose(false) }}
         onCancel={() => setConfirmClose(false)}
+      />
+
+      <ConfirmDialog
+        open={confirmDelete}
+        title="Delete incident"
+        message={`Are you sure you want to permanently delete incident ${incident.incident_id}? This action cannot be undone.`}
+        confirmLabel="Delete permanently"
+        danger
+        onConfirm={() => { onDeleteIncident?.(incident.incident_id); setConfirmDelete(false) }}
+        onCancel={() => setConfirmDelete(false)}
       />
     </aside>
   )

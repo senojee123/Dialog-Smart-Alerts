@@ -72,5 +72,22 @@ export function useIncidents() {
     }
   }, [])
 
-  return { incidents, loading, error, applyEvent, updateIncident }
+  const deleteIncident = useCallback(async (id) => {
+    // Optimistic local delete
+    setIncidents(prev => prev.filter(i => i.incident_id !== id))
+    try {
+      const res = await fetch(`/api/incidents/${id}`, {
+        method: 'DELETE',
+      })
+      if (!res.ok) {
+        const latest = await fetchIncidents()
+        setIncidents(latest)
+      }
+    } catch {
+      const latest = await fetchIncidents()
+      setIncidents(latest)
+    }
+  }, [])
+
+  return { incidents, loading, error, applyEvent, updateIncident, deleteIncident }
 }

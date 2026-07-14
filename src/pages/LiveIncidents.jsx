@@ -10,7 +10,7 @@ import { useToast } from '../hooks/useToast.js'
 
 export default function LiveIncidents() {
   const { playCriticalCue } = useOutletContext() ?? {}
-  const { incidents, loading, error, applyEvent, updateIncident } = useIncidents()
+  const { incidents, loading, error, applyEvent, updateIncident, deleteIncident } = useIncidents()
   const streamStatus = useIncidentStream(applyEvent)
   const { toasts, addToast, removeToast } = useToast()
   const [selected, setSelected] = useState(null)
@@ -22,6 +22,12 @@ export default function LiveIncidents() {
   function handleCloseIncident(id) {
     updateIncident(id, { status: 'CLOSED' })
     addToast({ message: `Incident ${id} closed.`, type: 'success' })
+    setSelected(null)
+  }
+
+  function handleDeleteIncident(id) {
+    deleteIncident(id)
+    addToast({ message: `Incident ${id} deleted.`, type: 'success' })
     setSelected(null)
   }
 
@@ -75,6 +81,7 @@ export default function LiveIncidents() {
           incident={selectedIncident}
           onClose={() => setSelected(null)}
           onCloseIncident={handleCloseIncident}
+          onDeleteIncident={handleDeleteIncident}
           onHardwareOverride={handleHardwareOverride}
         />
       )}
