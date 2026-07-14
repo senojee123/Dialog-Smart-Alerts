@@ -115,20 +115,8 @@ async def dispatch(incident: dict, rule: dict, action_key: str, event: dict) -> 
                 else:
                     recipient_num = f"tel:+94{clean_num}"
                 
-                # Ideabiz Sandbox constraints: message must contain "test message" or "test SMS" and be <= 60 characters.
-                # If the template message doesn't meet these requirements, we format a compliant sandbox message.
+                # Send the exact rendered message template as configured in the Rule Engine.
                 sms_body = message
-                if len(sms_body) > 60 or ("test message" not in sms_body.lower() and "test sms" not in sms_body.lower()):
-                    # Replace regulator blocked emergency keywords in sandbox to prevent gateway drops
-                    sms_body = sms_body.replace("CRITICAL", "CRIT").replace("critical", "crit")
-                    
-                    # Prefix sandbox required keywords if missing
-                    if "test message" not in sms_body.lower() and "test sms" not in sms_body.lower():
-                        sms_body = f"test message: {sms_body}"
-                    
-                    # Truncate to maximum sandbox allowed length
-                    if len(sms_body) > 60:
-                        sms_body = sms_body[:60]
                 
                 try:
                     # Run blocking network call in thread executor with isolated parameters to prevent race conditions
