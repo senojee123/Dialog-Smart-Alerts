@@ -81,7 +81,6 @@
   <!-- Node-RED style Dark Header Bar -->
   <header class="h-12 bg-[#1e1e1e] flex items-center px-4 justify-between shrink-0 shadow-[0_2px_4px_rgba(0,0,0,0.15)] z-30 select-none">
     <div class="flex items-center gap-3">
-      <!-- Logo Block -->
       <div class="h-7 w-7 bg-brand flex items-center justify-center rounded shadow-sm shrink-0">
         <svg viewBox="0 0 100 100" class="w-4.5 h-4.5 fill-white">
           <polygon points="20,10 80,10 50,50" />
@@ -109,7 +108,7 @@
   <div class="flex-1 flex overflow-hidden">
     
     <!-- Left Sidebar: Nodes Palette (like Node-RED) -->
-    <aside class="w-64 bg-[#f3f4f6] border-r border-line flex flex-col shrink-0 select-none">
+    <aside class="w-60 bg-[#f3f4f6] border-r border-line flex flex-col shrink-0 select-none">
       
       <!-- Search Palette -->
       <div class="p-2 border-b border-line">
@@ -204,8 +203,8 @@
 
     </aside>
 
-    <!-- Main Canvas Area -->
-    <div class="flex-1 overflow-auto red-canvas-grid relative" id="canvas-area">
+    <!-- Main Canvas Area (Slides width smoothly when sidebar opens) -->
+    <div class="flex-1 overflow-auto red-canvas-grid relative transition-all duration-300 z-10" id="canvas-area">
       
       <!-- SVG Overlay for connecting wires -->
       <svg id="connections-svg" class="absolute inset-0 w-full h-full pointer-events-none z-0">
@@ -219,7 +218,7 @@
       </svg>
 
       <!-- 3-Column Visual Nodes Grid container -->
-      <div class="grid grid-cols-3 gap-x-32 max-w-6xl mx-auto min-h-full items-center p-12 relative z-10">
+      <div class="grid grid-cols-3 gap-x-16 lg:gap-x-24 max-w-5xl mx-auto min-h-full items-center p-8 relative z-10">
         
         <!-- Column 1: Input triggers list -->
         <div class="flex flex-col gap-6" id="col-triggers">
@@ -240,37 +239,37 @@
 
     </div>
 
-  </div>
-
-  <!-- Sliding Config Panel Drawer (like Node-RED Edit panel) -->
-  <div id="drawer" class="fixed inset-y-0 right-0 w-full sm:w-[440px] bg-white border-l border-line shadow-2xl z-40 transform translate-x-full transition-transform duration-300 ease-in-out flex flex-col select-none">
-    
-    <!-- Drawer Header -->
-    <div class="h-14 bg-[#3f3f3f] text-white flex items-center justify-between px-4 shrink-0 shadow">
-      <div class="flex items-center gap-2">
-        <div class="p-1.5 bg-brand text-white rounded">
-          <i id="drawer-icon" data-lucide="edit-3" class="w-3.5 h-3.5"></i>
+    <!-- Properties Config Panel Panel Sidebar (Pushes Canvas to left, does not overlap!) -->
+    <div id="drawer" class="w-0 bg-white border-l border-line flex flex-col transition-all duration-300 select-none overflow-hidden shrink-0 z-20">
+      
+      <!-- Drawer Header -->
+      <div class="h-12 bg-[#3f3f3f] text-white flex items-center justify-between px-4 shrink-0 shadow">
+        <div class="flex items-center gap-2">
+          <div class="p-1.5 bg-brand text-white rounded">
+            <i id="drawer-icon" data-lucide="edit-3" class="w-3.5 h-3.5"></i>
+          </div>
+          <h3 id="drawer-title" class="font-bold text-xs tracking-wide">Edit node properties</h3>
         </div>
-        <h3 id="drawer-title" class="font-bold text-xs tracking-wide">Edit node properties</h3>
+        <button onclick="closeDrawer()" class="p-1 hover:bg-white/10 rounded text-gray-300 hover:text-white transition-colors">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
       </div>
-      <button onclick="closeDrawer()" class="p-1 hover:bg-white/10 rounded text-gray-300 hover:text-white transition-colors">
-        <i data-lucide="x" class="w-4 h-4"></i>
-      </button>
-    </div>
 
-    <!-- Drawer Content Scrollable Area -->
-    <div class="flex-1 overflow-y-auto p-5 space-y-4" id="drawer-content">
-      <!-- Injected fields dynamically -->
-    </div>
+      <!-- Drawer Content Scrollable Area -->
+      <div class="flex-1 overflow-y-auto p-5 space-y-4" id="drawer-content">
+        <!-- Injected fields dynamically -->
+      </div>
 
-    <!-- Drawer Footer Actions -->
-    <div class="h-14 border-t border-line px-4 flex items-center justify-end gap-2 bg-gray-50 shrink-0">
-      <button onclick="closeDrawer()" class="px-4 py-1.5 text-xs font-semibold text-ink-muted hover:text-ink border border-line bg-white rounded hover:bg-gray-100 transition-colors">
-        Cancel
-      </button>
-      <button onclick="saveStepData()" id="drawer-save-btn" class="px-4 py-1.5 text-xs font-semibold text-white bg-brand hover:bg-brand-hover rounded shadow transition-colors">
-        Done
-      </button>
+      <!-- Drawer Footer Actions -->
+      <div class="h-12 border-t border-line px-4 flex items-center justify-end gap-2 bg-gray-50 shrink-0">
+        <button onclick="closeDrawer()" class="px-4 py-1.5 text-xs font-semibold text-ink-muted hover:text-ink border border-line bg-white rounded hover:bg-gray-100 transition-colors">
+          Cancel
+        </button>
+        <button onclick="saveStepData()" id="drawer-save-btn" class="px-4 py-1.5 text-xs font-semibold text-white bg-brand hover:bg-brand-hover rounded shadow transition-colors">
+          Done
+        </button>
+      </div>
+
     </div>
 
   </div>
@@ -457,8 +456,12 @@
     // Build cubic bezier curve formula for cables
     function drawCurve(fromPt, toPt) {
       if (!fromPt || !toPt) return '';
-      const dx = Math.abs(toPt.x - fromPt.x) * 0.45;
+      const dx = Math.abs(toPointXDiff(fromPt, toPt)) * 0.45;
       return `M ${fromPt.x} ${fromPt.y} C ${fromPt.x + dx} ${fromPt.y}, ${toPt.x - dx} ${toPt.y}, ${toPt.x} ${toPt.y}`;
+    }
+
+    function toPointXDiff(fromPt, toPt) {
+      return toPt.x - fromPt.x;
     }
 
     // Draw wiring diagrams between active ports
@@ -537,7 +540,6 @@
         if (fromId === activeNodeId || toId === activeNodeId) return 'highlight';
         return 'dim';
       } else {
-        // Trigger or Action selected
         if (fromId === activeNodeId || toId === activeNodeId) return 'highlight';
         return 'dim';
       }
@@ -556,17 +558,14 @@
           if (activeNodeId === id) {
             el.classList.add('border-brand', 'ring-2', 'ring-brand/10', 'scale-[1.01]', 'shadow-md');
           } else {
-            // Check connected paths
             let isConnected = false;
             if (rules.some(r => r.id === activeNodeId)) {
-              // Rule active
               const activeRule = rules.find(r => r.id === activeNodeId);
-              if (triggerNodes.some(t => t.id === id)) isConnected = true; // all inputs feed into evaluated rules
+              if (triggerNodes.some(t => t.id === id)) isConnected = true;
               if (id === 'act-sms' && (activeRule.actions?.on_trigger?.notify_stakeholder_ids?.length > 0)) isConnected = true;
               if (id === 'act-signs' && activeRule.actions?.on_trigger?.create_incident) isConnected = true;
               if (id === 'act-sirens' && activeRule.actions?.on_trigger?.create_incident) isConnected = true;
             } else {
-              // Trigger or Action active
               if (rules.some(r => r.id === id && r.active)) {
                 const ruleObj = rules.find(r => r.id === id);
                 if (activeNodeId === 'in-camera' || activeNodeId === 'in-simulator') isConnected = true;
@@ -589,7 +588,6 @@
       activeNodeId = nodeId;
       drawWires();
 
-      // Open drawer config for that node
       const rule = rules.find(r => r.id === nodeId);
       if (rule) {
         openRuleDrawer(rule);
@@ -604,6 +602,7 @@
       const icon = document.getElementById('drawer-icon');
       const content = document.getElementById('drawer-content');
       const saveBtn = document.getElementById('drawer-save-btn');
+      const drawer = document.getElementById('drawer');
 
       title.innerText = `Edit: ${rule.name}`;
       icon.setAttribute('data-lucide', 'git-fork');
@@ -753,7 +752,9 @@
       `;
 
       lucide.createIcons();
-      document.getElementById('drawer').classList.remove('translate-x-full');
+      drawer.style.width = '420px';
+      // Trigger coordinates update after canvas transitions to smaller width
+      setTimeout(updateCoords, 310);
     }
 
     // Toggle Camera Device inline form
@@ -830,7 +831,6 @@
         if (res.ok) {
           const created = await res.json();
           stakeholders.push(created);
-          // Auto checkbox check
           const rule = rules.find(r => r.id === activeNodeId);
           if (rule) {
             rule.actions.on_trigger.notify_stakeholder_ids.push(created.id);
@@ -888,6 +888,7 @@
       const icon = document.getElementById('drawer-icon');
       const content = document.getElementById('drawer-content');
       const saveBtn = document.getElementById('drawer-save-btn');
+      const drawer = document.getElementById('drawer');
 
       title.innerText = `Properties: ${nodeId}`;
       icon.setAttribute('data-lucide', 'info');
@@ -913,14 +914,16 @@
       `;
 
       lucide.createIcons();
-      document.getElementById('drawer').classList.remove('translate-x-full');
+      drawer.style.width = '420px';
+      setTimeout(updateCoords, 310);
     }
 
     // Close side drawer panel
     function closeDrawer() {
-      document.getElementById('drawer').classList.add('translate-x-full');
+      const drawer = document.getElementById('drawer');
+      drawer.style.width = '0px';
       activeNodeId = null;
-      drawWires();
+      setTimeout(updateCoords, 310);
     }
 
     // Add new template evaluator rule to the workspace
@@ -986,16 +989,13 @@
     // Save all local configuration flows to server REST APIs
     async function deployFlow() {
       try {
-        // Sequentially save each rule config
         await Promise.all(rules.map(rule => {
-          // If newly created on builder, save via POST, else save via PUT
           const url = rule.id.startsWith('RULE-NEW-') 
             ? 'https://web-production-31cc0e.up.railway.app/api/rules'
             : `https://web-production-31cc0e.up.railway.app/api/rules/${rule.id}`;
           const method = rule.id.startsWith('RULE-NEW-') ? 'POST' : 'PUT';
 
           if (rule.id.startsWith('RULE-NEW-')) {
-            // Strip client temp ID
             rule.id = `RULE-${Math.floor(100 + Math.random() * 900)}`;
           }
 
