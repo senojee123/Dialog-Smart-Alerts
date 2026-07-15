@@ -13,6 +13,7 @@ import Simulator from './pages/Simulator.jsx'
 // Admin – configuration
 import AdminUseCases from './pages/admin/UseCases.jsx'
 import AdminRules from './pages/admin/Rules.jsx'
+import AdminWorkflows from './pages/admin/Workflows.jsx'
 import AdminStakeholders from './pages/admin/Stakeholders.jsx'
 import AdminDevices from './pages/admin/Devices.jsx'
 import AdminRoadSignBoards from './pages/admin/RoadSignBoards.jsx'
@@ -53,6 +54,7 @@ export default function App() {
           {/* Configuration admin */}
           <Route path="/admin/use-cases"    element={<Wrap><AdminUseCases /></Wrap>} />
           <Route path="/admin/rules"        element={<Wrap><AdminRules /></Wrap>} />
+          <Route path="/admin/workflows"    element={<Wrap><AdminWorkflows /></Wrap>} />
           <Route path="/admin/stakeholders" element={<Wrap><AdminStakeholders /></Wrap>} />
           <Route path="/admin/devices"      element={<Wrap><AdminDevices /></Wrap>} />
           <Route path="/admin/road-signs"   element={<Wrap><AdminRoadSignBoards /></Wrap>} />
