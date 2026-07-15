@@ -1,0 +1,656 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dialog Smart Alerts — Workflow Visualizer</title>
+  <!-- Google Fonts: Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
+          colors: {
+            brand: {
+              DEFAULT: '#E60000', // Dialog Red
+              hover: '#C00000',
+              bg: '#FFF0F0',
+            },
+            line: {
+              DEFAULT: '#F2F4F7',
+              strong: '#E4E7EC',
+            },
+            ink: {
+              DEFAULT: '#101828',
+              muted: '#475467',
+              subtle: '#667085',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  
+  <!-- Lucide Icons CDN -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #F8F9FC;
+    }
+    /* Smooth CSS animations */
+    .glow-line {
+      filter: drop-shadow(0 0 4px rgba(230, 0, 0, 0.4));
+    }
+    .node-transition {
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+  </style>
+</head>
+<body class="h-screen flex flex-col overflow-hidden text-ink">
+
+  <!-- Header -->
+  <header class="h-16 bg-white border-b border-line flex items-center px-8 gap-4 justify-between shrink-0 shadow-[0_1px_2px_rgba(0,0,0,0.03)] z-30">
+    <div class="flex items-center gap-3">
+      <!-- Embedded clean geometric logo -->
+      <div class="h-9 w-9 bg-brand flex items-center justify-center rounded-lg shadow-sm">
+        <svg viewBox="0 0 100 100" class="w-6 h-6 fill-white">
+          <polygon points="20,10 80,10 50,50" />
+          <polygon points="50,50 80,90 20,90" />
+        </svg>
+      </div>
+      <div>
+        <h1 class="font-extrabold text-lg tracking-tight leading-none text-brand">Dialog Smart Alerts</h1>
+        <p class="text-[11px] text-ink-muted mt-0.5 uppercase tracking-wider font-semibold">Workflow Architecture Visualizer</p>
+      </div>
+    </div>
+    <div class="flex items-center gap-3">
+      <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-100">
+        <span class="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+        Live API Sync
+      </span>
+      <button onclick="fetchData()" class="p-1.5 text-ink-muted hover:text-ink hover:bg-line rounded-lg transition-colors" title="Reload Rules">
+        <i data-lucide="rotate-cw" class="w-4 h-4"></i>
+      </button>
+    </div>
+  </header>
+
+  <!-- Inspector Panel (Rules Details) -->
+  <div id="inspector-panel" class="hidden mx-8 mt-4 p-4 border border-brand/20 bg-brand/[0.01] rounded-xl flex items-start gap-4 shadow-sm animate-fade-in relative z-20 transition-all duration-300">
+    <div class="p-2.5 bg-brand/5 rounded-lg text-brand shrink-0">
+      <i data-lucide="git-branch" class="w-5 h-5"></i>
+    </div>
+    <div class="flex-1 space-y-2">
+      <div class="flex items-center gap-2">
+        <h4 id="inspect-title" class="font-bold text-ink text-sm">Rule Title</h4>
+        <span id="inspect-status-badge" class="inline-block text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full">Active</span>
+        <span id="inspect-priority" class="text-xs text-ink-muted font-medium">· Priority 1</span>
+      </div>
+      <p id="inspect-desc" class="text-xs text-ink-muted leading-relaxed">Description of rule.</p>
+      
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4 pt-1.5">
+        <div>
+          <span class="text-[10px] font-bold text-ink-subtle uppercase tracking-wider block mb-1">Trigger Conditions</span>
+          <div id="inspect-conditions" class="space-y-1">
+            <!-- Populated dynamically -->
+          </div>
+        </div>
+        
+        <div>
+          <span class="text-[10px] font-bold text-ink-subtle uppercase tracking-wider block mb-1">Confirmation Details</span>
+          <div id="inspect-confirmation" class="text-[11px] text-ink leading-relaxed">
+            Immediate action (no confirmation required).
+          </div>
+        </div>
+
+        <div>
+          <span class="text-[10px] font-bold text-ink-subtle uppercase tracking-wider block mb-1">Alert Targets</span>
+          <div id="inspect-targets" class="text-[11px] text-ink space-y-0.5">
+            <!-- Populated dynamically -->
+          </div>
+        </div>
+      </div>
+    </div>
+    <button onclick="clearSelection()" class="absolute top-3 right-3 text-xs text-ink-subtle hover:text-ink font-semibold flex items-center gap-1">
+      <i data-lucide="x" class="w-3.5 h-3.5"></i> Clear selection
+    </button>
+  </div>
+
+  <!-- Interactive diagram area -->
+  <div class="flex-1 overflow-auto p-8 relative select-none z-10" id="canvas-area">
+    
+    <!-- SVG background layer for connection lines -->
+    <svg id="connections-svg" class="absolute inset-0 w-full h-full pointer-events-none z-0">
+      <defs>
+        <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+          <feGaussianBlur stdDeviation="3" result="blur" />
+          <feComposite in="SourceGraphic" in2="blur" operator="over" />
+        </filter>
+      </defs>
+      <!-- Paths are drawn dynamically by JS -->
+    </svg>
+
+    <!-- 3-Column Node Layout -->
+    <div class="grid grid-cols-3 gap-x-20 gap-y-6 max-w-6xl mx-auto h-full items-center relative z-10">
+      
+      <!-- Column 1: Triggers -->
+      <div class="flex flex-col gap-6 justify-center" id="col-triggers">
+        <h3 class="text-[10px] font-bold text-ink-subtle uppercase tracking-wider mb-2 text-center">1. Intake Triggers</h3>
+        
+        <div id="trig-telemetry" data-node-id="trig-telemetry" data-node-type="trigger"
+             class="node-transition p-4 rounded-xl border border-indigo-100 bg-white shadow-sm hover:shadow-md hover:scale-[1.01] cursor-pointer"
+             onclick="selectNode('trigger', 'trig-telemetry')">
+          <div class="flex items-center gap-3">
+            <div class="p-2 bg-indigo-50 text-indigo-600 rounded-lg">
+              <i data-lucide="radio" class="w-5 h-5"></i>
+            </div>
+            <div>
+              <h4 class="font-bold text-ink text-sm leading-snug">Telemetry Ingestion</h4>
+              <p class="text-[11px] text-ink-muted leading-snug mt-0.5">MQTT Camera Traps</p>
+            </div>
+          </div>
+        </div>
+
+        <div id="trig-simulator" data-node-id="trig-simulator" data-node-type="trigger"
+             class="node-transition p-4 rounded-xl border border-indigo-100 bg-white shadow-sm hover:shadow-md hover:scale-[1.01] cursor-pointer"
+             onclick="selectNode('trigger', 'trig-simulator')">
+          <div class="flex items-center gap-3">
+            <div class="p-2 bg-indigo-50 text-indigo-600 rounded-lg">
+              <i data-lucide="play-circle" class="w-5 h-5"></i>
+            </div>
+            <div>
+              <h4 class="font-bold text-ink text-sm leading-snug">Manual Override</h4>
+              <p class="text-[11px] text-ink-muted leading-snug mt-0.5">Simulator Tool UI</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Column 2: Rules Engine -->
+      <div class="flex flex-col gap-6 justify-center" id="col-rules">
+        <h3 class="text-[10px] font-bold text-ink-subtle uppercase tracking-wider mb-2 text-center">2. Processing Rules</h3>
+        <div id="rules-loading" class="text-xs text-ink-muted text-center py-6">Loading active rules...</div>
+        <div id="rules-container" class="space-y-4 hidden">
+          <!-- Populated dynamically -->
+        </div>
+      </div>
+
+      <!-- Column 3: Actions -->
+      <div class="flex flex-col gap-6 justify-center" id="col-actions">
+        <h3 class="text-[10px] font-bold text-ink-subtle uppercase tracking-wider mb-2 text-center">3. Output Actions</h3>
+        
+        <div id="act-sms" data-node-id="act-sms" data-node-type="action"
+             class="node-transition p-4 rounded-xl border border-rose-100 bg-white shadow-sm hover:shadow-md hover:scale-[1.01] cursor-pointer"
+             onclick="selectNode('action', 'act-sms')">
+          <div class="flex items-center gap-3">
+            <div class="p-2 bg-rose-50 text-rose-600 rounded-lg">
+              <i data-lucide="mail" class="w-5 h-5"></i>
+            </div>
+            <div>
+              <h4 class="font-bold text-ink text-sm leading-snug">SMS Notifications</h4>
+              <p class="text-[11px] text-ink-muted leading-snug mt-0.5">Ideabiz SMS Gateway API</p>
+            </div>
+          </div>
+        </div>
+
+        <div id="act-signs" data-node-id="act-signs" data-node-type="action"
+             class="node-transition p-4 rounded-xl border border-rose-100 bg-white shadow-sm hover:shadow-md hover:scale-[1.01] cursor-pointer"
+             onclick="selectNode('action', 'act-signs')">
+          <div class="flex items-center gap-3">
+            <div class="p-2 bg-rose-50 text-rose-600 rounded-lg">
+              <i data-lucide="monitor" class="w-5 h-5"></i>
+            </div>
+            <div>
+              <h4 class="font-bold text-ink text-sm leading-snug">LED warning boards</h4>
+              <p class="text-[11px] text-ink-muted leading-snug mt-0.5">MQTT Actuator Commands</p>
+            </div>
+          </div>
+        </div>
+
+        <div id="act-sirens" data-node-id="act-sirens" data-node-type="action"
+             class="node-transition p-4 rounded-xl border border-rose-100 bg-white shadow-sm hover:shadow-md hover:scale-[1.01] cursor-pointer"
+             onclick="selectNode('action', 'act-sirens')">
+          <div class="flex items-center gap-3">
+            <div class="p-2 bg-rose-50 text-rose-600 rounded-lg">
+              <i data-lucide="volume-2" class="w-5 h-5"></i>
+            </div>
+            <div>
+              <h4 class="font-bold text-ink text-sm leading-snug">Audible Sirens</h4>
+              <p class="text-[11px] text-ink-muted leading-snug mt-0.5">MQTT Actuator Commands</p>
+            </div>
+          </div>
+        </div>
+
+        <div id="act-map" data-node-id="act-map" data-node-type="action"
+             class="node-transition p-4 rounded-xl border border-rose-100 bg-white shadow-sm hover:shadow-md hover:scale-[1.01] cursor-pointer"
+             onclick="selectNode('action', 'act-map')">
+          <div class="flex items-center gap-3">
+            <div class="p-2 bg-rose-50 text-rose-600 rounded-lg">
+              <i data-lucide="info" class="w-5 h-5"></i>
+            </div>
+            <div>
+              <h4 class="font-bold text-ink text-sm leading-snug">Live Dashboard Sync</h4>
+              <p class="text-[11px] text-ink-muted leading-snug mt-0.5">FastAPI SSE Event Stream</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+
+  <!-- State logic & SVG rendering script -->
+  <script>
+    let rules = [];
+    let activeNode = null; // { type, id }
+    let coords = {};
+
+    // Fallback static rules data in case live server is down
+    const FALLBACK_RULES = [
+      {
+        id: "RULE-001",
+        name: "Single Detection – High Alert",
+        description: "Fires an immediate HIGH incident warning whenever a single sensor identifies an elephant with at least 60% confidence.",
+        active: true,
+        priority: 1,
+        conditions: [
+          { field: "object_type", op: "eq", value: "elephant" },
+          { field: "confidence", op: "gte", value: "60" }
+        ],
+        confirmation: null,
+        actions: {
+          on_trigger: {
+            create_incident: true,
+            incident_severity: "HIGH",
+            notify_stakeholder_ids: ["SH-01", "SH-02"],
+            message_template: "Alert [HIGH]: Elephant detected in {zone_name}."
+          }
+        }
+      },
+      {
+        id: "RULE-002",
+        name: "Dual Confirmation – Critical Alert",
+        description: "Escalates warnings to CRITICAL if multiple detection events occur in the same zone within a 15-minute sliding window.",
+        active: true,
+        priority: 2,
+        conditions: [
+          { field: "object_type", op: "eq", value: "elephant" },
+          { field: "confidence", op: "gte", value: "70" }
+        ],
+        confirmation: {
+          required_count: 2,
+          window_seconds: 900,
+          same_zone: true
+        },
+        actions: {
+          on_trigger: {
+            create_incident: true,
+            incident_severity: "HIGH",
+            notify_stakeholder_ids: ["SH-01"]
+          },
+          on_confirm: {
+            create_incident: true,
+            incident_severity: "CRITICAL",
+            notify_stakeholder_ids: ["SH-01", "SH-02", "SH-03"],
+            message_template: "CONFIRMED elephant near {zone_name}. Respond immediately."
+          }
+        }
+      }
+    ];
+
+    // Fetch active rules from backend API
+    async function fetchData() {
+      document.getElementById('rules-loading').style.display = 'block';
+      document.getElementById('rules-container').style.display = 'none';
+      try {
+        const response = await fetch('https://web-production-31cc0e.up.railway.app/api/rules');
+        if (!response.ok) throw new Error();
+        rules = await response.json();
+      } catch (e) {
+        console.warn('Backend unavailable, using static fallback rules configuration.');
+        rules = FALLBACK_RULES;
+      }
+      renderRules();
+    }
+
+    // Render database rules into the middle column
+    function renderRules() {
+      const container = document.getElementById('rules-container');
+      container.innerHTML = '';
+      
+      rules.forEach(rule => {
+        const borderClass = rule.active ? 'border-amber-100' : 'border-gray-100 opacity-60';
+        const card = document.createElement('div');
+        card.id = `rule-${rule.id}`;
+        card.setAttribute('data-node-id', `rule-${rule.id}`);
+        card.setAttribute('data-node-type', 'rule');
+        card.className = `node-transition p-4 rounded-xl border ${borderClass} bg-white shadow-sm hover:shadow-md hover:scale-[1.01] cursor-pointer`;
+        card.onclick = () => selectNode('rule', rule.id);
+        
+        card.innerHTML = `
+          <div class="space-y-1.5">
+            <div class="flex items-start justify-between gap-2">
+              <h4 class="font-bold text-ink text-[13px] leading-tight line-clamp-1">${rule.name}</h4>
+              <span class="inline-block text-[10px] font-semibold font-mono bg-amber-50 text-amber-700 px-1.5 py-0.5 rounded-md border border-amber-100 shrink-0">P${rule.priority}</span>
+            </div>
+            <div class="flex items-center gap-1.5">
+              <span class="inline-block h-1.5 w-1.5 rounded-full ${rule.active ? 'bg-amber-500' : 'bg-gray-300'}"></span>
+              <span class="text-[10px] text-ink-subtle font-semibold tracking-wider uppercase">${rule.active ? 'Active' : 'Disabled'}</span>
+            </div>
+          </div>
+        `;
+        container.appendChild(card);
+      });
+      
+      document.getElementById('rules-loading').style.display = 'none';
+      container.style.display = 'block';
+      
+      // Initialize icons and re-calculate line coordinates
+      lucide.createIcons();
+      setTimeout(updateCoords, 100);
+    }
+
+    // Calculate coordinates of node input/output anchors
+    function updateCoords() {
+      const svg = document.getElementById('connections-svg');
+      const rectSvg = svg.getBoundingClientRect();
+      const newCoords = {};
+      
+      document.querySelectorAll('[data-node-id]').forEach(el => {
+        const id = el.getAttribute('data-node-id');
+        const rect = el.getBoundingClientRect();
+        newCoords[id] = {
+          left: {
+            x: rect.left - rectSvg.left,
+            y: rect.top - rectSvg.top + rect.height / 2
+          },
+          right: {
+            x: rect.right - rectSvg.left,
+            y: rect.top - rectSvg.top + rect.height / 2
+          }
+        };
+      });
+      coords = newCoords;
+      drawConnections();
+    }
+
+    // Draw smooth SVG cubic bezier curves between points
+    function drawCurve(fromPoint, toPoint) {
+      if (!fromPoint || !toPoint) return '';
+      const dx = Math.abs(toPoint.x - fromPoint.x) * 0.45;
+      const control1X = fromPoint.x + dx;
+      const control1Y = fromPoint.y;
+      const control2X = toPoint.x - dx;
+      const control2Y = toPoint.y;
+      return `M ${fromPoint.x} ${fromPoint.y} C ${control1X} ${control1Y}, ${control2X} ${control2Y}, ${toPoint.x} ${toPoint.y}`;
+    }
+
+    // Compute line connections based on selected highlight node
+    function drawConnections() {
+      const svg = document.getElementById('connections-svg');
+      // Clear paths but keep defs/filter
+      const oldPaths = svg.querySelectorAll('path');
+      oldPaths.forEach(p => p.remove());
+
+      const TRIGGERS = ['trig-telemetry', 'trig-simulator'];
+      const ACTIONS = [
+        { id: 'act-sms', check: r => (r.actions?.on_trigger?.notify_stakeholder_ids?.length > 0) || (r.actions?.on_confirm?.notify_stakeholder_ids?.length > 0) },
+        { id: 'act-signs', check: r => r.actions?.on_trigger?.create_incident || r.actions?.on_confirm?.create_incident },
+        { id: 'act-sirens', check: r => r.actions?.on_trigger?.create_incident || r.actions?.on_confirm?.create_incident },
+        { id: 'act-map', check: r => true } // Live sync is always triggered by all active rules
+      ];
+
+      // Draw Trigger -> Rule lines
+      TRIGGERS.forEach(tId => {
+        rules.forEach(r => {
+          const rId = `rule-${r.id}`;
+          const state = getConnectionState(tId, rId, ACTIONS);
+          createPath(tId, rId, state);
+        });
+      });
+
+      // Draw Rule -> Action lines
+      rules.forEach(r => {
+        const rId = `rule-${r.id}`;
+        if (!r.active) return;
+        
+        ACTIONS.forEach(a => {
+          if (a.check(r)) {
+            const state = getConnectionState(rId, a.id, ACTIONS);
+            createPath(rId, a.id, state);
+          }
+        });
+      });
+
+      updateNodeStyles(ACTIONS);
+    }
+
+    // Helper to create and append SVG path element
+    function createPath(fromId, toId, state) {
+      const svg = document.getElementById('connections-svg');
+      const fromPt = coords[fromId]?.right;
+      const toPt = coords[toId]?.left;
+      if (!fromPt || !toPt) return;
+
+      const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      path.setAttribute('d', drawCurve(fromPt, toPt));
+      path.setAttribute('fill', 'none');
+      path.style.transition = 'all 0.3s ease';
+
+      if (state === 'highlight') {
+        path.setAttribute('stroke', '#E60000');
+        path.setAttribute('stroke-width', '3.5');
+        path.style.opacity = '1';
+        path.setAttribute('filter', 'url(#glow)');
+        path.setAttribute('class', 'glow-line');
+      } else if (state === 'dim') {
+        path.setAttribute('stroke', '#E4E7EC');
+        path.setAttribute('stroke-width', '1.5');
+        path.style.opacity = '0.15';
+      } else {
+        path.setAttribute('stroke', '#D0D5DD');
+        path.setAttribute('stroke-width', '2');
+        path.style.opacity = '0.6';
+      }
+
+      svg.appendChild(path);
+    }
+
+    // Determine connection state (highlight, dim, normal)
+    function getConnectionState(fromId, toId, ACTIONS) {
+      if (!activeNode) return 'normal';
+      const { type, id } = activeNode;
+
+      if (type === 'trigger') {
+        if (fromId === id) return 'highlight';
+        const rule = rules.find(r => `rule-${r.id}` === fromId);
+        if (rule && rule.active) {
+          const actionObj = ACTIONS.find(a => a.id === toId);
+          if (actionObj && actionObj.check(rule)) return 'highlight';
+        }
+        return 'dim';
+      }
+
+      if (type === 'rule') {
+        const targetRuleId = `rule-${id}`;
+        if (fromId === targetRuleId || toId === targetRuleId) return 'highlight';
+        return 'dim';
+      }
+
+      if (type === 'action') {
+        if (toId === id) {
+          const rule = rules.find(r => `rule-${r.id}` === fromId);
+          if (rule && rule.active) {
+            const actionObj = ACTIONS.find(a => a.id === id);
+            if (actionObj && actionObj.check(rule)) return 'highlight';
+          }
+        }
+        const rule = rules.find(r => `rule-${r.id}` === fromId);
+        if (rule && rule.active && toId === id) return 'highlight';
+        return 'dim';
+      }
+
+      return 'normal';
+    }
+
+    // Adjust visual states of the nodes dynamically
+    function updateNodeStyles(ACTIONS) {
+      document.querySelectorAll('[data-node-id]').forEach(el => {
+        const id = el.getAttribute('data-node-id');
+        const type = el.getAttribute('data-node-type');
+        
+        // Remove old style classes
+        el.className = el.className
+          .replace(/border-brand|ring-2|ring-brand\/10|translate-x-1|scale-\[1\.01\]|shadow-md|border-brand\/40|bg-brand\/\[0\.01\]|opacity-40|grayscale-\[20%\]/g, '')
+          .trim();
+
+        const state = getNodeState(id, type, ACTIONS);
+        
+        if (state === 'selected') {
+          el.classList.add('border-brand', 'ring-2', 'ring-brand/10', 'translate-x-1');
+        } else if (state === 'highlight') {
+          el.classList.add('border-brand/40', 'shadow-md', 'scale-[1.01]', 'bg-brand/[0.01]');
+        } else if (state === 'dim') {
+          el.classList.add('opacity-40', 'grayscale-[20%]');
+        }
+      });
+    }
+
+    // Determine target node status (selected, highlight, dim, normal)
+    function getNodeState(nodeId, type, ACTIONS) {
+      if (!activeNode) return 'normal';
+      if (activeNode.id === nodeId) return 'selected';
+
+      const { type: activeType, id: activeId } = activeNode;
+
+      if (activeType === 'trigger') {
+        if (type === 'trigger') return 'dim';
+        if (type === 'rule') {
+          const rule = rules.find(r => `rule-${r.id}` === nodeId);
+          return rule && rule.active ? 'highlight' : 'dim';
+        }
+        if (type === 'action') {
+          const actionObj = ACTIONS.find(a => a.id === nodeId);
+          const hasActiveConnection = rules.some(r => r.active && actionObj.check(r));
+          return hasActiveConnection ? 'highlight' : 'dim';
+        }
+      }
+
+      if (activeType === 'rule') {
+        const selectedRule = rules.find(r => r.id === activeId);
+        if (type === 'trigger') return 'highlight';
+        if (type === 'rule') return 'dim';
+        if (type === 'action' && selectedRule && selectedRule.active) {
+          const actionObj = ACTIONS.find(a => a.id === nodeId);
+          return actionObj && actionObj.check(selectedRule) ? 'highlight' : 'dim';
+        }
+        return 'dim';
+      }
+
+      if (activeType === 'action') {
+        if (type === 'action') return 'dim';
+        if (type === 'rule') {
+          const rule = rules.find(r => `rule-${r.id}` === nodeId);
+          const actionObj = ACTIONS.find(a => a.id === activeId);
+          return rule && rule.active && actionObj.check(rule) ? 'highlight' : 'dim';
+        }
+        if (type === 'trigger') return 'highlight';
+      }
+
+      return 'normal';
+    }
+
+    // Node click handler
+    function selectNode(type, id) {
+      activeNode = { type, id };
+      if (type === 'rule') {
+        const rule = rules.find(r => r.id === id);
+        showInspector(rule);
+      } else {
+        document.getElementById('inspector-panel').classList.add('hidden');
+        selectedRule = null;
+      }
+      drawConnections();
+    }
+
+    // Open detailed rule inspector
+    function showInspector(rule) {
+      if (!rule) return;
+      
+      const panel = document.getElementById('inspector-panel');
+      document.getElementById('inspect-title').innerText = rule.name;
+      document.getElementById('inspect-desc').innerText = rule.description || 'No description provided.';
+      document.getElementById('inspect-priority').innerText = `· Priority ${rule.priority}`;
+      
+      // Status badge styling
+      const statusBadge = document.getElementById('inspect-status-badge');
+      statusBadge.innerText = rule.active ? 'Active' : 'Disabled';
+      if (rule.active) {
+        statusBadge.className = "inline-block text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-100";
+      } else {
+        statusBadge.className = "inline-block text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-gray-50 text-gray-500 border border-gray-100";
+      }
+
+      // Populate Conditions
+      const condContainer = document.getElementById('inspect-conditions');
+      condContainer.innerHTML = '';
+      (rule.conditions || []).forEach(c => {
+        const badge = document.createElement('span');
+        badge.className = "inline-block text-[11px] bg-white border border-line rounded px-1.5 py-0.5 font-mono text-ink mr-1.5 mt-1";
+        badge.innerText = `${c.field} ${c.op === 'eq' ? '=' : c.op === 'neq' ? '≠' : c.op === 'gte' ? '≥' : c.op === 'lte' ? '≤' : c.op} "${c.value}"`;
+        condContainer.appendChild(badge);
+      });
+
+      // Populate Confirmation Details
+      const confContainer = document.getElementById('inspect-confirmation');
+      if (rule.confirmation) {
+        confContainer.innerHTML = `
+          Requires <span class="font-semibold text-brand">${rule.confirmation.required_count} detections</span> within <span className="font-semibold text-brand">${rule.confirmation.window_seconds / 60} minutes</span> (same zone to verify).
+        `;
+      } else {
+        confContainer.innerHTML = '<span class="text-ink-subtle">Immediate action (no confirmation required).</span>';
+      }
+
+      // Populate Action Targets
+      const targetsContainer = document.getElementById('inspect-targets');
+      const action = rule.actions?.on_trigger || rule.actions?.on_confirm || {};
+      const notifyCount = action.notify_stakeholder_ids?.length || 0;
+      targetsContainer.innerHTML = `
+        <div class="flex items-center gap-1.5 text-xs">
+          <span class="font-semibold">Incident:</span> ${action.create_incident ? '✅ Enabled' : '❌ Disabled'}
+        </div>
+        <div class="flex items-center gap-1.5 text-xs mt-0.5">
+          <span class="font-semibold">SMS Alert Recipients:</span> ${notifyCount} stakeholder(s)
+        </div>
+      `;
+
+      panel.classList.remove('hidden');
+      setTimeout(updateCoords, 50);
+    }
+
+    // Reset clicked highlight state
+    function clearSelection() {
+      activeNode = null;
+      document.getElementById('inspector-panel').classList.add('hidden');
+      drawConnections();
+    }
+
+    // Initialize layout
+    window.addEventListener('resize', updateCoords);
+    document.addEventListener('DOMContentLoaded', () => {
+      fetchData();
+    });
+  </script>
+</body>
+</html>
