@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Dialog Smart Alerts — Workflow Builder</title>
+  <title>Dialog Smart Alerts — Node-RED Flow Editor</title>
   
   <!-- Google Fonts: Inter & JetBrains Mono -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -27,13 +27,13 @@
               bg: '#FFF0F0',
             },
             line: {
-              DEFAULT: '#F2F4F7',
-              strong: '#E4E7EC',
+              DEFAULT: '#E5E7EB',
+              strong: '#D1D5DB',
             },
             ink: {
-              DEFAULT: '#101828',
-              muted: '#475467',
-              subtle: '#667085',
+              DEFAULT: '#111827',
+              muted: '#4B5563',
+              subtle: '#9CA3AF',
             }
           }
         }
@@ -47,10 +47,19 @@
   <style>
     body {
       font-family: 'Inter', sans-serif;
-      background-color: #F8F9FC;
+      background-color: #F3F4F6;
     }
     .node-transition {
-      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    /* Node-RED style canvas grid background */
+    .red-canvas-grid {
+      background-size: 20px 20px;
+      background-image: radial-gradient(circle, #D1D5DB 1px, transparent 1px);
+      background-color: #F9FAFB;
+    }
+    .glow-wire {
+      filter: drop-shadow(0 0 5px rgba(230, 0, 0, 0.6));
     }
     @keyframes pulse-ring {
       0% { transform: scale(0.95); opacity: 1; }
@@ -69,785 +78,942 @@
 </head>
 <body class="h-screen flex flex-col overflow-hidden text-ink">
 
-  <!-- Header -->
-  <header class="h-16 bg-white border-b border-line flex items-center px-8 gap-4 justify-between shrink-0 shadow-[0_1px_2px_rgba(0,0,0,0.03)] z-30">
+  <!-- Node-RED style Dark Header Bar -->
+  <header class="h-12 bg-[#1e1e1e] flex items-center px-4 justify-between shrink-0 shadow-[0_2px_4px_rgba(0,0,0,0.15)] z-30 select-none">
     <div class="flex items-center gap-3">
-      <div class="h-9 w-9 bg-brand flex items-center justify-center rounded-lg shadow-sm">
-        <svg viewBox="0 0 100 100" class="w-6 h-6 fill-white">
+      <!-- Logo Block -->
+      <div class="h-7 w-7 bg-brand flex items-center justify-center rounded shadow-sm shrink-0">
+        <svg viewBox="0 0 100 100" class="w-4.5 h-4.5 fill-white">
           <polygon points="20,10 80,10 50,50" />
           <polygon points="50,50 80,90 20,90" />
         </svg>
       </div>
-      <div>
-        <h1 class="font-extrabold text-lg tracking-tight leading-none text-brand">Dialog Smart Alerts</h1>
-        <p class="text-[11px] text-ink-muted mt-0.5 uppercase tracking-wider font-semibold">Interactive Workflow Builder</p>
+      <div class="flex items-baseline gap-2">
+        <h1 class="font-extrabold text-sm tracking-tight text-white">Dialog Smart Alerts</h1>
+        <span class="text-[10px] text-brand uppercase font-extrabold tracking-wider border-l border-ink-muted pl-2">Node-RED Flow Editor</span>
       </div>
     </div>
+    
+    <!-- Action Options (Deploy Button) -->
     <div class="flex items-center gap-3">
-      <a href="/incidents" class="text-xs text-ink-muted hover:text-ink font-semibold flex items-center gap-1">
+      <a href="/incidents" class="text-xs text-gray-300 hover:text-white font-semibold flex items-center gap-1 mr-2">
         <i data-lucide="arrow-left" class="w-3.5 h-3.5"></i> Back to Dashboard
       </a>
+      <button onclick="deployFlow()" class="flex items-center gap-1.5 px-3 py-1 bg-brand hover:bg-brand-hover text-white text-xs font-bold rounded shadow transition-colors shrink-0">
+        <i data-lucide="play" class="w-3 h-3 fill-white"></i> Deploy
+      </button>
     </div>
   </header>
 
-  <!-- Main Wizard Workspace -->
-  <main class="flex-1 overflow-y-auto p-8 flex flex-col justify-center relative">
+  <!-- Node-RED Workspace layout -->
+  <div class="flex-1 flex overflow-hidden">
     
-    <div class="max-w-6xl w-full mx-auto space-y-8">
+    <!-- Left Sidebar: Nodes Palette (like Node-RED) -->
+    <aside class="w-64 bg-[#f3f4f6] border-r border-line flex flex-col shrink-0 select-none">
       
-      <!-- Wizard Title -->
-      <div class="text-center space-y-2">
-        <h2 class="text-2xl font-extrabold tracking-tight text-ink">Configure Warning Rule Workflow</h2>
-        <p class="text-sm text-ink-muted max-w-xl mx-auto">
-          Complete each connected stage below to configure an automation workflow. Once finished, submit to activate it in the database.
-        </p>
+      <!-- Search Palette -->
+      <div class="p-2 border-b border-line">
+        <div class="flex items-center bg-white border border-line rounded px-2 py-1">
+          <i data-lucide="search" class="w-3.5 h-3.5 text-ink-subtle mr-1.5"></i>
+          <input type="text" placeholder="filter nodes" class="w-full text-xs text-ink outline-none">
+        </div>
       </div>
 
-      <!-- Horizontal Connected Blocks Row -->
-      <div class="flex flex-col lg:flex-row items-stretch justify-center gap-4 lg:gap-3 py-6">
+      <!-- Nodes List Scrollable -->
+      <div class="flex-1 overflow-y-auto p-2 space-y-4">
         
-        <!-- Step 1: Basics -->
-        <div id="step-card-1" onclick="openStepDrawer(1)"
-             class="node-transition flex-1 min-w-[210px] bg-white border border-brand/30 shadow-md rounded-xl p-5 cursor-pointer hover:border-brand hover:shadow-lg hover:-translate-y-0.5 flex flex-col justify-between">
-          <div class="space-y-3">
-            <div class="flex items-center justify-between">
-              <span class="text-[10px] font-bold text-brand uppercase tracking-wider">Step 1</span>
-              <div id="step-icon-1" class="h-6 w-6 rounded-full bg-brand/5 text-brand flex items-center justify-center">
-                <i data-lucide="info" class="w-3.5 h-3.5"></i>
+        <!-- Category: Input Triggers -->
+        <div>
+          <h4 class="text-[10px] font-bold text-ink-muted uppercase tracking-wider px-1.5 mb-1.5">input triggers</h4>
+          <div class="space-y-1">
+            <div onclick="addNewNode('trigger', 'camera')" class="flex items-center justify-between bg-white border border-line-strong rounded px-2.5 py-1.5 hover:bg-brand/5 hover:border-brand cursor-pointer transition-colors shadow-sm">
+              <div class="flex items-center gap-2">
+                <div class="h-5 w-5 bg-indigo-50 text-indigo-600 rounded flex items-center justify-center shrink-0">
+                  <i data-lucide="camera" class="w-3 h-3"></i>
+                </div>
+                <span class="text-xs font-semibold">Camera trap</span>
               </div>
+              <i data-lucide="plus" class="w-3.5 h-3.5 text-ink-subtle"></i>
             </div>
-            <h3 class="font-bold text-ink text-sm leading-snug">Rule Details</h3>
-            <p id="step-summary-1" class="text-xs text-ink-muted leading-relaxed">Name, use case context, priority levels.</p>
-          </div>
-          <div class="pt-4 mt-auto">
-            <span id="step-badge-1" class="inline-block text-[9px] font-bold uppercase tracking-wider text-brand bg-brand/5 px-2 py-0.5 rounded">Active</span>
-          </div>
-        </div>
-
-        <!-- Connection Arrow 1 -->
-        <div class="flex items-center justify-center text-ink-subtle/30 py-2 lg:py-0">
-          <i data-lucide="arrow-right" class="w-5 h-5 hidden lg:block"></i>
-          <i data-lucide="arrow-down" class="w-5 h-5 block lg:hidden"></i>
-        </div>
-
-        <!-- Step 2: Conditions & Camera Registration -->
-        <div id="step-card-2" onclick="openStepDrawer(2)"
-             class="node-transition flex-1 min-w-[210px] bg-gray-50 border border-line-strong rounded-xl p-5 cursor-not-allowed opacity-50 flex flex-col justify-between">
-          <div class="space-y-3">
-            <div class="flex items-center justify-between">
-              <span class="text-[10px] font-bold text-ink-subtle uppercase tracking-wider">Step 2</span>
-              <div id="step-icon-2" class="h-6 w-6 rounded-full bg-line-strong text-ink-subtle flex items-center justify-center">
-                <i data-lucide="git-fork" class="w-3.5 h-3.5"></i>
+            
+            <div onclick="addNewNode('trigger', 'simulator')" class="flex items-center justify-between bg-white border border-line-strong rounded px-2.5 py-1.5 hover:bg-brand/5 hover:border-brand cursor-pointer transition-colors shadow-sm">
+              <div class="flex items-center gap-2">
+                <div class="h-5 w-5 bg-indigo-50 text-indigo-600 rounded flex items-center justify-center shrink-0">
+                  <i data-lucide="play-circle" class="w-3 h-3"></i>
+                </div>
+                <span class="text-xs font-semibold">Manual Simulator</span>
               </div>
+              <i data-lucide="plus" class="w-3.5 h-3.5 text-ink-subtle"></i>
             </div>
-            <h3 class="font-bold text-ink text-sm leading-snug">Trigger Conditions</h3>
-            <p id="step-summary-2" class="text-xs text-ink-muted leading-relaxed">Object types, camera register filters.</p>
-          </div>
-          <div class="pt-4 mt-auto">
-            <span id="step-badge-2" class="inline-block text-[9px] font-bold uppercase tracking-wider text-ink-subtle bg-line-strong/50 px-2 py-0.5 rounded">Locked</span>
           </div>
         </div>
 
-        <!-- Connection Arrow 2 -->
-        <div class="flex items-center justify-center text-ink-subtle/30 py-2 lg:py-0">
-          <i data-lucide="arrow-right" class="w-5 h-5 hidden lg:block"></i>
-          <i data-lucide="arrow-down" class="w-5 h-5 block lg:hidden"></i>
-        </div>
-
-        <!-- Step 3: Confirmation -->
-        <div id="step-card-3" onclick="openStepDrawer(3)"
-             class="node-transition flex-1 min-w-[210px] bg-gray-50 border border-line-strong rounded-xl p-5 cursor-not-allowed opacity-50 flex flex-col justify-between">
-          <div class="space-y-3">
-            <div class="flex items-center justify-between">
-              <span class="text-[10px] font-bold text-ink-subtle uppercase tracking-wider">Step 3</span>
-              <div id="step-icon-3" class="h-6 w-6 rounded-full bg-line-strong text-ink-subtle flex items-center justify-center">
-                <i data-lucide="check-square" class="w-3.5 h-3.5"></i>
+        <!-- Category: Logic -->
+        <div>
+          <h4 class="text-[10px] font-bold text-ink-muted uppercase tracking-wider px-1.5 mb-1.5">logic functions</h4>
+          <div class="space-y-1">
+            <div onclick="addNewNode('rule', 'evaluator')" class="flex items-center justify-between bg-white border border-line-strong rounded px-2.5 py-1.5 hover:bg-brand/5 hover:border-brand cursor-pointer transition-colors shadow-sm">
+              <div class="flex items-center gap-2">
+                <div class="h-5 w-5 bg-amber-50 text-amber-600 rounded flex items-center justify-center shrink-0">
+                  <i data-lucide="git-fork" class="w-3 h-3"></i>
+                </div>
+                <span class="text-xs font-semibold text-amber-700">Rule Evaluator</span>
               </div>
+              <i data-lucide="plus" class="w-3.5 h-3.5 text-ink-subtle"></i>
             </div>
-            <h3 class="font-bold text-ink text-sm leading-snug">Confirmation</h3>
-            <p id="step-summary-3" class="text-xs text-ink-muted leading-relaxed">Required event counts, verification windows.</p>
-          </div>
-          <div class="pt-4 mt-auto">
-            <span id="step-badge-3" class="inline-block text-[9px] font-bold uppercase tracking-wider text-ink-subtle bg-line-strong/50 px-2 py-0.5 rounded">Locked</span>
           </div>
         </div>
 
-        <!-- Connection Arrow 3 -->
-        <div class="flex items-center justify-center text-ink-subtle/30 py-2 lg:py-0">
-          <i data-lucide="arrow-right" class="w-5 h-5 hidden lg:block"></i>
-          <i data-lucide="arrow-down" class="w-5 h-5 block lg:hidden"></i>
-        </div>
-
-        <!-- Step 4: Actions & Sign Registration -->
-        <div id="step-card-4" onclick="openStepDrawer(4)"
-             class="node-transition flex-1 min-w-[210px] bg-gray-50 border border-line-strong rounded-xl p-5 cursor-not-allowed opacity-50 flex flex-col justify-between">
-          <div class="space-y-3">
-            <div class="flex items-center justify-between">
-              <span class="text-[10px] font-bold text-ink-subtle uppercase tracking-wider">Step 4</span>
-              <div id="step-icon-4" class="h-6 w-6 rounded-full bg-line-strong text-ink-subtle flex items-center justify-center">
-                <i data-lucide="send" class="w-3.5 h-3.5"></i>
+        <!-- Category: Outputs -->
+        <div>
+          <h4 class="text-[10px] font-bold text-ink-muted uppercase tracking-wider px-1.5 mb-1.5">output channels</h4>
+          <div class="space-y-1">
+            <div onclick="addNewNode('action', 'sms')" class="flex items-center justify-between bg-white border border-line-strong rounded px-2.5 py-1.5 hover:bg-brand/5 hover:border-brand cursor-pointer transition-colors shadow-sm">
+              <div class="flex items-center gap-2">
+                <div class="h-5 w-5 bg-rose-50 text-rose-600 rounded flex items-center justify-center shrink-0">
+                  <i data-lucide="send" class="w-3 h-3"></i>
+                </div>
+                <span class="text-xs font-semibold">SMS Notification</span>
               </div>
+              <i data-lucide="plus" class="w-3.5 h-3.5 text-ink-subtle"></i>
             </div>
-            <h3 class="font-bold text-ink text-sm leading-snug">Output Actions</h3>
-            <p id="step-summary-4" class="text-xs text-ink-muted leading-relaxed">SMS warning templates, warning sign registers.</p>
-          </div>
-          <div class="pt-4 mt-auto">
-            <span id="step-badge-4" class="inline-block text-[9px] font-bold uppercase tracking-wider text-ink-subtle bg-line-strong/50 px-2 py-0.5 rounded">Locked</span>
-          </div>
-        </div>
 
-        <!-- Connection Arrow 4 -->
-        <div class="flex items-center justify-center text-ink-subtle/30 py-2 lg:py-0">
-          <i data-lucide="arrow-right" class="w-5 h-5 hidden lg:block"></i>
-          <i data-lucide="arrow-down" class="w-5 h-5 block lg:hidden"></i>
-        </div>
-
-        <!-- Step 5: Review -->
-        <div id="step-card-5" onclick="openStepDrawer(5)"
-             class="node-transition flex-1 min-w-[210px] bg-gray-50 border border-line-strong rounded-xl p-5 cursor-not-allowed opacity-50 flex flex-col justify-between">
-          <div class="space-y-3">
-            <div class="flex items-center justify-between">
-              <span class="text-[10px] font-bold text-ink-subtle uppercase tracking-wider">Step 5</span>
-              <div id="step-icon-5" class="h-6 w-6 rounded-full bg-line-strong text-ink-subtle flex items-center justify-center">
-                <i data-lucide="shield-alert" class="w-3.5 h-3.5"></i>
+            <div onclick="addNewNode('action', 'signs')" class="flex items-center justify-between bg-white border border-line-strong rounded px-2.5 py-1.5 hover:bg-brand/5 hover:border-brand cursor-pointer transition-colors shadow-sm">
+              <div class="flex items-center gap-2">
+                <div class="h-5 w-5 bg-rose-50 text-rose-600 rounded flex items-center justify-center shrink-0">
+                  <i data-lucide="monitor" class="w-3 h-3"></i>
+                </div>
+                <span class="text-xs font-semibold">LED Warning Board</span>
               </div>
+              <i data-lucide="plus" class="w-3.5 h-3.5 text-ink-subtle"></i>
             </div>
-            <h3 class="font-bold text-ink text-sm leading-snug">Publish Workflow</h3>
-            <p id="step-summary-5" class="text-xs text-ink-muted leading-relaxed">Final review, activation in database.</p>
+
+            <div onclick="addNewNode('action', 'sirens')" class="flex items-center justify-between bg-white border border-line-strong rounded px-2.5 py-1.5 hover:bg-brand/5 hover:border-brand cursor-pointer transition-colors shadow-sm">
+              <div class="flex items-center gap-2">
+                <div class="h-5 w-5 bg-rose-50 text-rose-600 rounded flex items-center justify-center shrink-0">
+                  <i data-lucide="volume-2" class="w-3 h-3"></i>
+                </div>
+                <span class="text-xs font-semibold">Alarm Sirens</span>
+              </div>
+              <i data-lucide="plus" class="w-3.5 h-3.5 text-ink-subtle"></i>
+            </div>
           </div>
-          <div class="pt-4 mt-auto">
-            <span id="step-badge-5" class="inline-block text-[9px] font-bold uppercase tracking-wider text-ink-subtle bg-line-strong/50 px-2 py-0.5 rounded">Locked</span>
-          </div>
+        </div>
+
+      </div>
+
+    </aside>
+
+    <!-- Main Canvas Area -->
+    <div class="flex-1 overflow-auto red-canvas-grid relative" id="canvas-area">
+      
+      <!-- SVG Overlay for connecting wires -->
+      <svg id="connections-svg" class="absolute inset-0 w-full h-full pointer-events-none z-0">
+        <defs>
+          <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+            <feGaussianBlur stdDeviation="3" result="blur" />
+            <feComposite in="SourceGraphic" in2="blur" operator="over" />
+          </filter>
+        </defs>
+        <!-- Paths drawn dynamically by JS -->
+      </svg>
+
+      <!-- 3-Column Visual Nodes Grid container -->
+      <div class="grid grid-cols-3 gap-x-32 max-w-6xl mx-auto min-h-full items-center p-12 relative z-10">
+        
+        <!-- Column 1: Input triggers list -->
+        <div class="flex flex-col gap-6" id="col-triggers">
+          <!-- Populated dynamically -->
+        </div>
+
+        <!-- Column 2: Rules list -->
+        <div class="flex flex-col gap-6" id="col-rules">
+          <!-- Populated dynamically -->
+        </div>
+
+        <!-- Column 3: Action outputs list -->
+        <div class="flex flex-col gap-6" id="col-actions">
+          <!-- Populated dynamically -->
         </div>
 
       </div>
 
     </div>
 
-  </main>
+  </div>
 
-  <!-- Sliding Drawer Side Panel -->
-  <div id="drawer" class="fixed inset-y-0 right-0 w-full sm:w-[440px] bg-white border-l border-line shadow-2xl z-40 transform translate-x-full transition-transform duration-300 ease-in-out flex flex-col">
+  <!-- Sliding Config Panel Drawer (like Node-RED Edit panel) -->
+  <div id="drawer" class="fixed inset-y-0 right-0 w-full sm:w-[440px] bg-white border-l border-line shadow-2xl z-40 transform translate-x-full transition-transform duration-300 ease-in-out flex flex-col select-none">
+    
     <!-- Drawer Header -->
-    <div class="h-16 border-b border-line flex items-center justify-between px-6 shrink-0">
-      <div class="flex items-center gap-2.5">
-        <div class="p-2 bg-brand/5 text-brand rounded-lg">
-          <i id="drawer-icon" data-lucide="edit-3" class="w-4 h-4"></i>
+    <div class="h-14 bg-[#3f3f3f] text-white flex items-center justify-between px-4 shrink-0 shadow">
+      <div class="flex items-center gap-2">
+        <div class="p-1.5 bg-brand text-white rounded">
+          <i id="drawer-icon" data-lucide="edit-3" class="w-3.5 h-3.5"></i>
         </div>
-        <div>
-          <h3 id="drawer-title" class="font-bold text-ink text-sm">Configure Step</h3>
-          <p id="drawer-subtitle" class="text-[10px] text-ink-muted uppercase tracking-wider font-semibold">Workflow Step configuration</p>
-        </div>
+        <h3 id="drawer-title" class="font-bold text-xs tracking-wide">Edit node properties</h3>
       </div>
-      <button onclick="closeDrawer()" class="p-1.5 hover:bg-line rounded-lg text-ink-subtle hover:text-ink transition-colors">
-        <i data-lucide="x" class="w-4.5 h-4.5"></i>
+      <button onclick="closeDrawer()" class="p-1 hover:bg-white/10 rounded text-gray-300 hover:text-white transition-colors">
+        <i data-lucide="x" class="w-4 h-4"></i>
       </button>
     </div>
 
     <!-- Drawer Content Scrollable Area -->
-    <div class="flex-1 overflow-y-auto p-6" id="drawer-content">
-      <!-- Input fields injected dynamically by JS -->
+    <div class="flex-1 overflow-y-auto p-5 space-y-4" id="drawer-content">
+      <!-- Injected fields dynamically -->
     </div>
 
     <!-- Drawer Footer Actions -->
-    <div class="h-16 border-t border-line px-6 flex items-center justify-end gap-3 bg-surface-alt/20 shrink-0">
-      <button onclick="closeDrawer()" class="px-4 py-2 text-xs font-semibold text-ink-muted hover:text-ink border border-line bg-white rounded-lg hover:bg-line/40 transition-colors">
+    <div class="h-14 border-t border-line px-4 flex items-center justify-end gap-2 bg-gray-50 shrink-0">
+      <button onclick="closeDrawer()" class="px-4 py-1.5 text-xs font-semibold text-ink-muted hover:text-ink border border-line bg-white rounded hover:bg-gray-100 transition-colors">
         Cancel
       </button>
-      <button onclick="saveStepData()" id="drawer-save-btn" class="px-4 py-2 text-xs font-semibold text-white bg-brand hover:bg-brand-hover rounded-lg transition-colors shadow-sm">
-        Save Step
+      <button onclick="saveStepData()" id="drawer-save-btn" class="px-4 py-1.5 text-xs font-semibold text-white bg-brand hover:bg-brand-hover rounded shadow transition-colors">
+        Done
       </button>
     </div>
+
   </div>
 
-  <!-- Modal Dialog (Success Submission Notification) -->
-  <div id="success-modal" class="hidden fixed inset-0 bg-ink/40 flex items-center justify-center z-50 p-4">
-    <div class="bg-white rounded-2xl max-w-sm w-full p-6 text-center space-y-4 shadow-xl border border-line animate-scale-up">
-      <div class="h-12 w-12 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center mx-auto relative pulse-ring">
-        <i data-lucide="check" class="w-6 h-6"></i>
+  <!-- Success Deployment Modal -->
+  <div id="success-modal" class="hidden fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+    <div class="bg-white rounded-xl max-w-sm w-full p-6 text-center space-y-4 shadow-2xl border border-line animate-scale-up">
+      <div class="h-10 w-10 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center mx-auto relative pulse-ring">
+        <i data-lucide="check" class="w-5 h-5"></i>
       </div>
-      <h3 class="font-extrabold text-lg tracking-tight text-ink">Workflow Activated!</h3>
+      <h3 class="font-extrabold text-base tracking-tight text-ink">Deployment Successful</h3>
       <p class="text-xs text-ink-muted leading-relaxed">
-        The warning rule workflow has been compiled and saved to the backend server. The sensor triggers are now active in the field.
+        The warning rule workflow configurations have been built and deployed live to your physical Yala IoT network.
       </p>
-      <button onclick="resetWizard()" class="w-full py-2.5 bg-brand hover:bg-brand-hover text-white text-xs font-bold rounded-lg transition-colors shadow-sm">
-        Create Another Workflow
+      <button onclick="document.getElementById('success-modal').classList.add('hidden')" class="w-full py-2 bg-brand hover:bg-brand-hover text-white text-xs font-bold rounded shadow transition-colors">
+        Done
       </button>
     </div>
   </div>
 
-  <!-- Wizard JavaScript State Handler -->
   <script>
-    // State of the rule payload to submit
-    let currentRule = {
-      name: "",
-      description: "",
-      use_case_id: "",
-      priority: 1,
-      active: true,
-      conditions: [
-        { field: "object_type", op: "eq", value: "elephant" }
-      ],
-      confirmation: null,
-      actions: {
-        on_trigger: {
-          create_incident: true,
-          incident_severity: "HIGH",
-          notify_stakeholder_ids: [],
-          message_template: "Alert [{severity}]: {object_type} detected in {zone_name} by {device_name}. Confidence: {confidence}%. Incident: {incident_id}"
-        }
-      }
-    };
-
-    // Track active completion steps
-    let stepsStatus = {
-      1: { unlocked: true, completed: false, summary: "Name, use case context, priority levels." },
-      2: { unlocked: false, completed: false, summary: "Object types, camera register filters." },
-      3: { unlocked: false, completed: false, summary: "Required event counts, verification windows." },
-      4: { unlocked: false, completed: false, summary: "SMS warning templates, warning sign registers." },
-      5: { unlocked: false, completed: false, summary: "Final review, activation in database." }
-    };
-
-    let activeDrawerStep = null;
+    // State of active visual nodes on canvas
+    let rules = [];
     let useCases = [];
     let stakeholders = [];
     let zones = [];
 
+    // Trigger Nodes list
+    let triggerNodes = [
+      { id: "in-camera", name: "Camera Trap (AI)", type: "camera" },
+      { id: "in-simulator", name: "Manual Simulator", type: "simulator" }
+    ];
+
+    // Actuator Nodes list
+    let actionNodes = [
+      { id: "act-sms", name: "SMS Notification", type: "sms" },
+      { id: "act-signs", name: "LED warning board", type: "signs" },
+      { id: "act-sirens", name: "Audible Sirens", type: "sirens" }
+    ];
+
+    let activeNodeId = null; // Currently clicked / active node on canvas
+    let coords = {};
+
     // Fetch database dependencies on load
     async function loadDependencies() {
       try {
-        const [ucRes, shRes, zoneRes] = await Promise.all([
+        const [ucRes, shRes, zoneRes, ruleRes] = await Promise.all([
           fetch('https://web-production-31cc0e.up.railway.app/api/use-cases'),
           fetch('https://web-production-31cc0e.up.railway.app/api/stakeholders'),
-          fetch('https://web-production-31cc0e.up.railway.app/api/zones')
+          fetch('https://web-production-31cc0e.up.railway.app/api/zones'),
+          fetch('https://web-production-31cc0e.up.railway.app/api/rules')
         ]);
         if (ucRes.ok) useCases = await ucRes.json();
         if (shRes.ok) stakeholders = await shRes.json();
         if (zoneRes.ok) zones = await zoneRes.json();
+        if (ruleRes.ok) rules = await ruleRes.json();
       } catch (e) {
         console.warn('API connection failed. Using fallback layout lists.');
-        useCases = [
-          { id: "UC-001", name: "Elephant Detection – Road Corridor", color: "#E60000" }
-        ];
-        zones = [
-          { id: "ZONE-B43", name: "B43 Yala Road Corridor", road: "B43" },
-          { id: "ZONE-A2",  name: "A2 Southern Highway",     road: "A2" },
-          { id: "ZONE-KTR", name: "Kataragama Road",         road: "KTR" }
-        ];
+        useCases = [{ id: "UC-001", name: "Elephant Detection – Road Corridor", color: "#E60000" }];
+        zones = [{ id: "ZONE-B43", name: "B43 Yala Road Corridor", road: "B43" }];
         stakeholders = [
+          { id: "SH-001", name: "Park Warden – Yala", channels: [{ type: "sms", address: "+94771000001" }] }
+        ];
+        rules = [
           {
-            id: "SH-001",
-            name: "Park Warden – Yala",
-            role: "Wildlife Officer",
-            channels: [{ type: "sms", address: "+94771000001" }]
-          },
-          {
-            id: "SH-002",
-            name: "Traffic Control – Southern Province",
-            role: "Traffic Controller",
-            channels: [{ type: "sms", address: "+94771000002" }]
-          },
-          {
-            id: "SH-004",
-            name: "DWC Operations Centre",
-            role: "Operations Coordinator",
-            channels: [{ type: "sms", address: "+94771000004" }]
+            id: "RULE-001",
+            name: "Single Detection – High Alert",
+            description: "Fires an immediate HIGH incident warning whenever a single sensor identifies an elephant with at least 60% confidence.",
+            active: true,
+            priority: 1,
+            use_case_id: "UC-001",
+            conditions: [{ field: "object_type", op: "eq", value: "elephant" }],
+            confirmation: null,
+            actions: {
+              on_trigger: {
+                create_incident: true,
+                incident_severity: "HIGH",
+                notify_stakeholder_ids: ["SH-001"],
+                message_template: "Alert [HIGH]: Elephant detected in {zone_name}."
+              }
+            }
           }
         ];
       }
+      renderCanvas();
     }
 
-    // Open Step configuration Drawer
-    function openStepDrawer(stepNum) {
-      if (!stepsStatus[stepNum].unlocked) return; // Ignore clicked locked nodes
+    // Render nodes palette and wires on the graph canvas
+    function renderCanvas() {
+      // 1. Render Column 1 (Triggers)
+      const colTrig = document.getElementById('col-triggers');
+      colTrig.innerHTML = '';
+      triggerNodes.forEach(t => {
+        colTrig.innerHTML += `
+          <div id="node-${t.id}" data-node-id="${t.id}" onclick="selectNode('${t.id}')"
+               class="node-transition relative bg-white border border-gray-300 rounded shadow-sm px-4 py-2 cursor-pointer hover:border-indigo-500 hover:shadow flex items-center gap-3">
+            <div class="h-6 w-6 bg-indigo-50 text-indigo-600 rounded flex items-center justify-center shrink-0">
+              <i data-lucide="${t.type === 'camera' ? 'camera' : 'play-circle'}" class="w-3.5 h-3.5"></i>
+            </div>
+            <div>
+              <h4 class="font-bold text-xs leading-none">${t.name}</h4>
+              <span class="text-[9px] text-ink-subtle uppercase font-mono tracking-wider">mqtt input</span>
+            </div>
+            <!-- Node-RED style output port circle -->
+            <div class="absolute -right-1.5 top-1/2 -mt-1 w-2 h-2 rounded-full border border-gray-400 bg-white shadow-xs"></div>
+          </div>
+        `;
+      });
+
+      // 2. Render Column 2 (Rules)
+      const colRules = document.getElementById('col-rules');
+      colRules.innerHTML = '';
+      rules.forEach(r => {
+        colRules.innerHTML += `
+          <div id="node-${r.id}" data-node-id="${r.id}" onclick="selectNode('${r.id}')"
+               class="node-transition relative bg-white border border-amber-300 rounded shadow-sm px-4 py-2.5 cursor-pointer hover:border-amber-500 hover:shadow">
+            <!-- Node-RED style input port circle -->
+            <div class="absolute -left-1.5 top-1/2 -mt-1 w-2 h-2 rounded-full border border-gray-400 bg-white shadow-xs"></div>
+            
+            <div class="flex items-start justify-between gap-1.5 mb-1">
+              <h4 class="font-extrabold text-xs text-ink leading-tight line-clamp-1">${r.name}</h4>
+              <span class="text-[8px] font-bold font-mono bg-amber-50 text-amber-700 px-1 border border-amber-100 rounded shrink-0">P${r.priority}</span>
+            </div>
+            <div class="flex items-center gap-1.5">
+              <span class="inline-block h-1 w-1 rounded-full ${r.active ? 'bg-emerald-500' : 'bg-gray-300'}"></span>
+              <span class="text-[8px] text-ink-muted uppercase font-bold tracking-wider">${r.active ? 'Active' : 'Disabled'}</span>
+            </div>
+
+            <!-- Node-RED style output port circle -->
+            <div class="absolute -right-1.5 top-1/2 -mt-1 w-2 h-2 rounded-full border border-gray-400 bg-white shadow-xs"></div>
+          </div>
+        `;
+      });
+
+      // 3. Render Column 3 (Actions)
+      const colAct = document.getElementById('col-actions');
+      colAct.innerHTML = '';
+      actionNodes.forEach(a => {
+        colAct.innerHTML += `
+          <div id="node-${a.id}" data-node-id="${a.id}" onclick="selectNode('${a.id}')"
+               class="node-transition relative bg-white border border-gray-300 rounded shadow-sm px-4 py-2 cursor-pointer hover:border-rose-500 hover:shadow flex items-center gap-3">
+            <!-- Node-RED style input port circle -->
+            <div class="absolute -left-1.5 top-1/2 -mt-1 w-2 h-2 rounded-full border border-gray-400 bg-white shadow-xs"></div>
+            
+            <div class="h-6 w-6 bg-rose-50 text-rose-600 rounded flex items-center justify-center shrink-0">
+              <i data-lucide="${a.type === 'sms' ? 'send' : a.type === 'signs' ? 'monitor' : 'volume-2'}" class="w-3.5 h-3.5"></i>
+            </div>
+            <div>
+              <h4 class="font-bold text-xs leading-none">${a.name}</h4>
+              <span class="text-[9px] text-ink-subtle uppercase font-mono tracking-wider">actuator egress</span>
+            </div>
+          </div>
+        `;
+      });
+
+      lucide.createIcons();
+      setTimeout(updateCoords, 100);
+    }
+
+    // Capture coordinate positions of anchor ports on resize/render
+    function updateCoords() {
+      const svg = document.getElementById('connections-svg');
+      const rectSvg = svg.getBoundingClientRect();
+      const newCoords = {};
+
+      document.querySelectorAll('[data-node-id]').forEach(el => {
+        const id = el.getAttribute('data-node-id');
+        const rect = el.getBoundingClientRect();
+        newCoords[id] = {
+          left: {
+            x: rect.left - rectSvg.left,
+            y: rect.top - rectSvg.top + rect.height / 2
+          },
+          right: {
+            x: rect.right - rectSvg.left,
+            y: rect.top - rectSvg.top + rect.height / 2
+          }
+        };
+      });
+      coords = newCoords;
+      drawWires();
+    }
+
+    // Build cubic bezier curve formula for cables
+    function drawCurve(fromPt, toPt) {
+      if (!fromPt || !toPt) return '';
+      const dx = Math.abs(toPt.x - fromPt.x) * 0.45;
+      return `M ${fromPt.x} ${fromPt.y} C ${fromPt.x + dx} ${fromPt.y}, ${toPt.x - dx} ${toPt.y}, ${toPt.x} ${toPt.y}`;
+    }
+
+    // Draw wiring diagrams between active ports
+    function drawWires() {
+      const svg = document.getElementById('connections-svg');
+      const oldPaths = svg.querySelectorAll('path');
+      oldPaths.forEach(p => p.remove());
+
+      // 1. Draw Ingress to rules
+      triggerNodes.forEach(t => {
+        rules.forEach(r => {
+          if (!r.active) return;
+          const state = getWireState(t.id, r.id);
+          createPath(t.id, r.id, state);
+        });
+      });
+
+      // 2. Draw Rules to Egress actuators
+      rules.forEach(r => {
+        if (!r.active) return;
+        
+        actionNodes.forEach(a => {
+          let matches = false;
+          if (a.type === 'sms' && (r.actions?.on_trigger?.notify_stakeholder_ids?.length > 0)) matches = true;
+          if (a.type === 'signs' && r.actions?.on_trigger?.create_incident) matches = true;
+          if (a.type === 'sirens' && r.actions?.on_trigger?.create_incident) matches = true;
+
+          if (matches) {
+            const state = getWireState(r.id, a.id);
+            createPath(r.id, a.id, state);
+          }
+        });
+      });
+
+      updateNodeHighlightStyles();
+    }
+
+    // Helper to create and append SVG path elements
+    function createPath(fromId, toId, state) {
+      const svg = document.getElementById('connections-svg');
+      const fromPt = coords[fromId]?.right;
+      const toPt = coords[toId]?.left;
+      if (!fromPt || !toPt) return;
+
+      const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      path.setAttribute('d', drawCurve(fromPt, toPt));
+      path.setAttribute('fill', 'none');
+      path.style.transition = 'all 0.3s ease';
+
+      if (state === 'highlight') {
+        path.setAttribute('stroke', '#E60000');
+        path.setAttribute('stroke-width', '3.5');
+        path.style.opacity = '1';
+        path.setAttribute('filter', 'url(#glow)');
+        path.setAttribute('class', 'glow-wire');
+      } else if (state === 'dim') {
+        path.setAttribute('stroke', '#D1D5DB');
+        path.setAttribute('stroke-width', '1.5');
+        path.style.opacity = '0.15';
+      } else {
+        path.setAttribute('stroke', '#9CA3AF');
+        path.setAttribute('stroke-width', '2');
+        path.style.opacity = '0.6';
+      }
+
+      svg.appendChild(path);
+    }
+
+    // Calculate highlighted wires based on selected node selection
+    function getWireState(fromId, toId) {
+      if (!activeNodeId) return 'normal';
       
-      activeDrawerStep = stepNum;
-      const drawer = document.getElementById('drawer');
+      const isRuleFrom = rules.some(r => r.id === activeNodeId);
+      
+      if (isRuleFrom) {
+        if (fromId === activeNodeId || toId === activeNodeId) return 'highlight';
+        return 'dim';
+      } else {
+        // Trigger or Action selected
+        if (fromId === activeNodeId || toId === activeNodeId) return 'highlight';
+        return 'dim';
+      }
+    }
+
+    // Adjust visual states of the nodes dynamically on selection
+    function updateNodeHighlightStyles() {
+      document.querySelectorAll('[data-node-id]').forEach(el => {
+        const id = el.getAttribute('data-node-id');
+        
+        el.className = el.className
+          .replace(/border-brand|ring-2|ring-brand\/10|scale-\[1\.01\]|shadow-md|border-brand\/40|opacity-40|grayscale-\[20%\]/g, '')
+          .trim();
+
+        if (activeNodeId) {
+          if (activeNodeId === id) {
+            el.classList.add('border-brand', 'ring-2', 'ring-brand/10', 'scale-[1.01]', 'shadow-md');
+          } else {
+            // Check connected paths
+            let isConnected = false;
+            if (rules.some(r => r.id === activeNodeId)) {
+              // Rule active
+              const activeRule = rules.find(r => r.id === activeNodeId);
+              if (triggerNodes.some(t => t.id === id)) isConnected = true; // all inputs feed into evaluated rules
+              if (id === 'act-sms' && (activeRule.actions?.on_trigger?.notify_stakeholder_ids?.length > 0)) isConnected = true;
+              if (id === 'act-signs' && activeRule.actions?.on_trigger?.create_incident) isConnected = true;
+              if (id === 'act-sirens' && activeRule.actions?.on_trigger?.create_incident) isConnected = true;
+            } else {
+              // Trigger or Action active
+              if (rules.some(r => r.id === id && r.active)) {
+                const ruleObj = rules.find(r => r.id === id);
+                if (activeNodeId === 'in-camera' || activeNodeId === 'in-simulator') isConnected = true;
+                if (activeNodeId === 'act-sms' && (ruleObj.actions?.on_trigger?.notify_stakeholder_ids?.length > 0)) isConnected = true;
+                if (activeNodeId === 'act-signs' && ruleObj.actions?.on_trigger?.create_incident) isConnected = true;
+                if (activeNodeId === 'act-sirens' && ruleObj.actions?.on_trigger?.create_incident) isConnected = true;
+              }
+            }
+
+            if (!isConnected) {
+              el.classList.add('opacity-40', 'grayscale-[20%]');
+            }
+          }
+        }
+      });
+    }
+
+    // Node click handler
+    function selectNode(nodeId) {
+      activeNodeId = nodeId;
+      drawWires();
+
+      // Open drawer config for that node
+      const rule = rules.find(r => r.id === nodeId);
+      if (rule) {
+        openRuleDrawer(rule);
+      } else {
+        openDebugDrawer(nodeId);
+      }
+    }
+
+    // Open properties edit panel for rules (Step config layout)
+    function openRuleDrawer(rule) {
       const title = document.getElementById('drawer-title');
-      const subtitle = document.getElementById('drawer-subtitle');
       const icon = document.getElementById('drawer-icon');
       const content = document.getElementById('drawer-content');
       const saveBtn = document.getElementById('drawer-save-btn');
 
-      saveBtn.innerText = stepNum === 5 ? "Submit & Activate" : "Save Step";
-      
-      if (stepNum === 1) {
-        title.innerText = "Step 1: Rule Details";
-        subtitle.innerText = "Basic Rule configurations";
-        icon.setAttribute('data-lucide', 'info');
-        
-        let ucOptions = useCases.map(uc => `<option value="${uc.id}" ${currentRule.use_case_id === uc.id ? 'selected' : ''}>${uc.name}</option>`).join('');
-        content.innerHTML = `
-          <div class="space-y-4">
-            <div>
-              <label class="block text-xs font-semibold text-ink mb-1.5">Rule Name <span class="text-brand">*</span></label>
-              <input type="text" id="form-name" value="${currentRule.name}" class="w-full border border-line-strong rounded-lg p-2.5 text-xs text-ink focus:outline-none focus:ring-1 focus:ring-brand" placeholder="e.g. Dual Confirmation - Critical Alert">
-            </div>
-            <div>
-              <label class="block text-xs font-semibold text-ink mb-1.5">Description</label>
-              <textarea id="form-desc" class="w-full border border-line-strong rounded-lg p-2.5 text-xs text-ink resize-none focus:outline-none focus:ring-1 focus:ring-brand" rows="3" placeholder="What does this rule detect?">${currentRule.description}</textarea>
-            </div>
-            <div class="grid grid-cols-2 gap-4">
-              <div>
-                <label class="block text-xs font-semibold text-ink mb-1.5">Use Case <span class="text-brand">*</span></label>
-                <select id="form-uc" class="w-full border border-line-strong bg-white rounded-lg p-2.5 text-xs text-ink focus:outline-none focus:ring-1 focus:ring-brand">
-                  <option value="">Select...</option>
-                  ${ucOptions}
-                </select>
-              </div>
-              <div>
-                <label class="block text-xs font-semibold text-ink mb-1.5">Priority <span class="text-ink-subtle">(Higher checked first)</span></label>
-                <input type="number" id="form-priority" min="1" value="${currentRule.priority}" class="w-full border border-line-strong rounded-lg p-2.5 text-xs text-ink focus:outline-none focus:ring-1 focus:ring-brand">
-              </div>
-            </div>
-          </div>
-        `;
-      } 
-      else if (stepNum === 2) {
-        title.innerText = "Step 2: Trigger Conditions";
-        subtitle.innerText = "Rule Evaluation Parameters";
-        icon.setAttribute('data-lucide', 'git-fork');
+      title.innerText = `Edit: ${rule.name}`;
+      icon.setAttribute('data-lucide', 'git-fork');
+      saveBtn.style.display = 'block';
 
-        renderStep2Conditions();
-      } 
-      else if (stepNum === 3) {
-        title.innerText = "Step 3: Confirmation Settings";
-        subtitle.innerText = "Verification & Duplication Guards";
-        icon.setAttribute('data-lucide', 'check-square');
-
-        const conf = currentRule.confirmation;
-        content.innerHTML = `
-          <div class="space-y-4">
-            <p class="text-[11px] text-ink-muted leading-relaxed">
-              Require multiple events from the same zone within a time window before escalating — prevents false alarms.
-            </p>
-            <label class="flex items-start gap-2.5 cursor-pointer">
-              <input type="checkbox" id="form-conf-enabled" ${conf ? 'checked' : ''} onchange="toggleConfBlock(this.checked)" class="mt-0.5 rounded border-line-strong accent-brand w-4 h-4 shrink-0">
-              <span class="text-xs text-ink leading-tight">Require confirmation from multiple events</span>
-            </label>
-            
-            <div id="conf-inputs-container" class="${conf ? 'block' : 'hidden'} p-4 rounded-xl border border-line-strong bg-gray-50/50 space-y-3">
-              <div class="grid grid-cols-2 gap-3">
-                <div>
-                  <label class="block text-[11px] font-semibold text-ink mb-1">Detections Required</label>
-                  <input type="number" id="form-conf-count" min="2" value="${conf ? conf.required_count : 2}" class="w-full border border-line-strong bg-white rounded-lg p-2 text-xs text-ink">
-                </div>
-                <div>
-                  <label class="block text-[11px] font-semibold text-ink mb-1">Sliding Window (s)</label>
-                  <input type="number" id="form-conf-window" min="60" value="${conf ? conf.window_seconds : 900}" class="w-full border border-line-strong bg-white rounded-lg p-2 text-xs text-ink">
-                </div>
-              </div>
-              <label class="flex items-center gap-2 cursor-pointer mt-1">
-                <input type="checkbox" id="form-conf-zone" ${!conf || conf.same_zone ? 'checked' : ''} class="rounded border-line-strong accent-brand">
-                <span class="text-xs text-ink">Must belong to the same zone</span>
-              </label>
-            </div>
-          </div>
-        `;
-      } 
-      else if (stepNum === 4) {
-        title.innerText = "Step 4: Output Alert Actions";
-        subtitle.innerText = "Warning Egress Destinations";
-        icon.setAttribute('data-lucide', 'send');
-
-        renderStep4Actions();
-      } 
-      else if (stepNum === 5) {
-        title.innerText = "Step 5: Review & Save";
-        subtitle.innerText = "Final Workflow Summary";
-        icon.setAttribute('data-lucide', 'shield-alert');
-
-        let conditionsText = currentRule.conditions.map(c => `<code>${c.field} ${c.op === 'eq' ? '=' : c.op === 'neq' ? '≠' : c.op === 'gte' ? '≥' : c.op === 'lte' ? '≤' : c.op} "${c.value}"</code>`).join(' AND ');
-        let confirmText = currentRule.confirmation 
-          ? `Requires <strong>${currentRule.confirmation.required_count} detections</strong> within <strong>${currentRule.confirmation.window_seconds}s</strong> (same zone).`
-          : "Immediate activation.";
-
-        let actIds = currentRule.actions.on_trigger.notify_stakeholder_ids || [];
-        let recipientNames = stakeholders
-          .filter(sh => actIds.includes(sh.id))
-          .map(sh => sh.name)
-          .join(', ') || 'None selected';
-
-        content.innerHTML = `
-          <div class="space-y-4">
-            <p class="text-[11px] text-ink-muted leading-relaxed">
-              Verify your workflow details. Clicking activate registers the warning rule logic in the database.
-            </p>
-            <div class="p-4 rounded-xl border border-line bg-gray-50/50 space-y-3.5 text-xs">
-              <div>
-                <span class="text-[10px] font-bold text-ink-subtle uppercase tracking-wider block mb-1">Basics</span>
-                <strong>Name:</strong> ${currentRule.name}<br>
-                <strong>Priority:</strong> ${currentRule.priority} · <strong>Status:</strong> ${currentRule.active ? 'Active' : 'Disabled'}
-              </div>
-              <div class="border-t border-line-strong pt-2">
-                <span class="text-[10px] font-bold text-ink-subtle uppercase tracking-wider block mb-1">Trigger Conditions</span>
-                ${conditionsText}
-              </div>
-              <div class="border-t border-line-strong pt-2">
-                <span class="text-[10px] font-bold text-ink-subtle uppercase tracking-wider block mb-1">Confirmation Details</span>
-                ${confirmText}
-              </div>
-              <div class="border-t border-line-strong pt-2">
-                <span class="text-[10px] font-bold text-ink-subtle uppercase tracking-wider block mb-1">Outgoing Actions</span>
-                <strong>Create Incident:</strong> ${currentRule.actions.on_trigger.create_incident ? 'Yes (flashes road signs RED & sounds sirens)' : 'No'}<br>
-                <strong>Alert Severity:</strong> ${currentRule.actions.on_trigger.incident_severity}<br>
-                <strong>Recipients:</strong> ${recipientNames}
-              </div>
-            </div>
-          </div>
-        `;
-      }
-
-      lucide.createIcons();
-      drawer.classList.remove('translate-x-full');
-    }
-
-    // Render Step 2 Conditions list & Camera Registry Button
-    function renderStep2Conditions() {
-      const content = document.getElementById('drawer-content');
-      
-      let rowsHtml = currentRule.conditions.map((c, i) => `
-        <div class="flex items-center gap-2 w-full condition-row mb-2" data-index="${i}">
-          <div class="flex-1 min-w-0">
-            <select class="w-full border border-line-strong bg-white rounded-lg p-2 text-xs text-ink cond-field" onchange="onFieldChange(${i}, this)">
-              <option value="object_type" ${c.field === 'object_type' ? 'selected' : ''}>Object Type</option>
-              <option value="confidence" ${c.field === 'confidence' ? 'selected' : ''}>Confidence %</option>
-            </select>
-          </div>
-          <div class="w-24 shrink-0">
-            <select class="w-full border border-line-strong bg-white rounded-lg p-2 text-xs text-ink cond-op">
-              ${c.field === 'confidence' ? `
-                <option value="gte" ${c.op === 'gte' ? 'selected' : ''}>&ge;</option>
-                <option value="lte" ${c.op === 'lte' ? 'selected' : ''}>&le;</option>
-              ` : `
-                <option value="eq" ${c.op === 'eq' ? 'selected' : ''}>=</option>
-                <option value="neq" ${c.op === 'neq' ? 'selected' : ''}>&ne;</option>
-              `}
-            </select>
-          </div>
-          <div class="flex-1 min-w-0">
-            <input type="text" value="${c.value}" class="w-full border border-line-strong rounded-lg p-2 text-xs text-ink cond-val" placeholder="${c.field === 'confidence' ? '70' : 'elephant'}">
-          </div>
-          ${currentRule.conditions.length > 1 ? `
-            <button onclick="removeConditionRow(${i})" class="text-ink-subtle hover:text-brand shrink-0 p-1">
-              <i data-lucide="trash-2" class="w-4 h-4"></i>
-            </button>
-          ` : ''}
-        </div>
-      `).join('');
-
+      let ucOptions = useCases.map(uc => `<option value="${uc.id}" ${rule.use_case_id === uc.id ? 'selected' : ''}>${uc.name}</option>`).join('');
       let zoneOptions = zones.map(z => `<option value="${z.id}">${z.name}</option>`).join('');
-
-      content.innerHTML = `
-        <div class="space-y-4">
-          <p class="text-[11px] text-ink-muted leading-relaxed">
-            All conditions must match (AND logic). The workflow triggers when an incoming telemetry event satisfies every row.
-          </p>
-          
-          <div id="conditions-list-container">
-            ${rowsHtml}
-          </div>
-
-          <div class="flex items-center justify-between pt-1">
-            <button onclick="addConditionRow()" class="flex items-center gap-1 px-2.5 py-1.5 text-xs font-semibold border border-line bg-white hover:bg-line/40 rounded-lg transition-colors text-ink">
-              <i data-lucide="plus" class="w-3.5 h-3.5"></i> Add Condition
-            </button>
-            <button onclick="toggleNewDeviceForm()" class="text-[10px] text-brand hover:text-brand-hover font-bold flex items-center gap-0.5">
-              <i data-lucide="camera" class="w-3 h-3"></i> + Register Camera Device
-            </button>
-          </div>
-
-          <!-- Inline Register Camera / Sensor Form -->
-          <div id="new-dev-form" class="hidden p-3 border border-dashed border-line-strong bg-gray-50/50 rounded-xl space-y-2.5">
-            <h5 class="text-[11px] font-bold text-ink uppercase tracking-wider">Register New Camera Sensor</h5>
-            <div class="grid grid-cols-2 gap-2">
-              <input type="text" id="dev-id" placeholder="Device ID (e.g. DEV-006)" class="w-full border border-line-strong bg-white rounded p-1.5 text-xs text-ink">
-              <input type="text" id="dev-name" placeholder="Name (e.g. Camera Trap B43)" class="w-full border border-line-strong bg-white rounded p-1.5 text-xs text-ink">
-            </div>
-            <div class="grid grid-cols-2 gap-2">
-              <select id="dev-type" class="w-full border border-line-strong bg-white rounded p-1.5 text-xs text-ink">
-                <option value="camera">Camera Trap</option>
-                <option value="thermal">Thermal Sensor</option>
-              </select>
-              <select id="dev-zone" class="w-full border border-line-strong bg-white rounded p-1.5 text-xs text-ink">
-                <option value="">Select Zone...</option>
-                ${zoneOptions}
-              </select>
-            </div>
-            <div class="flex gap-2">
-              <input type="text" id="dev-key" placeholder="API Authentication Key" class="flex-1 border border-line-strong bg-white rounded p-1.5 text-xs text-ink">
-              <button onclick="submitNewDevice()" class="px-3 py-1.5 bg-brand hover:bg-brand-hover text-white text-xs font-bold rounded-lg transition-colors">
-                Register
-              </button>
-            </div>
-          </div>
-        </div>
-      `;
-      lucide.createIcons();
-    }
-
-    // Toggle Camera Device inline form
-    function toggleNewDeviceForm() {
-      const form = document.getElementById('new-dev-form');
-      form.classList.toggle('hidden');
-    }
-
-    // Submit new camera device to database API
-    async function submitNewDevice() {
-      const id = document.getElementById('dev-id').value.trim();
-      const name = document.getElementById('dev-name').value.trim();
-      const type = document.getElementById('dev-type').value;
-      const zoneId = document.getElementById('dev-zone').value;
-      const key = document.getElementById('dev-key').value.trim() || 'default-key';
-
-      if (!id) { alert('Device ID is required.'); return; }
-      if (!name) { alert('Device name is required.'); return; }
-      if (!zoneId) { alert('Zone location is required.'); return; }
-
-      const newDevice = {
-        id: id,
-        name: name,
-        type: type,
-        zone_id: zoneId,
-        use_case_id: currentRule.use_case_id || "UC-001",
-        lat: 6.3800,
-        lng: 81.4000,
-        api_key: key,
-        online: true
-      };
-
-      try {
-        const response = await fetch('https://web-production-31cc0e.up.railway.app/api/devices', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(newDevice)
-        });
-        if (response.ok) {
-          alert(`Success: Camera ${id} registered in database!`);
-          document.getElementById('new-dev-form').classList.add('hidden');
-        } else {
-          alert('Failed to register device. Verify unique Device ID.');
-        }
-      } catch (e) {
-        alert('Network connection error. Unable to register device.');
-      }
-    }
-
-    // Render Step 4 Actions & Sign Board Registry
-    function renderStep4Actions() {
-      const content = document.getElementById('drawer-content');
-      const act = currentRule.actions.on_trigger;
       
+      const act = rule.actions?.on_trigger || {};
       let shCheckboxes = stakeholders.map(sh => {
         let smsNum = (sh.channels || []).find(c => c.type === 'sms')?.address || 'No number';
         return `
           <label class="flex items-center gap-2 cursor-pointer py-0.5">
             <input type="checkbox" name="sh-checkboxes" value="${sh.id}" 
                    ${(act.notify_stakeholder_ids || []).includes(sh.id) ? 'checked' : ''}
-                   class="rounded border-line-strong accent-brand w-4.5 h-4.5">
+                   class="rounded border-line-strong accent-brand w-4 h-4">
             <span class="text-xs text-ink">${sh.name}</span>
             <span class="text-[10px] text-ink-muted">(${smsNum})</span>
           </label>
         `;
       }).join('');
 
-      let zoneOptions = zones.map(z => `<option value="${z.id}">${z.name}</option>`).join('');
+      let condRows = (rule.conditions || []).map((c, i) => `
+        <div class="flex items-center gap-2 w-full condition-row mb-2" data-index="${i}">
+          <select class="w-1/3 border border-line bg-white rounded p-1 text-xs text-ink cond-field" onchange="onFieldChange(${i}, this)">
+            <option value="object_type" ${c.field === 'object_type' ? 'selected' : ''}>Object Type</option>
+            <option value="confidence" ${c.field === 'confidence' ? 'selected' : ''}>Confidence %</option>
+          </select>
+          <select class="w-20 border border-line bg-white rounded p-1 text-xs text-ink cond-op">
+            ${c.field === 'confidence' ? `
+              <option value="gte" ${c.op === 'gte' ? 'selected' : ''}>&ge;</option>
+              <option value="lte" ${c.op === 'lte' ? 'selected' : ''}>&le;</option>
+            ` : `
+              <option value="eq" ${c.op === 'eq' ? 'selected' : ''}>=</option>
+              <option value="neq" ${c.op === 'neq' ? 'selected' : ''}>&ne;</option>
+            `}
+          </select>
+          <input type="text" value="${c.value}" class="flex-1 border border-line rounded p-1 text-xs text-ink cond-val">
+        </div>
+      `).join('');
 
       content.innerHTML = `
         <div class="space-y-4">
-          <label class="flex items-start gap-2.5 cursor-pointer">
-            <input type="checkbox" id="form-act-inc" ${act.create_incident ? 'checked' : ''} class="mt-0.5 rounded border-line-strong accent-brand w-4 h-4 shrink-0">
-            <span class="text-xs text-ink leading-tight">Create Live Incident (Turns signs RED, sounds sirens)</span>
-          </label>
-          
-          <div>
-            <label class="block text-xs font-semibold text-ink mb-1.5 font-bold">Alert Severity</label>
-            <select id="form-act-sev" onchange="onSeverityChange(this.value)" class="w-full border border-line-strong bg-white rounded-lg p-2.5 text-xs text-ink focus:outline-none focus:ring-1 focus:ring-brand">
-              <option value="LOW" ${act.incident_severity === 'LOW' ? 'selected' : ''}>LOW</option>
-              <option value="MEDIUM" ${act.incident_severity === 'MEDIUM' ? 'selected' : ''}>MEDIUM</option>
-              <option value="HIGH" ${act.incident_severity === 'HIGH' ? 'selected' : ''}>HIGH</option>
-              <option value="CRITICAL" ${act.incident_severity === 'CRITICAL' ? 'selected' : ''}>CRITICAL</option>
+          <!-- 1. Basics -->
+          <div class="space-y-2.5">
+            <h4 class="text-[10px] font-bold text-ink uppercase tracking-wider">1. Rule Basics</h4>
+            <div class="grid grid-cols-2 gap-2">
+              <input type="text" id="edit-name" value="${rule.name}" placeholder="Rule Name" class="w-full border border-line rounded p-2 text-xs text-ink">
+              <input type="number" id="edit-priority" min="1" value="${rule.priority}" placeholder="Priority" class="w-full border border-line rounded p-2 text-xs text-ink">
+            </div>
+            <select id="edit-uc" class="w-full border border-line bg-white rounded p-2 text-xs text-ink">
+              ${ucOptions}
             </select>
           </div>
 
-          <div class="border-t border-line pt-2">
-            <div class="flex items-center justify-between mb-1.5">
-              <label class="block text-xs font-bold text-ink">
-                Who receives the SMS warning for <span id="sev-label" class="text-brand font-extrabold">${act.incident_severity}</span> alerts?
-              </label>
-              <button onclick="toggleNewStakeholderForm()" class="text-[10px] text-brand hover:text-brand-hover font-bold flex items-center gap-0.5">
-                <i data-lucide="plus" class="w-3 h-3"></i> Add Recipient
-              </button>
+          <!-- 2. Conditions & Device Register -->
+          <div class="space-y-2 border-t border-line pt-3">
+            <div class="flex items-center justify-between">
+              <h4 class="text-[10px] font-bold text-ink uppercase tracking-wider">2. Trigger Conditions</h4>
+              <button onclick="toggleNewDeviceForm()" class="text-[9px] text-brand hover:underline font-bold">+ Register Camera</button>
             </div>
             
-            <!-- Inline Register Stakeholder Form -->
-            <div id="new-sh-form" class="hidden p-3 mb-3 border border-dashed border-line-strong bg-gray-50/50 rounded-xl space-y-2.5">
-              <h5 class="text-[11px] font-bold text-ink uppercase tracking-wider">Register New Recipient</h5>
+            <!-- Camera Inline Form -->
+            <div id="new-dev-form" class="hidden p-3 border border-dashed border-line rounded bg-gray-50/50 space-y-2">
               <div class="grid grid-cols-2 gap-2">
-                <input type="text" id="sh-name" placeholder="Name (e.g. Ranger B)" class="w-full border border-line-strong bg-white rounded p-1.5 text-xs text-ink">
-                <input type="text" id="sh-role" placeholder="Role (e.g. Ranger B)" class="w-full border border-line-strong bg-white rounded p-1.5 text-xs text-ink">
-              </div>
-              <div class="flex gap-2">
-                <input type="text" id="sh-phone" placeholder="Phone Number (e.g. +94740525967)" class="flex-1 border border-line-strong bg-white rounded p-1.5 text-xs text-ink">
-                <button onclick="submitNewStakeholder()" class="px-3 py-1.5 bg-brand hover:bg-brand-hover text-white text-xs font-bold rounded-lg transition-colors">
-                  Create
-                </button>
-              </div>
-            </div>
-
-            <div class="space-y-1.5 max-h-40 overflow-y-auto border border-line-strong rounded-lg p-3 bg-gray-50/50">
-              ${shCheckboxes}
-            </div>
-          </div>
-
-          <!-- Actuators (Warning signs registration) -->
-          <div class="border-t border-line pt-2">
-            <div class="flex items-center justify-between mb-1">
-              <span class="text-xs font-bold text-ink">Local Warning Signs & Sirens</span>
-              <button onclick="toggleNewSignForm()" class="text-[10px] text-brand hover:text-brand-hover font-bold flex items-center gap-0.5">
-                <i data-lucide="monitor" class="w-3 h-3"></i> + Register Sign Board
-              </button>
-            </div>
-
-            <!-- Inline Register Sign Board Form -->
-            <div id="new-sign-form" class="hidden p-3 border border-dashed border-line-strong bg-gray-50/50 rounded-xl space-y-2.5">
-              <h5 class="text-[11px] font-bold text-ink uppercase tracking-wider">Register New LED Warning Board</h5>
-              <div class="grid grid-cols-2 gap-2">
-                <input type="text" id="sign-id" placeholder="Sign ID (e.g. RS-012)" class="w-full border border-line-strong bg-white rounded p-1.5 text-xs text-ink">
-                <input type="text" id="sign-name" placeholder="Name (e.g. B43 Board 9)" class="w-full border border-line-strong bg-white rounded p-1.5 text-xs text-ink">
+                <input type="text" id="dev-id" placeholder="Device ID (DEV-006)" class="w-full border border-line bg-white rounded p-1 text-xs">
+                <input type="text" id="dev-name" placeholder="Name" class="w-full border border-line bg-white rounded p-1 text-xs">
               </div>
               <div class="grid grid-cols-2 gap-2">
-                <input type="text" id="sign-road" placeholder="Road (e.g. B43 Yala Road)" class="w-full border border-line-strong bg-white rounded p-1.5 text-xs text-ink">
-                <select id="sign-zone" class="w-full border border-line-strong bg-white rounded p-1.5 text-xs text-ink">
-                  <option value="">Select Zone...</option>
+                <select id="dev-type" class="w-full border border-line bg-white rounded p-1 text-xs">
+                  <option value="camera">Camera Trap</option>
+                  <option value="thermal">Thermal Sensor</option>
+                </select>
+                <select id="dev-zone" class="w-full border border-line bg-white rounded p-1 text-xs">
                   ${zoneOptions}
                 </select>
               </div>
-              <div class="flex gap-2">
-                <input type="number" id="sign-km" placeholder="KM Marker (e.g. 1.8)" step="0.1" class="flex-1 border border-line-strong bg-white rounded p-1.5 text-xs text-ink">
-                <button onclick="submitNewSign()" class="px-3 py-1.5 bg-brand hover:bg-brand-hover text-white text-xs font-bold rounded-lg transition-colors font-semibold">
-                  Register
-                </button>
-              </div>
+              <button onclick="submitNewDevice()" class="w-full py-1 bg-brand text-white text-[11px] font-bold rounded">Register Device</button>
             </div>
-            
-            <p class="text-[10px] text-ink-muted leading-relaxed">
-              LED boards and zone sirens are automatically triggered by proximity radius modes in the spatial server. Newly registered signs will flash RED automatically when incidents open in their assigned zones.
-            </p>
+
+            <div id="edit-conditions-container">${condRows}</div>
           </div>
 
-          <div>
-            <label class="block text-xs font-semibold text-ink mb-1.5 font-bold">SMS Message Template</label>
-            <textarea id="form-act-template" class="w-full border border-line-strong rounded-lg p-2.5 text-xs text-ink resize-none focus:outline-none focus:ring-1 focus:ring-brand font-mono" rows="3">${act.message_template}</textarea>
+          <!-- 3. Output Alerts & Recipient Register -->
+          <div class="space-y-3 border-t border-line pt-3">
+            <div class="flex items-center justify-between">
+              <h4 class="text-[10px] font-bold text-ink uppercase tracking-wider">3. Action Handlers</h4>
+              <button onclick="toggleNewStakeholderForm()" class="text-[9px] text-brand hover:underline font-bold">+ Add Recipient</button>
+            </div>
+
+            <!-- Stakeholder Inline Form -->
+            <div id="new-sh-form" class="hidden p-3 border border-dashed border-line rounded bg-gray-50/50 space-y-2">
+              <div class="grid grid-cols-2 gap-2">
+                <input type="text" id="sh-name" placeholder="Name (Ranger)" class="w-full border border-line bg-white rounded p-1 text-xs">
+                <input type="text" id="sh-role" placeholder="Role (Field)" class="w-full border border-line bg-white rounded p-1 text-xs">
+              </div>
+              <div class="flex gap-2">
+                <input type="text" id="sh-phone" placeholder="Phone (+94...)" class="flex-1 border border-line bg-white rounded p-1 text-xs">
+                <button onclick="submitNewStakeholder()" class="px-2 py-1 bg-brand text-white text-[11px] font-bold rounded">Save</button>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-2">
+              <label class="flex items-center gap-1.5 text-xs text-ink py-1">
+                <input type="checkbox" id="edit-act-inc" ${act.create_incident ? 'checked' : ''} class="rounded accent-brand">
+                Incident Active
+              </label>
+              <select id="edit-act-sev" class="border border-line bg-white rounded p-1 text-xs">
+                <option value="LOW" ${act.incident_severity === 'LOW' ? 'selected' : ''}>LOW</option>
+                <option value="MEDIUM" ${act.incident_severity === 'MEDIUM' ? 'selected' : ''}>MEDIUM</option>
+                <option value="HIGH" ${act.incident_severity === 'HIGH' ? 'selected' : ''}>HIGH</option>
+                <option value="CRITICAL" ${act.incident_severity === 'CRITICAL' ? 'selected' : ''}>CRITICAL</option>
+              </select>
+            </div>
+
+            <div class="space-y-1.5 max-h-36 overflow-y-auto border border-line rounded p-2 bg-gray-50/50">
+              ${shCheckboxes}
+            </div>
+
+            <!-- Register Sign Actuator Form -->
+            <div class="border-t border-line pt-2">
+              <div class="flex items-center justify-between">
+                <span class="text-[10px] font-bold text-ink uppercase tracking-wider">Warning Signboards</span>
+                <button onclick="toggleNewSignForm()" class="text-[9px] text-brand hover:underline font-bold">+ Register Sign</button>
+              </div>
+              <div id="new-sign-form" class="hidden p-3 mt-1.5 border border-dashed border-line rounded bg-gray-50/50 space-y-2">
+                <div class="grid grid-cols-2 gap-2">
+                  <input type="text" id="sign-id" placeholder="Sign ID (RS-012)" class="w-full border border-line bg-white rounded p-1 text-xs">
+                  <input type="text" id="sign-name" placeholder="Name" class="w-full border border-line bg-white rounded p-1 text-xs">
+                </div>
+                <div class="grid grid-cols-2 gap-2">
+                  <input type="text" id="sign-road" placeholder="Road" class="w-full border border-line bg-white rounded p-1 text-xs">
+                  <select id="sign-zone" class="w-full border border-line bg-white rounded p-1 text-xs">
+                    ${zoneOptions}
+                  </select>
+                </div>
+                <button onclick="submitNewSign()" class="w-full py-1 bg-brand text-white text-[11px] font-bold rounded">Register Board</button>
+              </div>
+            </div>
+
+            <div>
+              <label class="block text-[10px] font-bold text-ink uppercase tracking-wider mb-1.5">SMS Notification template</label>
+              <textarea id="edit-act-template" rows="2" class="w-full border border-line rounded p-2 text-xs font-mono text-ink resize-none focus:ring-1 focus:ring-brand focus:outline-none">${act.message_template}</textarea>
+            </div>
           </div>
         </div>
       `;
+
       lucide.createIcons();
+      document.getElementById('drawer').classList.remove('translate-x-full');
     }
 
-    // Toggle Sign Board inline form
+    // Toggle Camera Device inline form
+    function toggleNewDeviceForm() {
+      document.getElementById('new-dev-form').classList.toggle('hidden');
+    }
+
+    // Submit camera device via API
+    async function submitNewDevice() {
+      const id = document.getElementById('dev-id').value.trim();
+      const name = document.getElementById('dev-name').value.trim();
+      const type = document.getElementById('dev-type').value;
+      const zoneId = document.getElementById('dev-zone').value;
+
+      if (!id || !name || !zoneId) { alert('All fields are required.'); return; }
+
+      const newDevice = {
+        id: id,
+        name: name,
+        type: type,
+        zone_id: zoneId,
+        use_case_id: "UC-001",
+        lat: 6.3800,
+        lng: 81.4000,
+        api_key: "default-api-key",
+        online: true
+      };
+
+      try {
+        const res = await fetch('https://web-production-31cc0e.up.railway.app/api/devices', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(newDevice)
+        });
+        if (res.ok) {
+          alert(`Registered Camera Trap: ${id}`);
+          document.getElementById('new-dev-form').classList.add('hidden');
+        } else {
+          alert('Failed to register device. Verify unique Device ID.');
+        }
+      } catch (e) {
+        alert('Network connection error.');
+      }
+    }
+
+    // Toggle stakeholder inline form
+    function toggleNewStakeholderForm() {
+      document.getElementById('new-sh-form').classList.toggle('hidden');
+    }
+
+    // Submit new stakeholder via API
+    async function submitNewStakeholder() {
+      const name = document.getElementById('sh-name').value.trim();
+      const role = document.getElementById('sh-role').value.trim();
+      const phone = document.getElementById('sh-phone').value.trim();
+
+      if (!name || !phone) { alert('Name and Phone are required.'); return; }
+
+      const newSh = {
+        name: name,
+        role: role || "Field Ranger",
+        org: "Department of Wildlife Conservation",
+        use_case_ids: ["UC-001"],
+        channels: [{ type: "sms", address: phone, language: "en" }],
+        on_call: true
+      };
+
+      try {
+        const res = await fetch('https://web-production-31cc0e.up.railway.app/api/stakeholders', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(newSh)
+        });
+        if (res.ok) {
+          const created = await res.json();
+          stakeholders.push(created);
+          // Auto checkbox check
+          const rule = rules.find(r => r.id === activeNodeId);
+          if (rule) {
+            rule.actions.on_trigger.notify_stakeholder_ids.push(created.id);
+            openRuleDrawer(rule);
+          }
+        }
+      } catch (e) {
+        alert('Network connection error.');
+      }
+    }
+
+    // Toggle warning sign form
     function toggleNewSignForm() {
-      const form = document.getElementById('new-sign-form');
-      form.classList.toggle('hidden');
+      document.getElementById('new-sign-form').classList.toggle('hidden');
     }
 
-    // Submit new sign board to database API
+    // Submit new warning sign via API
     async function submitNewSign() {
       const id = document.getElementById('sign-id').value.trim();
       const name = document.getElementById('sign-name').value.trim();
       const road = document.getElementById('sign-road').value.trim();
       const zoneId = document.getElementById('sign-zone').value;
-      const km = parseFloat(document.getElementById('sign-km').value) || 1.0;
 
-      if (!id) { alert('Sign Board ID is required.'); return; }
-      if (!name) { alert('Sign Board name is required.'); return; }
-      if (!zoneId) { alert('Zone location is required.'); return; }
+      if (!id || !name || !zoneId) { alert('All fields are required.'); return; }
 
       const newSign = {
         id: id,
         name: name,
         zone_id: zoneId,
-        road: road || "Yala Road Corridor",
-        km_marker: km,
+        road: road || "Yala Corridor",
+        km_marker: 1.0,
         lat: 6.3800,
         lng: 81.4000,
         online: true
       };
 
       try {
-        const response = await fetch('https://web-production-31cc0e.up.railway.app/api/road-signs', {
+        const res = await fetch('https://web-production-31cc0e.up.railway.app/api/road-signs', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(newSign)
         });
-        if (response.ok) {
-          alert(`Success: Sign Board ${id} registered in database!`);
+        if (res.ok) {
+          alert(`Registered Signboard: ${id}`);
           document.getElementById('new-sign-form').classList.add('hidden');
-        } else {
-          alert('Failed to register sign board. Verify unique Sign ID.');
         }
       } catch (e) {
-        alert('Network connection error. Unable to register sign board.');
+        alert('Network connection error.');
       }
     }
 
-    // Toggle stakeholder inline form visibility
-    function toggleNewStakeholderForm() {
-      const form = document.getElementById('new-sh-form');
-      form.classList.toggle('hidden');
-    }
+    // Open read-only properties info for default hardware nodes
+    function openDebugDrawer(nodeId) {
+      const title = document.getElementById('drawer-title');
+      const icon = document.getElementById('drawer-icon');
+      const content = document.getElementById('drawer-content');
+      const saveBtn = document.getElementById('drawer-save-btn');
 
-    // Submit new stakeholder to database API
-    async function submitNewStakeholder() {
-      const name = document.getElementById('sh-name').value.trim();
-      const role = document.getElementById('sh-role').value.trim();
-      const phone = document.getElementById('sh-phone').value.trim();
+      title.innerText = `Properties: ${nodeId}`;
+      icon.setAttribute('data-lucide', 'info');
+      saveBtn.style.display = 'none';
 
-      if (!name) { alert('Recipient name is required.'); return; }
-      if (!phone) { alert('Recipient phone number is required.'); return; }
-
-      const newSh = {
-        name: name,
-        role: role || "Field Responder",
-        org: "Department of Wildlife Conservation",
-        use_case_ids: [currentRule.use_case_id || "UC-001"],
-        channels: [
-          { type: "sms", address: phone, language: "en" }
-        ],
-        on_call: true
-      };
-
-      try {
-        const response = await fetch('https://web-production-31cc0e.up.railway.app/api/stakeholders', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(newSh)
-        });
-        if (response.ok) {
-          const created = await response.json();
-          stakeholders.push(created);
-          currentRule.actions.on_trigger.notify_stakeholder_ids.push(created.id);
-          renderStep4Actions();
-        } else {
-          alert('Failed to register recipient. Please check API parameters.');
-        }
-      } catch (e) {
-        alert('Network connection error. Unable to register recipient.');
+      let details = "";
+      if (nodeId === 'in-camera') {
+        details = "Telemetry sensor inputs mounted along road corridors. Trigger rule evaluations upon identifying target objects.";
+      } else if (nodeId === 'in-simulator') {
+        details = "Manual simulator testing panel. Allows operators to trigger manual overrides.";
+      } else {
+        details = "Hardware warning actuators. Signs flash RED and zone sirens trigger upon live incidents.";
       }
-    }
 
-    // Handle severity dropdown updates
-    function onSeverityChange(val) {
-      document.getElementById('sev-label').innerText = val;
+      content.innerHTML = `
+        <div class="space-y-4">
+          <p class="text-xs text-ink-muted leading-relaxed">${details}</p>
+          <div class="p-3 bg-gray-50 border border-line rounded-lg text-xs space-y-1.5">
+            <strong>Node Type:</strong> System Node<br>
+            <strong>Status:</strong> <span class="text-emerald-600 font-bold">Online</span>
+          </div>
+        </div>
+      `;
+
+      lucide.createIcons();
+      document.getElementById('drawer').classList.remove('translate-x-full');
     }
 
     // Close side drawer panel
     function closeDrawer() {
       document.getElementById('drawer').classList.add('translate-x-full');
-      activeDrawerStep = null;
+      activeNodeId = null;
+      drawWires();
     }
 
-    // Handle dropdown condition field switches (toggle operator list)
+    // Add new template evaluator rule to the workspace
+    function addNewNode(category, type) {
+      if (category !== 'rule') {
+        alert('Standard System Input/Output nodes are registered by hardware registries.');
+        return;
+      }
+
+      const newId = `RULE-NEW-${Date.now()}`;
+      const newRuleObj = {
+        id: newId,
+        name: "New Rule Block",
+        description: "Evaluator description.",
+        active: true,
+        priority: rules.length + 1,
+        use_case_id: "UC-001",
+        conditions: [{ field: "object_type", op: "eq", value: "elephant" }],
+        confirmation: null,
+        actions: {
+          on_trigger: {
+            create_incident: true,
+            incident_severity: "HIGH",
+            notify_stakeholder_ids: [],
+            message_template: "Alert [HIGH]: Elephant detected in Yala."
+          }
+        }
+      };
+
+      rules.push(newRuleObj);
+      renderCanvas();
+      selectNode(newId);
+    }
+
+    // Save properties updates from Drawer variables back to rule item
+    function saveStepData() {
+      const rule = rules.find(r => r.id === activeNodeId);
+      if (!rule) return;
+
+      const name = document.getElementById('edit-name').value.trim();
+      const priority = parseInt(document.getElementById('edit-priority').value) || 1;
+      const ucId = document.getElementById('edit-uc').value;
+      const inc = document.getElementById('edit-act-inc').checked;
+      const sev = document.getElementById('edit-act-sev').value;
+      const template = document.getElementById('edit-act-template').value.trim();
+
+      const shBoxes = document.querySelectorAll('input[name="sh-checkboxes"]:checked');
+      let stakeholderIds = [];
+      shBoxes.forEach(b => stakeholderIds.push(b.value));
+
+      rule.name = name;
+      rule.priority = priority;
+      rule.use_case_id = ucId;
+      rule.actions.on_trigger.create_incident = inc;
+      rule.actions.on_trigger.incident_severity = sev;
+      rule.actions.on_trigger.notify_stakeholder_ids = stakeholderIds;
+      rule.actions.on_trigger.message_template = template;
+
+      closeDrawer();
+      renderCanvas();
+    }
+
+    // Save all local configuration flows to server REST APIs
+    async function deployFlow() {
+      try {
+        // Sequentially save each rule config
+        await Promise.all(rules.map(rule => {
+          // If newly created on builder, save via POST, else save via PUT
+          const url = rule.id.startsWith('RULE-NEW-') 
+            ? 'https://web-production-31cc0e.up.railway.app/api/rules'
+            : `https://web-production-31cc0e.up.railway.app/api/rules/${rule.id}`;
+          const method = rule.id.startsWith('RULE-NEW-') ? 'POST' : 'PUT';
+
+          if (rule.id.startsWith('RULE-NEW-')) {
+            // Strip client temp ID
+            rule.id = `RULE-${Math.floor(100 + Math.random() * 900)}`;
+          }
+
+          return fetch(url, {
+            method: method,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(rule)
+          });
+        }));
+
+        document.getElementById('success-modal').classList.remove('hidden');
+        loadDependencies();
+      } catch (e) {
+        alert('Network connection error. Deployment failed.');
+      }
+    }
+
+    // Handle dropdown condition fields
     function onFieldChange(idx, selectEl) {
       const row = selectEl.closest('.condition-row');
       const opSelect = row.querySelector('.cond-op');
@@ -855,230 +1021,14 @@
 
       if (selectEl.value === 'confidence') {
         opSelect.innerHTML = '<option value="gte">&ge;</option><option value="lte">&le;</option>';
-        valInput.placeholder = '70';
         valInput.value = '70';
       } else {
         opSelect.innerHTML = '<option value="eq">=</option><option value="neq">&ne;</option>';
-        valInput.placeholder = 'elephant';
         valInput.value = 'elephant';
       }
     }
 
-    // Add another condition row (AND logic)
-    function addConditionRow() {
-      currentRule.conditions.push({ field: "object_type", op: "eq", value: "elephant" });
-      openStepDrawer(2);
-    }
-
-    // Remove specific condition row
-    function removeConditionRow(idx) {
-      currentRule.conditions.splice(idx, 1);
-      openStepDrawer(2);
-    }
-
-    // Toggle confirmation inputs container display
-    function toggleConfBlock(checked) {
-      const container = document.getElementById('conf-inputs-container');
-      if (checked) {
-        container.classList.remove('hidden');
-      } else {
-        container.classList.add('hidden');
-      }
-    }
-
-    // Save individual configuration steps
-    function saveStepData() {
-      if (activeDrawerStep === 1) {
-        const nameVal = document.getElementById('form-name').value.trim();
-        const descVal = document.getElementById('form-desc').value.trim();
-        const ucVal = document.getElementById('form-uc').value;
-        const priorityVal = parseInt(document.getElementById('form-priority').value) || 1;
-
-        if (!nameVal) { alert('Rule name is required.'); return; }
-        if (!ucVal) { alert('Use case context is required.'); return; }
-
-        currentRule.name = nameVal;
-        currentRule.description = descVal;
-        currentRule.use_case_id = ucVal;
-        currentRule.priority = priorityVal;
-
-        stepsStatus[1].completed = true;
-        stepsStatus[1].summary = `Name: ${nameVal} | Priority ${priorityVal}`;
-        
-        stepsStatus[2].unlocked = true;
-      } 
-      else if (activeDrawerStep === 2) {
-        const condRows = document.querySelectorAll('.condition-row');
-        let newConditions = [];
-        let summaries = [];
-
-        condRows.forEach(row => {
-          const field = row.querySelector('.cond-field').value;
-          const op = row.querySelector('.cond-op').value;
-          const value = row.querySelector('.cond-val').value.trim();
-
-          newConditions.push({ field, op, value });
-          
-          let opSymbol = op === 'eq' ? '=' : op === 'neq' ? '≠' : op === 'gte' ? '≥' : op === 'lte' ? '≤' : op;
-          summaries.push(`${field} ${opSymbol} "${value}"`);
-        });
-
-        currentRule.conditions = newConditions;
-        stepsStatus[2].completed = true;
-        stepsStatus[2].summary = summaries.join(' AND ');
-        
-        stepsStatus[3].unlocked = true;
-      } 
-      else if (activeDrawerStep === 3) {
-        const enabled = document.getElementById('form-conf-enabled').checked;
-        if (enabled) {
-          const count = parseInt(document.getElementById('form-conf-count').value) || 2;
-          const windowSec = parseInt(document.getElementById('form-conf-window').value) || 900;
-          const sameZone = document.getElementById('form-conf-zone').checked;
-
-          currentRule.confirmation = { required_count: count, window_seconds: windowSec, same_zone: sameZone };
-          stepsStatus[3].summary = `${count} detections inside ${windowSec / 60}m`;
-        } else {
-          currentRule.confirmation = null;
-          stepsStatus[3].summary = "Immediate activation (no confirmation)";
-        }
-        
-        stepsStatus[3].completed = true;
-        stepsStatus[4].unlocked = true;
-      } 
-      else if (activeDrawerStep === 4) {
-        const createInc = document.getElementById('form-act-inc').checked;
-        const severity = document.getElementById('form-act-sev').value;
-        const template = document.getElementById('form-act-template').value.trim();
-
-        const checkboxes = document.querySelectorAll('input[name="sh-checkboxes"]:checked');
-        let stakeholderIds = [];
-        checkboxes.forEach(cb => stakeholderIds.push(cb.value));
-
-        currentRule.actions.on_trigger.create_incident = createInc;
-        currentRule.actions.on_trigger.incident_severity = severity;
-        currentRule.actions.on_trigger.notify_stakeholder_ids = stakeholderIds;
-        currentRule.actions.on_trigger.message_template = template;
-
-        stepsStatus[4].completed = true;
-        stepsStatus[4].summary = `Severity: ${severity} | Notify ${stakeholderIds.length} contact(s)`;
-        
-        stepsStatus[5].unlocked = true;
-      } 
-      else if (activeDrawerStep === 5) {
-        submitWorkflow();
-        return;
-      }
-
-      closeDrawer();
-      updateBlocksUI();
-    }
-
-    // Submit rule to backend API
-    async function submitWorkflow() {
-      try {
-        const response = await fetch('https://web-production-31cc0e.up.railway.app/api/rules', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(currentRule)
-        });
-        if (response.ok) {
-          document.getElementById('success-modal').classList.remove('hidden');
-          closeDrawer();
-        } else {
-          const err = await response.json();
-          alert(`Server Error: ${err.message || 'Failed to submit workflow.'}`);
-        }
-      } catch (e) {
-        alert('Network error. Unable to connect to the database server.');
-      }
-    }
-
-    // Update block cards styles and summaries
-    function updateBlocksUI() {
-      for (let step = 1; step <= 5; step++) {
-        const card = document.getElementById(`step-card-${step}`);
-        const iconContainer = document.getElementById(`step-icon-${step}`);
-        const summary = document.getElementById(`step-summary-${step}`);
-        const badge = document.getElementById(`step-badge-${step}`);
-
-        const status = stepsStatus[step];
-
-        card.className = "node-transition flex-1 min-w-[210px] rounded-xl p-5 flex flex-col justify-between ";
-        iconContainer.className = "h-6 w-6 rounded-full flex items-center justify-center ";
-        badge.className = "inline-block text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded ";
-
-        if (status.completed) {
-          card.classList.add("bg-emerald-50/10", "border-emerald-500", "shadow-sm", "cursor-pointer", "hover:border-emerald-600", "hover:shadow-md");
-          iconContainer.classList.add("bg-emerald-100", "text-emerald-700");
-          iconContainer.innerHTML = '<i data-lucide="check" class="w-3.5 h-3.5"></i>';
-          badge.classList.add("bg-emerald-50", "text-emerald-700", "border", "border-emerald-100");
-          badge.innerText = "Completed";
-          summary.innerText = status.summary;
-        } 
-        else if (status.unlocked) {
-          card.classList.add("bg-white", "border-brand/30", "shadow-md", "cursor-pointer", "hover:border-brand", "hover:shadow-lg", "hover:-translate-y-0.5");
-          iconContainer.classList.add("bg-brand/5", "text-brand");
-          badge.classList.add("bg-brand/5", "text-brand");
-          badge.innerText = "Active";
-          summary.innerText = status.summary;
-          
-          if (step === 1) iconContainer.innerHTML = '<i data-lucide="info" class="w-3.5 h-3.5"></i>';
-          if (step === 2) iconContainer.innerHTML = '<i data-lucide="git-fork" class="w-3.5 h-3.5"></i>';
-          if (step === 3) iconContainer.innerHTML = '<i data-lucide="check-square" class="w-3.5 h-3.5"></i>';
-          if (step === 4) iconContainer.innerHTML = '<i data-lucide="send" class="w-3.5 h-3.5"></i>';
-          if (step === 5) iconContainer.innerHTML = '<i data-lucide="shield-alert" class="w-3.5 h-3.5"></i>';
-        } 
-        else {
-          card.classList.add("bg-gray-50", "border-line-strong", "cursor-not-allowed", "opacity-50");
-          iconContainer.classList.add("bg-line-strong", "text-ink-subtle");
-          badge.classList.add("bg-line-strong/50", "text-ink-subtle");
-          badge.innerText = "Locked";
-          summary.innerText = status.summary;
-          
-          if (step === 2) iconContainer.innerHTML = '<i data-lucide="git-fork" class="w-3.5 h-3.5"></i>';
-          if (step === 3) iconContainer.innerHTML = '<i data-lucide="check-square" class="w-3.5 h-3.5"></i>';
-          if (step === 4) iconContainer.innerHTML = '<i data-lucide="send" class="w-3.5 h-3.5"></i>';
-          if (step === 5) iconContainer.innerHTML = '<i data-lucide="shield-alert" class="w-3.5 h-3.5"></i>';
-        }
-      }
-      lucide.createIcons();
-    }
-
-    // Reset wizard back to default blank state
-    function resetWizard() {
-      currentRule = {
-        name: "",
-        description: "",
-        use_case_id: "",
-        priority: 1,
-        active: true,
-        conditions: [
-          { field: "object_type", op: "eq", value: "elephant" }
-        ],
-        confirmation: null,
-        actions: {
-          on_trigger: {
-            create_incident: true,
-            incident_severity: "HIGH",
-            notify_stakeholder_ids: [],
-            message_template: "Alert [{severity}]: {object_type} detected in {zone_name} by {device_name}. Confidence: {confidence}%. Incident: {incident_id}"
-          }
-        }
-      };
-
-      stepsStatus = {
-        1: { unlocked: true, completed: false, summary: "Name, use case context, priority levels." },
-        2: { unlocked: false, completed: false, summary: "Object types, camera register filters." },
-        3: { unlocked: false, completed: false, summary: "Required event counts, verification windows." },
-        4: { unlocked: false, completed: false, summary: "SMS warning templates, warning sign registers." },
-        5: { unlocked: false, completed: false, summary: "Final review, activation in database." }
-      };
-
-      document.getElementById('success-modal').classList.add('hidden');
-      updateBlocksUI();
-    }
-
+    window.addEventListener('resize', updateCoords);
     document.addEventListener('DOMContentLoaded', () => {
       loadDependencies();
       lucide.createIcons();
