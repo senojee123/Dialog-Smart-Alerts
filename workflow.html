@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Dialog Smart Alerts — Workflow Visualizer</title>
-  <!-- Google Fonts: Inter -->
+  <title>Dialog Smart Alerts — End-to-End Workflow Architecture</title>
+  <!-- Google Fonts: Inter & JetBrains Mono -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -48,9 +48,8 @@
       font-family: 'Inter', sans-serif;
       background-color: #F8F9FC;
     }
-    /* Smooth CSS animations */
     .glow-line {
-      filter: drop-shadow(0 0 4px rgba(230, 0, 0, 0.4));
+      filter: drop-shadow(0 0 5px rgba(230, 0, 0, 0.5));
     }
     .node-transition {
       transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -62,7 +61,6 @@
   <!-- Header -->
   <header class="h-16 bg-white border-b border-line flex items-center px-8 gap-4 justify-between shrink-0 shadow-[0_1px_2px_rgba(0,0,0,0.03)] z-30">
     <div class="flex items-center gap-3">
-      <!-- Embedded clean geometric logo -->
       <div class="h-9 w-9 bg-brand flex items-center justify-center rounded-lg shadow-sm">
         <svg viewBox="0 0 100 100" class="w-6 h-6 fill-white">
           <polygon points="20,10 80,10 50,50" />
@@ -71,13 +69,13 @@
       </div>
       <div>
         <h1 class="font-extrabold text-lg tracking-tight leading-none text-brand">Dialog Smart Alerts</h1>
-        <p class="text-[11px] text-ink-muted mt-0.5 uppercase tracking-wider font-semibold">Workflow Architecture Visualizer</p>
+        <p class="text-[11px] text-ink-muted mt-0.5 uppercase tracking-wider font-semibold">End-to-End Workflow Architecture</p>
       </div>
     </div>
     <div class="flex items-center gap-3">
       <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-100">
         <span class="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-        Live API Sync
+        Live Architecture Map
       </span>
       <button onclick="fetchData()" class="p-1.5 text-ink-muted hover:text-ink hover:bg-line rounded-lg transition-colors" title="Reload Rules">
         <i data-lucide="rotate-cw" class="w-4 h-4"></i>
@@ -85,49 +83,43 @@
     </div>
   </header>
 
-  <!-- Inspector Panel (Rules Details) -->
+  <!-- Inspector Panel (Rules Details / Info Details) -->
   <div id="inspector-panel" class="hidden mx-8 mt-4 p-4 border border-brand/20 bg-brand/[0.01] rounded-xl flex items-start gap-4 shadow-sm animate-fade-in relative z-20 transition-all duration-300">
     <div class="p-2.5 bg-brand/5 rounded-lg text-brand shrink-0">
-      <i data-lucide="git-branch" class="w-5 h-5"></i>
+      <i id="inspect-icon" data-lucide="info" class="w-5 h-5"></i>
     </div>
     <div class="flex-1 space-y-2">
       <div class="flex items-center gap-2">
-        <h4 id="inspect-title" class="font-bold text-ink text-sm">Rule Title</h4>
-        <span id="inspect-status-badge" class="inline-block text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full">Active</span>
-        <span id="inspect-priority" class="text-xs text-ink-muted font-medium">· Priority 1</span>
+        <h4 id="inspect-title" class="font-bold text-ink text-sm">Component Title</h4>
+        <span id="inspect-badge" class="inline-block text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full">Intake</span>
+        <span id="inspect-subtext" class="text-xs text-ink-muted font-medium">Secondary detail text</span>
       </div>
-      <p id="inspect-desc" class="text-xs text-ink-muted leading-relaxed">Description of rule.</p>
+      <p id="inspect-desc" class="text-xs text-ink-muted leading-relaxed">Description of rule or component workflow.</p>
       
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-4 pt-1.5">
+      <div id="inspect-details-grid" class="grid grid-cols-1 md:grid-cols-3 gap-4 pt-1.5 hidden">
         <div>
           <span class="text-[10px] font-bold text-ink-subtle uppercase tracking-wider block mb-1">Trigger Conditions</span>
-          <div id="inspect-conditions" class="space-y-1">
-            <!-- Populated dynamically -->
-          </div>
+          <div id="inspect-conditions" class="space-y-1"></div>
         </div>
         
         <div>
           <span class="text-[10px] font-bold text-ink-subtle uppercase tracking-wider block mb-1">Confirmation Details</span>
-          <div id="inspect-confirmation" class="text-[11px] text-ink leading-relaxed">
-            Immediate action (no confirmation required).
-          </div>
+          <div id="inspect-confirmation" class="text-[11px] text-ink leading-relaxed"></div>
         </div>
 
         <div>
           <span class="text-[10px] font-bold text-ink-subtle uppercase tracking-wider block mb-1">Alert Targets</span>
-          <div id="inspect-targets" class="text-[11px] text-ink space-y-0.5">
-            <!-- Populated dynamically -->
-          </div>
+          <div id="inspect-targets" class="text-[11px] text-ink space-y-0.5"></div>
         </div>
       </div>
     </div>
     <button onclick="clearSelection()" class="absolute top-3 right-3 text-xs text-ink-subtle hover:text-ink font-semibold flex items-center gap-1">
-      <i data-lucide="x" class="w-3.5 h-3.5"></i> Clear selection
+      <i data-lucide="x" class="w-3.5 h-3.5"></i> Clear tracing
     </button>
   </div>
 
   <!-- Interactive diagram area -->
-  <div class="flex-1 overflow-auto p-8 relative select-none z-10" id="canvas-area">
+  <div class="flex-1 overflow-auto p-6 relative select-none z-10" id="canvas-area">
     
     <!-- SVG background layer for connection lines -->
     <svg id="connections-svg" class="absolute inset-0 w-full h-full pointer-events-none z-0">
@@ -140,107 +132,187 @@
       <!-- Paths are drawn dynamically by JS -->
     </svg>
 
-    <!-- 3-Column Node Layout -->
-    <div class="grid grid-cols-3 gap-x-20 gap-y-6 max-w-6xl mx-auto h-full items-center relative z-10">
+    <!-- 5-Column Node Layout representing EVERYTHING in the app -->
+    <div class="grid grid-cols-5 gap-x-12 gap-y-4 max-w-7xl mx-auto h-full items-center relative z-10 py-4">
       
-      <!-- Column 1: Triggers -->
-      <div class="flex flex-col gap-6 justify-center" id="col-triggers">
-        <h3 class="text-[10px] font-bold text-ink-subtle uppercase tracking-wider mb-2 text-center">1. Intake Triggers</h3>
+      <!-- Stage 1: Input Sources -->
+      <div class="flex flex-col gap-4 justify-center" id="col-inputs">
+        <h3 class="text-[10px] font-bold text-ink-subtle uppercase tracking-wider mb-2 text-center">1. Input Sources</h3>
         
-        <div id="trig-telemetry" data-node-id="trig-telemetry" data-node-type="trigger"
-             class="node-transition p-4 rounded-xl border border-indigo-100 bg-white shadow-sm hover:shadow-md hover:scale-[1.01] cursor-pointer"
-             onclick="selectNode('trigger', 'trig-telemetry')">
+        <div id="in-camera" data-node-id="in-camera" data-node-type="input"
+             class="node-transition p-3.5 rounded-xl border border-indigo-100 bg-white shadow-sm hover:shadow-md hover:scale-[1.01] cursor-pointer"
+             onclick="selectNode('input', 'in-camera')">
           <div class="flex items-center gap-3">
             <div class="p-2 bg-indigo-50 text-indigo-600 rounded-lg">
-              <i data-lucide="radio" class="w-5 h-5"></i>
+              <i data-lucide="camera" class="w-4.5 h-4.5"></i>
             </div>
             <div>
-              <h4 class="font-bold text-ink text-sm leading-snug">Telemetry Ingestion</h4>
-              <p class="text-[11px] text-ink-muted leading-snug mt-0.5">MQTT Camera Traps</p>
+              <h4 class="font-bold text-ink text-xs leading-tight">Camera & AI Sensors</h4>
+              <p class="text-[10px] text-ink-muted leading-tight mt-0.5">Physical telemetry traps</p>
             </div>
           </div>
         </div>
 
-        <div id="trig-simulator" data-node-id="trig-simulator" data-node-type="trigger"
-             class="node-transition p-4 rounded-xl border border-indigo-100 bg-white shadow-sm hover:shadow-md hover:scale-[1.01] cursor-pointer"
-             onclick="selectNode('trigger', 'trig-simulator')">
+        <div id="in-simulator" data-node-id="in-simulator" data-node-type="input"
+             class="node-transition p-3.5 rounded-xl border border-indigo-100 bg-white shadow-sm hover:shadow-md hover:scale-[1.01] cursor-pointer"
+             onclick="selectNode('input', 'in-simulator')">
           <div class="flex items-center gap-3">
             <div class="p-2 bg-indigo-50 text-indigo-600 rounded-lg">
-              <i data-lucide="play-circle" class="w-5 h-5"></i>
+              <i data-lucide="play-circle" class="w-4.5 h-4.5"></i>
             </div>
             <div>
-              <h4 class="font-bold text-ink text-sm leading-snug">Manual Override</h4>
-              <p class="text-[11px] text-ink-muted leading-snug mt-0.5">Simulator Tool UI</p>
+              <h4 class="font-bold text-ink text-xs leading-tight">Manual Simulator</h4>
+              <p class="text-[10px] text-ink-muted leading-tight mt-0.5">Control Panel event trigger</p>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- Column 2: Rules Engine -->
-      <div class="flex flex-col gap-6 justify-center" id="col-rules">
-        <h3 class="text-[10px] font-bold text-ink-subtle uppercase tracking-wider mb-2 text-center">2. Processing Rules</h3>
-        <div id="rules-loading" class="text-xs text-ink-muted text-center py-6">Loading active rules...</div>
-        <div id="rules-container" class="space-y-4 hidden">
+      <!-- Stage 2: Transit & Brokers -->
+      <div class="flex flex-col gap-4 justify-center" id="col-transit">
+        <h3 class="text-[10px] font-bold text-ink-subtle uppercase tracking-wider mb-2 text-center">2. Transit & Ingestion</h3>
+
+        <div id="trn-broker" data-node-id="trn-broker" data-node-type="transit"
+             class="node-transition p-3.5 rounded-xl border border-blue-100 bg-white shadow-sm hover:shadow-md hover:scale-[1.01] cursor-pointer"
+             onclick="selectNode('transit', 'trn-broker')">
+          <div class="flex items-center gap-3">
+            <div class="p-2 bg-blue-50 text-blue-600 rounded-lg">
+              <i data-lucide="radio" class="w-4.5 h-4.5"></i>
+            </div>
+            <div>
+              <h4 class="font-bold text-ink text-xs leading-tight">MQTT Message Broker</h4>
+              <p class="text-[10px] text-ink-muted leading-tight mt-0.5">EMQX Cloud (broker.emqx.io)</p>
+            </div>
+          </div>
+        </div>
+
+        <div id="trn-client" data-node-id="trn-client" data-node-type="transit"
+             class="node-transition p-3.5 rounded-xl border border-blue-100 bg-white shadow-sm hover:shadow-md hover:scale-[1.01] cursor-pointer"
+             onclick="selectNode('transit', 'trn-client')">
+          <div class="flex items-center gap-3">
+            <div class="p-2 bg-blue-50 text-blue-600 rounded-lg">
+              <i data-lucide="cpu" class="w-4.5 h-4.5"></i>
+            </div>
+            <div>
+              <h4 class="font-bold text-ink text-xs leading-tight">FastAPI Ingest Worker</h4>
+              <p class="text-[10px] text-ink-muted leading-tight mt-0.5">mqtt_client.py listener</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Stage 3: Evaluation Core (Rules) -->
+      <div class="flex flex-col gap-4 justify-center" id="col-rules">
+        <h3 class="text-[10px] font-bold text-ink-subtle uppercase tracking-wider mb-2 text-center">3. Rules Evaluation</h3>
+        <div id="rules-loading" class="text-xs text-ink-muted text-center py-6">Loading rules...</div>
+        <div id="rules-container" class="space-y-3 hidden">
           <!-- Populated dynamically -->
         </div>
       </div>
 
-      <!-- Column 3: Actions -->
-      <div class="flex flex-col gap-6 justify-center" id="col-actions">
-        <h3 class="text-[10px] font-bold text-ink-subtle uppercase tracking-wider mb-2 text-center">3. Output Actions</h3>
+      <!-- Stage 4: Gateways & Outbox -->
+      <div class="flex flex-col gap-4 justify-center" id="col-gateways">
+        <h3 class="text-[10px] font-bold text-ink-subtle uppercase tracking-wider mb-2 text-center">4. Output Gateways</h3>
         
-        <div id="act-sms" data-node-id="act-sms" data-node-type="action"
-             class="node-transition p-4 rounded-xl border border-rose-100 bg-white shadow-sm hover:shadow-md hover:scale-[1.01] cursor-pointer"
-             onclick="selectNode('action', 'act-sms')">
+        <div id="gt-sms" data-node-id="gt-sms" data-node-type="gateway"
+             class="node-transition p-3.5 rounded-xl border border-purple-100 bg-white shadow-sm hover:shadow-md hover:scale-[1.01] cursor-pointer"
+             onclick="selectNode('gateway', 'gt-sms')">
           <div class="flex items-center gap-3">
-            <div class="p-2 bg-rose-50 text-rose-600 rounded-lg">
-              <i data-lucide="mail" class="w-5 h-5"></i>
+            <div class="p-2 bg-purple-50 text-purple-600 rounded-lg">
+              <i data-lucide="send" class="w-4.5 h-4.5"></i>
             </div>
             <div>
-              <h4 class="font-bold text-ink text-sm leading-snug">SMS Notifications</h4>
-              <p class="text-[11px] text-ink-muted leading-snug mt-0.5">Ideabiz SMS Gateway API</p>
+              <h4 class="font-bold text-ink text-xs leading-tight">Ideabiz SMS Gateway</h4>
+              <p class="text-[10px] text-ink-muted leading-tight mt-0.5">outbound request API</p>
             </div>
           </div>
         </div>
 
-        <div id="act-signs" data-node-id="act-signs" data-node-type="action"
-             class="node-transition p-4 rounded-xl border border-rose-100 bg-white shadow-sm hover:shadow-md hover:scale-[1.01] cursor-pointer"
-             onclick="selectNode('action', 'act-signs')">
+        <div id="gt-sse" data-node-id="gt-sse" data-node-type="gateway"
+             class="node-transition p-3.5 rounded-xl border border-purple-100 bg-white shadow-sm hover:shadow-md hover:scale-[1.01] cursor-pointer"
+             onclick="selectNode('gateway', 'gt-sse')">
           <div class="flex items-center gap-3">
-            <div class="p-2 bg-rose-50 text-rose-600 rounded-lg">
-              <i data-lucide="monitor" class="w-5 h-5"></i>
+            <div class="p-2 bg-purple-50 text-purple-600 rounded-lg">
+              <i data-lucide="info" class="w-4.5 h-4.5"></i>
             </div>
             <div>
-              <h4 class="font-bold text-ink text-sm leading-snug">LED warning boards</h4>
-              <p class="text-[11px] text-ink-muted leading-snug mt-0.5">MQTT Actuator Commands</p>
+              <h4 class="font-bold text-ink text-xs leading-tight">SSE Event Streamer</h4>
+              <p class="text-[10px] text-ink-muted leading-tight mt-0.5">FastAPI server.py streamer</p>
             </div>
           </div>
         </div>
 
-        <div id="act-sirens" data-node-id="act-sirens" data-node-type="action"
-             class="node-transition p-4 rounded-xl border border-rose-100 bg-white shadow-sm hover:shadow-md hover:scale-[1.01] cursor-pointer"
-             onclick="selectNode('action', 'act-sirens')">
+        <div id="gt-actuator" data-node-id="gt-actuator" data-node-type="gateway"
+             class="node-transition p-3.5 rounded-xl border border-purple-100 bg-white shadow-sm hover:shadow-md hover:scale-[1.01] cursor-pointer"
+             onclick="selectNode('gateway', 'gt-actuator')">
           <div class="flex items-center gap-3">
-            <div class="p-2 bg-rose-50 text-rose-600 rounded-lg">
-              <i data-lucide="volume-2" class="w-5 h-5"></i>
+            <div class="p-2 bg-purple-50 text-purple-600 rounded-lg">
+              <i data-lucide="zap" class="w-4.5 h-4.5"></i>
             </div>
             <div>
-              <h4 class="font-bold text-ink text-sm leading-snug">Audible Sirens</h4>
-              <p class="text-[11px] text-ink-muted leading-snug mt-0.5">MQTT Actuator Commands</p>
+              <h4 class="font-bold text-ink text-xs leading-tight">MQTT Actuator Publisher</h4>
+              <p class="text-[10px] text-ink-muted leading-tight mt-0.5">command publisher</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Stage 5: Alert Receivers (Endpoints) -->
+      <div class="flex flex-col gap-4 justify-center" id="col-receivers">
+        <h3 class="text-[10px] font-bold text-ink-subtle uppercase tracking-wider mb-2 text-center">5. Alert Receivers</h3>
+
+        <div id="rcv-phones" data-node-id="rcv-phones" data-node-type="receiver"
+             class="node-transition p-3.5 rounded-xl border border-rose-100 bg-white shadow-sm hover:shadow-md hover:scale-[1.01] cursor-pointer"
+             onclick="selectNode('receiver', 'rcv-phones')">
+          <div class="flex items-center gap-3">
+            <div class="p-2 bg-rose-50 text-rose-600 rounded-lg">
+              <i data-lucide="smartphone" class="w-4.5 h-4.5"></i>
+            </div>
+            <div>
+              <h4 class="font-bold text-ink text-xs leading-tight">Ranger Mobile Phones</h4>
+              <p class="text-[10px] text-ink-muted leading-tight mt-0.5">Field SMS notifications</p>
             </div>
           </div>
         </div>
 
-        <div id="act-map" data-node-id="act-map" data-node-type="action"
-             class="node-transition p-4 rounded-xl border border-rose-100 bg-white shadow-sm hover:shadow-md hover:scale-[1.01] cursor-pointer"
-             onclick="selectNode('action', 'act-map')">
+        <div id="rcv-dashboard" data-node-id="rcv-dashboard" data-node-type="receiver"
+             class="node-transition p-3.5 rounded-xl border border-rose-100 bg-white shadow-sm hover:shadow-md hover:scale-[1.01] cursor-pointer"
+             onclick="selectNode('receiver', 'rcv-dashboard')">
           <div class="flex items-center gap-3">
             <div class="p-2 bg-rose-50 text-rose-600 rounded-lg">
-              <i data-lucide="info" class="w-5 h-5"></i>
+              <i data-lucide="monitor" class="w-4.5 h-4.5"></i>
             </div>
             <div>
-              <h4 class="font-bold text-ink text-sm leading-snug">Live Dashboard Sync</h4>
-              <p class="text-[11px] text-ink-muted leading-snug mt-0.5">FastAPI SSE Event Stream</p>
+              <h4 class="font-bold text-ink text-xs leading-tight">Operator Dashboard</h4>
+              <p class="text-[10px] text-ink-muted leading-tight mt-0.5">Live incidents and map UI</p>
+            </div>
+          </div>
+        </div>
+
+        <div id="rcv-kiosk" data-node-id="rcv-kiosk" data-node-type="receiver"
+             class="node-transition p-3.5 rounded-xl border border-rose-100 bg-white shadow-sm hover:shadow-md hover:scale-[1.01] cursor-pointer"
+             onclick="selectNode('receiver', 'rcv-kiosk')">
+          <div class="flex items-center gap-3">
+            <div class="p-2 bg-rose-50 text-rose-600 rounded-lg">
+              <i data-lucide="tablet" class="w-4.5 h-4.5"></i>
+            </div>
+            <div>
+              <h4 class="font-bold text-ink text-xs leading-tight">Motorist Kiosks</h4>
+              <p class="text-[10px] text-ink-muted leading-tight mt-0.5">Pi-001/002 warning displays</p>
+            </div>
+          </div>
+        </div>
+
+        <div id="rcv-hardware" data-node-id="rcv-hardware" data-node-type="receiver"
+             class="node-transition p-3.5 rounded-xl border border-rose-100 bg-white shadow-sm hover:shadow-md hover:scale-[1.01] cursor-pointer"
+             onclick="selectNode('receiver', 'rcv-hardware')">
+          <div class="flex items-center gap-3">
+            <div class="p-2 bg-rose-50 text-rose-600 rounded-lg">
+              <i data-lucide="volume-2" class="w-4.5 h-4.5"></i>
+            </div>
+            <div>
+              <h4 class="font-bold text-ink text-xs leading-tight">Signs & Sirens</h4>
+              <p class="text-[10px] text-ink-muted leading-tight mt-0.5">LED boards and alarm units</p>
             </div>
           </div>
         </div>
@@ -255,6 +327,76 @@
     let rules = [];
     let activeNode = null; // { type, id }
     let coords = {};
+
+    // Component details for the inspector panel when a component is clicked
+    const NODE_DETAILS = {
+      'in-camera': {
+        title: 'Camera & AI Sensors',
+        badge: 'Intake Source',
+        subtext: 'Telemetry traps in the field',
+        desc: 'Standard IoT AI camera traps mounted in critical corridors (e.g. Zone B43 Yala Entrance). On identifying an elephant, the camera immediately constructs a JSON telemetry message and publishes it over MQTT.'
+      },
+      'in-simulator': {
+        title: 'Manual Simulator',
+        badge: 'Operator Trigger',
+        subtext: 'Local test framework',
+        desc: 'Web-based simulation utility on the admin portal. Allows operators to manually trigger test detections (e.g., animal type, confidence levels, camera, and zone) to verify sign lights, audible sirens, and SMS gateway functions.'
+      },
+      'trn-broker': {
+        title: 'MQTT Message Broker',
+        badge: 'Message Transit',
+        subtext: 'broker.emqx.io (Port 1883)',
+        desc: 'A managed high-performance MQTT cluster. Standardizes communications between field hardware and the central server. The broker processes ingestion topics (dialog/detections) and pushes commands back out to actuators.'
+      },
+      'trn-client': {
+        title: 'FastAPI Ingestion Client',
+        badge: 'Server Consumer',
+        subtext: 'mqtt_client.py background listener',
+        desc: 'A persistent background thread running inside your FastAPI server. Subscribes to the broker, automatically receives raw MQTT JSON payloads, normalizes the event schemas, and routes them to the Rules Evaluator for validation.'
+      },
+      'gt-sms': {
+        title: 'Ideabiz SMS Gateway',
+        badge: 'Outgoing Dispatcher',
+        subtext: 'API endpoint (APICall/SMSMessaging)',
+        desc: 'Ideabiz Developer Platform Gateway. Triggered rules compile custom alert notification text templates, authenticate through an API Bearer token, and dispatch requests directly to whitelisted mobile carrier port numbers.'
+      },
+      'gt-sse': {
+        title: 'SSE Event Streamer',
+        badge: 'Client Streamer',
+        subtext: 'FastAPI server.py route (/api/stream)',
+        desc: 'A server-sent event (SSE) channel. Keeps browser dashboards and motorist kiosks connected with an open connection, streaming database events instantly to eliminate layout lag.'
+      },
+      'gt-actuator': {
+        title: 'MQTT Actuator Publisher',
+        badge: 'actuator client dispatcher',
+        subtext: 'mqtt_client.py publisher',
+        desc: 'Compiles JSON command payloads (e.g., {"state": "RED"} or {"state": "ON"}) and publishes them back to specific actuator device command topics on the EMQX broker to trigger warning boards and sirens.'
+      },
+      'rcv-phones': {
+        title: 'Ranger Mobile Phones',
+        badge: 'Human Delivery',
+        subtext: 'Wildlife protection units',
+        desc: 'Ranger and Park Warden devices. Receive SMS text warnings with specific incident details (Incident IDs, camera locations, severity, confidence scores) dispatched through the SMS gateway.'
+      },
+      'rcv-dashboard': {
+        title: 'Operator Dashboard',
+        badge: 'User Interface',
+        subtext: 'React Control Center (localhost:5173)',
+        desc: 'Central control room application. Dynamically receives Server-Sent Events to show new incident pins on Yala maps, lists active incidents in tables, and allows operators to override hardware states and resolve alerts.'
+      },
+      'rcv-kiosk': {
+        title: 'Motorist Kiosks',
+        badge: 'Signage Interface',
+        subtext: 'Raspberry Pi displays (/device/:deviceId)',
+        desc: 'Industrial kiosk screens mounted at road corridor entry gates. Run a full-screen display listening to the event stream, instantly flashing Crimson danger warnings ("Stay in vehicle") to incoming drivers when an alert is active.'
+      },
+      'rcv-hardware': {
+        title: 'Signs & Sirens',
+        badge: 'Actuator Hardware',
+        subtext: 'Corridor alarm units',
+        desc: 'LED road warning boards and loud warning sirens located at Yala elephant crossing zones. They listen to command topics from the broker and instantly switch to a red flashing state or sound alarms to protect drivers.'
+      }
+    };
 
     // Fallback static rules data in case live server is down
     const FALLBACK_RULES = [
@@ -335,18 +477,18 @@
         card.id = `rule-${rule.id}`;
         card.setAttribute('data-node-id', `rule-${rule.id}`);
         card.setAttribute('data-node-type', 'rule');
-        card.className = `node-transition p-4 rounded-xl border ${borderClass} bg-white shadow-sm hover:shadow-md hover:scale-[1.01] cursor-pointer`;
+        card.className = `node-transition p-3 rounded-xl border ${borderClass} bg-white shadow-sm hover:shadow-md hover:scale-[1.01] cursor-pointer`;
         card.onclick = () => selectNode('rule', rule.id);
         
         card.innerHTML = `
-          <div class="space-y-1.5">
+          <div class="space-y-1">
             <div class="flex items-start justify-between gap-2">
-              <h4 class="font-bold text-ink text-[13px] leading-tight line-clamp-1">${rule.name}</h4>
-              <span class="inline-block text-[10px] font-semibold font-mono bg-amber-50 text-amber-700 px-1.5 py-0.5 rounded-md border border-amber-100 shrink-0">P${rule.priority}</span>
+              <h4 class="font-bold text-ink text-[12px] leading-tight line-clamp-1">${rule.name}</h4>
+              <span class="inline-block text-[9px] font-semibold font-mono bg-amber-50 text-amber-700 px-1 py-0.5 rounded-md border border-amber-100 shrink-0">P${rule.priority}</span>
             </div>
-            <div class="flex items-center gap-1.5">
-              <span class="inline-block h-1.5 w-1.5 rounded-full ${rule.active ? 'bg-amber-500' : 'bg-gray-300'}"></span>
-              <span class="text-[10px] text-ink-subtle font-semibold tracking-wider uppercase">${rule.active ? 'Active' : 'Disabled'}</span>
+            <div class="flex items-center gap-1">
+              <span class="inline-block h-1 w-1 rounded-full ${rule.active ? 'bg-amber-500' : 'bg-gray-300'}"></span>
+              <span class="text-[9px] text-ink-subtle font-semibold tracking-wider uppercase">${rule.active ? 'Active' : 'Disabled'}</span>
             </div>
           </div>
         `;
@@ -356,7 +498,6 @@
       document.getElementById('rules-loading').style.display = 'none';
       container.style.display = 'block';
       
-      // Initialize icons and re-calculate line coordinates
       lucide.createIcons();
       setTimeout(updateCoords, 100);
     }
@@ -399,41 +540,62 @@
     // Compute line connections based on selected highlight node
     function drawConnections() {
       const svg = document.getElementById('connections-svg');
-      // Clear paths but keep defs/filter
       const oldPaths = svg.querySelectorAll('path');
       oldPaths.forEach(p => p.remove());
 
-      const TRIGGERS = ['trig-telemetry', 'trig-simulator'];
-      const ACTIONS = [
-        { id: 'act-sms', check: r => (r.actions?.on_trigger?.notify_stakeholder_ids?.length > 0) || (r.actions?.on_confirm?.notify_stakeholder_ids?.length > 0) },
-        { id: 'act-signs', check: r => r.actions?.on_trigger?.create_incident || r.actions?.on_confirm?.create_incident },
-        { id: 'act-sirens', check: r => r.actions?.on_trigger?.create_incident || r.actions?.on_confirm?.create_incident },
-        { id: 'act-map', check: r => true } // Live sync is always triggered by all active rules
+      const TRIGGERS = ['in-camera', 'in-simulator'];
+      const TRANSITS = ['trn-broker', 'trn-client'];
+      
+      const GATEWAYS = [
+        { id: 'gt-sms', check: r => (r.actions?.on_trigger?.notify_stakeholder_ids?.length > 0) || (r.actions?.on_confirm?.notify_stakeholder_ids?.length > 0) },
+        { id: 'gt-sse', check: r => true },
+        { id: 'gt-actuator', check: r => r.actions?.on_trigger?.create_incident || r.actions?.on_confirm?.create_incident }
       ];
 
-      // Draw Trigger -> Rule lines
+      const RECEIVERS = [
+        { id: 'rcv-phones', check: r => (r.actions?.on_trigger?.notify_stakeholder_ids?.length > 0) || (r.actions?.on_confirm?.notify_stakeholder_ids?.length > 0), gatewayId: 'gt-sms' },
+        { id: 'rcv-dashboard', check: r => true, gatewayId: 'gt-sse' },
+        { id: 'rcv-kiosk', check: r => true, gatewayId: 'gt-sse' },
+        { id: 'rcv-hardware', check: r => r.actions?.on_trigger?.create_incident || r.actions?.on_confirm?.create_incident, gatewayId: 'gt-actuator' }
+      ];
+
+      // 1. Column 1 (Triggers) -> Column 2 (Transit: Broker)
       TRIGGERS.forEach(tId => {
-        rules.forEach(r => {
-          const rId = `rule-${r.id}`;
-          const state = getConnectionState(tId, rId, ACTIONS);
-          createPath(tId, rId, state);
-        });
+        const state = getInTransitState(tId, 'trn-broker', GATEWAYS, RECEIVERS);
+        createPath(tId, 'trn-broker', state);
       });
 
-      // Draw Rule -> Action lines
+      // 2. Column 2 (Transit: Broker) -> Column 2 (Transit: Client)
+      const brokerToClientState = getInTransitState('trn-broker', 'trn-client', GATEWAYS, RECEIVERS);
+      createPath('trn-broker', 'trn-client', brokerToClientState);
+
+      // 3. Column 2 (Transit: Client) -> Column 3 (Rules Engine)
+      rules.forEach(r => {
+        const rId = `rule-${r.id}`;
+        const state = getInTransitState('trn-client', rId, GATEWAYS, RECEIVERS);
+        createPath('trn-client', rId, state);
+      });
+
+      // 4. Column 3 (Rules Engine) -> Column 4 (Gateways)
       rules.forEach(r => {
         const rId = `rule-${r.id}`;
         if (!r.active) return;
         
-        ACTIONS.forEach(a => {
-          if (a.check(r)) {
-            const state = getConnectionState(rId, a.id, ACTIONS);
-            createPath(rId, a.id, state);
+        GATEWAYS.forEach(g => {
+          if (g.check(r)) {
+            const state = getInTransitState(rId, g.id, GATEWAYS, RECEIVERS);
+            createPath(rId, g.id, state);
           }
         });
       });
 
-      updateNodeStyles(ACTIONS);
+      // 5. Column 4 (Gateways) -> Column 5 (Receivers)
+      RECEIVERS.forEach(rcv => {
+        const state = getInTransitState(rcv.gatewayId, rcv.id, GATEWAYS, RECEIVERS);
+        createPath(rcv.gatewayId, rcv.id, state);
+      });
+
+      updateNodeStyles(GATEWAYS, RECEIVERS);
     }
 
     // Helper to create and append SVG path element
@@ -457,47 +619,126 @@
       } else if (state === 'dim') {
         path.setAttribute('stroke', '#E4E7EC');
         path.setAttribute('stroke-width', '1.5');
-        path.style.opacity = '0.15';
+        path.style.opacity = '0.12';
       } else {
         path.setAttribute('stroke', '#D0D5DD');
         path.setAttribute('stroke-width', '2');
-        path.style.opacity = '0.6';
+        path.style.opacity = '0.5';
       }
 
       svg.appendChild(path);
     }
 
-    // Determine connection state (highlight, dim, normal)
-    function getConnectionState(fromId, toId, ACTIONS) {
+    // Compute detailed highlights for path segments based on selected node
+    function getInTransitState(fromId, toId, GATEWAYS, RECEIVERS) {
       if (!activeNode) return 'normal';
       const { type, id } = activeNode;
 
-      if (type === 'trigger') {
+      // Highlight target trace
+      if (type === 'input') {
         if (fromId === id) return 'highlight';
+        if (fromId === 'trn-broker' && toId === 'trn-client') return 'highlight';
+        if (fromId === 'trn-client') return 'highlight';
+        
+        // Highlight active rules and their corresponding downstream paths
         const rule = rules.find(r => `rule-${r.id}` === fromId);
         if (rule && rule.active) {
-          const actionObj = ACTIONS.find(a => a.id === toId);
-          if (actionObj && actionObj.check(rule)) return 'highlight';
+          const gateway = GATEWAYS.find(g => g.id === toId);
+          if (gateway && gateway.check(rule)) return 'highlight';
+        }
+        
+        const rcv = RECEIVERS.find(r => r.id === toId);
+        if (rcv && fromId === rcv.gatewayId) {
+          const hasConnection = rules.some(rule => rule.active && GATEWAYS.find(g => g.id === rcv.gatewayId)?.check(rule));
+          if (hasConnection) return 'highlight';
         }
         return 'dim';
+      }
+
+      if (type === 'transit') {
+        if (id === 'trn-broker') {
+          if (toId === 'trn-broker') return 'highlight';
+          if (fromId === 'trn-broker' && toId === 'trn-client') return 'highlight';
+          if (fromId === 'trn-client') return 'highlight';
+          
+          const rule = rules.find(r => `rule-${r.id}` === fromId);
+          if (rule && rule.active) {
+            const gateway = GATEWAYS.find(g => g.id === toId);
+            if (gateway && gateway.check(rule)) return 'highlight';
+          }
+
+          const rcv = RECEIVERS.find(r => r.id === toId);
+          if (rcv && fromId === rcv.gatewayId) {
+            const hasConnection = rules.some(rule => rule.active && GATEWAYS.find(g => g.id === rcv.gatewayId)?.check(rule));
+            if (hasConnection) return 'highlight';
+          }
+          return 'dim';
+        }
+        
+        if (id === 'trn-client') {
+          if (toId === 'trn-client' || fromId === 'trn-client') return 'highlight';
+          const rule = rules.find(r => `rule-${r.id}` === fromId);
+          if (rule && rule.active) {
+            const gateway = GATEWAYS.find(g => g.id === toId);
+            if (gateway && gateway.check(rule)) return 'highlight';
+          }
+
+          const rcv = RECEIVERS.find(r => r.id === toId);
+          if (rcv && fromId === rcv.gatewayId) {
+            const hasConnection = rules.some(rule => rule.active && GATEWAYS.find(g => g.id === rcv.gatewayId)?.check(rule));
+            if (hasConnection) return 'highlight';
+          }
+          return 'dim';
+        }
       }
 
       if (type === 'rule') {
         const targetRuleId = `rule-${id}`;
         if (fromId === targetRuleId || toId === targetRuleId) return 'highlight';
+        
+        if (toId === targetRuleId) return 'highlight';
+        if (fromId === 'trn-broker' && toId === 'trn-client') return 'highlight';
+        if (fromId === 'trn-client' && toId === targetRuleId) return 'highlight';
+        
+        // Highlight active triggers leading to this rule
+        if (toId === 'trn-broker') return 'highlight';
         return 'dim';
       }
 
-      if (type === 'action') {
-        if (toId === id) {
-          const rule = rules.find(r => `rule-${r.id}` === fromId);
-          if (rule && rule.active) {
-            const actionObj = ACTIONS.find(a => a.id === id);
-            if (actionObj && actionObj.check(rule)) return 'highlight';
+      if (type === 'gateway') {
+        if (toId === id || fromId === id) return 'highlight';
+        
+        // Highlight backwards trace
+        if (toId === 'trn-broker') return 'highlight';
+        if (fromId === 'trn-broker' && toId === 'trn-client') return 'highlight';
+        
+        const rule = rules.find(r => `rule-${r.id}` === toId);
+        if (rule && rule.active) {
+          const gateway = GATEWAYS.find(g => g.id === id);
+          if (gateway && gateway.check(rule)) {
+            if (fromId === 'trn-client') return 'highlight';
           }
         }
-        const rule = rules.find(r => `rule-${r.id}` === fromId);
-        if (rule && rule.active && toId === id) return 'highlight';
+        return 'dim';
+      }
+
+      if (type === 'receiver') {
+        const targetRcv = RECEIVERS.find(r => r.id === id);
+        if (toId === id && fromId === targetRcv.gatewayId) return 'highlight';
+        
+        if (toId === 'trn-broker') return 'highlight';
+        if (fromId === 'trn-broker' && toId === 'trn-client') return 'highlight';
+        
+        // Trace back from target receiver
+        const rule = rules.find(r => `rule-${r.id}` === toId);
+        if (rule && rule.active) {
+          const gatewayObj = GATEWAYS.find(g => g.id === targetRcv.gatewayId);
+          if (gatewayObj && gatewayObj.check(rule)) {
+            if (fromId === 'trn-client') return 'highlight';
+            const gatewayId = targetRcv.gatewayId;
+            if (fromId === `rule-${rule.id}` && toId === gatewayId) return 'highlight';
+          }
+        }
         return 'dim';
       }
 
@@ -505,17 +746,16 @@
     }
 
     // Adjust visual states of the nodes dynamically
-    function updateNodeStyles(ACTIONS) {
+    function updateNodeStyles(GATEWAYS, RECEIVERS) {
       document.querySelectorAll('[data-node-id]').forEach(el => {
         const id = el.getAttribute('data-node-id');
         const type = el.getAttribute('data-node-type');
         
-        // Remove old style classes
         el.className = el.className
           .replace(/border-brand|ring-2|ring-brand\/10|translate-x-1|scale-\[1\.01\]|shadow-md|border-brand\/40|bg-brand\/\[0\.01\]|opacity-40|grayscale-\[20%\]/g, '')
           .trim();
 
-        const state = getNodeState(id, type, ACTIONS);
+        const state = getNodeState(id, type, GATEWAYS, RECEIVERS);
         
         if (state === 'selected') {
           el.classList.add('border-brand', 'ring-2', 'ring-brand/10', 'translate-x-1');
@@ -528,44 +768,94 @@
     }
 
     // Determine target node status (selected, highlight, dim, normal)
-    function getNodeState(nodeId, type, ACTIONS) {
+    function getNodeState(nodeId, type, GATEWAYS, RECEIVERS) {
       if (!activeNode) return 'normal';
       if (activeNode.id === nodeId) return 'selected';
 
       const { type: activeType, id: activeId } = activeNode;
 
-      if (activeType === 'trigger') {
-        if (type === 'trigger') return 'dim';
+      if (activeType === 'input') {
+        if (type === 'input') return 'dim';
+        if (type === 'transit') return 'highlight';
         if (type === 'rule') {
           const rule = rules.find(r => `rule-${r.id}` === nodeId);
           return rule && rule.active ? 'highlight' : 'dim';
         }
-        if (type === 'action') {
-          const actionObj = ACTIONS.find(a => a.id === nodeId);
-          const hasActiveConnection = rules.some(r => r.active && actionObj.check(r));
+        if (type === 'gateway') {
+          const gatewayObj = GATEWAYS.find(g => g.id === nodeId);
+          const hasActiveConnection = rules.some(r => r.active && gatewayObj.check(r));
+          return hasActiveConnection ? 'highlight' : 'dim';
+        }
+        if (type === 'receiver') {
+          const rcvObj = RECEIVERS.find(r => r.id === nodeId);
+          const gatewayObj = GATEWAYS.find(g => g.id === rcvObj.gatewayId);
+          const hasActiveConnection = rules.some(r => r.active && gatewayObj.check(r));
+          return hasActiveConnection ? 'highlight' : 'dim';
+        }
+      }
+
+      if (activeType === 'transit') {
+        if (type === 'input') return 'highlight';
+        if (type === 'transit') return 'dim';
+        if (type === 'rule') {
+          const rule = rules.find(r => `rule-${r.id}` === nodeId);
+          return rule && rule.active ? 'highlight' : 'dim';
+        }
+        if (type === 'gateway') {
+          const gatewayObj = GATEWAYS.find(g => g.id === nodeId);
+          const hasActiveConnection = rules.some(r => r.active && gatewayObj.check(r));
+          return hasActiveConnection ? 'highlight' : 'dim';
+        }
+        if (type === 'receiver') {
+          const rcvObj = RECEIVERS.find(r => r.id === nodeId);
+          const gatewayObj = GATEWAYS.find(g => g.id === rcvObj.gatewayId);
+          const hasActiveConnection = rules.some(r => r.active && gatewayObj.check(r));
           return hasActiveConnection ? 'highlight' : 'dim';
         }
       }
 
       if (activeType === 'rule') {
         const selectedRule = rules.find(r => r.id === activeId);
-        if (type === 'trigger') return 'highlight';
+        if (type === 'input' || type === 'transit') return 'highlight';
         if (type === 'rule') return 'dim';
-        if (type === 'action' && selectedRule && selectedRule.active) {
-          const actionObj = ACTIONS.find(a => a.id === nodeId);
-          return actionObj && actionObj.check(selectedRule) ? 'highlight' : 'dim';
+        if (type === 'gateway' && selectedRule && selectedRule.active) {
+          const gatewayObj = GATEWAYS.find(g => g.id === nodeId);
+          return gatewayObj && gatewayObj.check(selectedRule) ? 'highlight' : 'dim';
+        }
+        if (type === 'receiver' && selectedRule && selectedRule.active) {
+          const rcvObj = RECEIVERS.find(r => r.id === nodeId);
+          const gatewayObj = GATEWAYS.find(g => g.id === rcvObj.gatewayId);
+          return gatewayObj && gatewayObj.check(selectedRule) ? 'highlight' : 'dim';
         }
         return 'dim';
       }
 
-      if (activeType === 'action') {
-        if (type === 'action') return 'dim';
+      if (activeType === 'gateway') {
+        const gatewayObj = GATEWAYS.find(g => g.id === activeId);
+        if (type === 'receiver') {
+          const rcvObj = RECEIVERS.find(r => r.id === nodeId);
+          return rcvObj && rcvObj.gatewayId === activeId ? 'highlight' : 'dim';
+        }
         if (type === 'rule') {
           const rule = rules.find(r => `rule-${r.id}` === nodeId);
-          const actionObj = ACTIONS.find(a => a.id === activeId);
-          return rule && rule.active && actionObj.check(rule) ? 'highlight' : 'dim';
+          return rule && rule.active && gatewayObj.check(rule) ? 'highlight' : 'dim';
         }
-        if (type === 'trigger') return 'highlight';
+        if (type === 'input' || type === 'transit') return 'highlight';
+        return 'dim';
+      }
+
+      if (activeType === 'receiver') {
+        const targetRcv = RECEIVERS.find(r => r.id === activeId);
+        if (type === 'gateway') {
+          return nodeId === targetRcv.gatewayId ? 'highlight' : 'dim';
+        }
+        if (type === 'rule') {
+          const rule = rules.find(r => `rule-${r.id}` === nodeId);
+          const gatewayObj = GATEWAYS.find(g => g.id === targetRcv.gatewayId);
+          return rule && rule.active && gatewayObj.check(rule) ? 'highlight' : 'dim';
+        }
+        if (type === 'input' || type === 'transit') return 'highlight';
+        return 'dim';
       }
 
       return 'normal';
@@ -574,68 +864,87 @@
     // Node click handler
     function selectNode(type, id) {
       activeNode = { type, id };
+      
       if (type === 'rule') {
         const rule = rules.find(r => r.id === id);
-        showInspector(rule);
+        showInspector('rule', rule);
       } else {
-        document.getElementById('inspector-panel').classList.add('hidden');
-        selectedRule = null;
+        const detail = NODE_DETAILS[id];
+        showInspector('node', detail);
       }
+      
       drawConnections();
     }
 
-    // Open detailed rule inspector
-    function showInspector(rule) {
-      if (!rule) return;
+    // Open detailed rule/node inspector
+    function showInspector(type, data) {
+      if (!data) return;
       
       const panel = document.getElementById('inspector-panel');
-      document.getElementById('inspect-title').innerText = rule.name;
-      document.getElementById('inspect-desc').innerText = rule.description || 'No description provided.';
-      document.getElementById('inspect-priority').innerText = `· Priority ${rule.priority}`;
+      const grid = document.getElementById('inspect-details-grid');
+      const icon = document.getElementById('inspect-icon');
       
-      // Status badge styling
-      const statusBadge = document.getElementById('inspect-status-badge');
-      statusBadge.innerText = rule.active ? 'Active' : 'Disabled';
-      if (rule.active) {
-        statusBadge.className = "inline-block text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-100";
-      } else {
-        statusBadge.className = "inline-block text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-gray-50 text-gray-500 border border-gray-100";
-      }
+      document.getElementById('inspect-title').innerText = data.name || data.title;
+      document.getElementById('inspect-desc').innerText = data.description || data.desc;
+      
+      const badge = document.getElementById('inspect-badge');
+      const subtext = document.getElementById('inspect-subtext');
+      
+      if (type === 'rule') {
+        badge.innerText = data.active ? 'Active Rule' : 'Disabled Rule';
+        badge.className = data.active 
+          ? "inline-block text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-100"
+          : "inline-block text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-gray-50 text-gray-500 border border-gray-100";
+        
+        subtext.innerText = `· Priority ${data.priority}`;
+        icon.setAttribute('data-lucide', 'git-branch');
+        
+        // Populate Conditions
+        const condContainer = document.getElementById('inspect-conditions');
+        condContainer.innerHTML = '';
+        (data.conditions || []).forEach(c => {
+          const badge = document.createElement('span');
+          badge.className = "inline-block text-[11px] bg-white border border-line rounded px-1.5 py-0.5 font-mono text-ink mr-1.5 mt-1";
+          badge.innerText = `${c.field} ${c.op === 'eq' ? '=' : c.op === 'neq' ? '≠' : c.op === 'gte' ? '≥' : c.op === 'lte' ? '≤' : c.op} "${c.value}"`;
+          condContainer.appendChild(badge);
+        });
 
-      // Populate Conditions
-      const condContainer = document.getElementById('inspect-conditions');
-      condContainer.innerHTML = '';
-      (rule.conditions || []).forEach(c => {
-        const badge = document.createElement('span');
-        badge.className = "inline-block text-[11px] bg-white border border-line rounded px-1.5 py-0.5 font-mono text-ink mr-1.5 mt-1";
-        badge.innerText = `${c.field} ${c.op === 'eq' ? '=' : c.op === 'neq' ? '≠' : c.op === 'gte' ? '≥' : c.op === 'lte' ? '≤' : c.op} "${c.value}"`;
-        condContainer.appendChild(badge);
-      });
+        // Populate Confirmation Details
+        const confContainer = document.getElementById('inspect-confirmation');
+        if (data.confirmation) {
+          confContainer.innerHTML = `
+            Requires <span class="font-semibold text-brand">${data.confirmation.required_count} detections</span> within <span class="font-semibold text-brand">${data.confirmation.window_seconds / 60} minutes</span> (same zone).
+          `;
+        } else {
+          confContainer.innerHTML = '<span class="text-ink-subtle text-[11px]">Immediate action (no confirmation required).</span>';
+        }
 
-      // Populate Confirmation Details
-      const confContainer = document.getElementById('inspect-confirmation');
-      if (rule.confirmation) {
-        confContainer.innerHTML = `
-          Requires <span class="font-semibold text-brand">${rule.confirmation.required_count} detections</span> within <span className="font-semibold text-brand">${rule.confirmation.window_seconds / 60} minutes</span> (same zone to verify).
+        // Populate Action Targets
+        const targetsContainer = document.getElementById('inspect-targets');
+        const action = data.actions?.on_trigger || data.actions?.on_confirm || {};
+        const notifyCount = action.notify_stakeholder_ids?.length || 0;
+        targetsContainer.innerHTML = `
+          <div class="flex items-center gap-1.5 text-xs text-ink leading-relaxed">
+            <span class="font-semibold">Incident:</span> ${action.create_incident ? '✅ Enabled' : '❌ Disabled'}
+          </div>
+          <div class="flex items-center gap-1.5 text-xs text-ink leading-relaxed mt-0.5">
+            <span class="font-semibold">SMS Alert Recipients:</span> ${notifyCount} stakeholder(s)
+          </div>
         `;
+        
+        grid.classList.remove('hidden');
       } else {
-        confContainer.innerHTML = '<span class="text-ink-subtle">Immediate action (no confirmation required).</span>';
+        // Simple component node detail
+        badge.innerText = data.badge;
+        badge.className = "inline-block text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-100";
+        subtext.innerText = `· ${data.subtext}`;
+        icon.setAttribute('data-lucide', 'info');
+        
+        grid.classList.add('hidden');
       }
-
-      // Populate Action Targets
-      const targetsContainer = document.getElementById('inspect-targets');
-      const action = rule.actions?.on_trigger || rule.actions?.on_confirm || {};
-      const notifyCount = action.notify_stakeholder_ids?.length || 0;
-      targetsContainer.innerHTML = `
-        <div class="flex items-center gap-1.5 text-xs">
-          <span class="font-semibold">Incident:</span> ${action.create_incident ? '✅ Enabled' : '❌ Disabled'}
-        </div>
-        <div class="flex items-center gap-1.5 text-xs mt-0.5">
-          <span class="font-semibold">SMS Alert Recipients:</span> ${notifyCount} stakeholder(s)
-        </div>
-      `;
 
       panel.classList.remove('hidden');
+      lucide.createIcons();
       setTimeout(updateCoords, 50);
     }
 
