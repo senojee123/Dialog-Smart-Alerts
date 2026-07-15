@@ -130,7 +130,7 @@
           <i data-lucide="arrow-down" class="w-5 h-5 block lg:hidden"></i>
         </div>
 
-        <!-- Step 2: Conditions -->
+        <!-- Step 2: Conditions & Camera Registration -->
         <div id="step-card-2" onclick="openStepDrawer(2)"
              class="node-transition flex-1 min-w-[210px] bg-gray-50 border border-line-strong rounded-xl p-5 cursor-not-allowed opacity-50 flex flex-col justify-between">
           <div class="space-y-3">
@@ -141,7 +141,7 @@
               </div>
             </div>
             <h3 class="font-bold text-ink text-sm leading-snug">Trigger Conditions</h3>
-            <p id="step-summary-2" class="text-xs text-ink-muted leading-relaxed">Object types, confidence margins.</p>
+            <p id="step-summary-2" class="text-xs text-ink-muted leading-relaxed">Object types, camera register filters.</p>
           </div>
           <div class="pt-4 mt-auto">
             <span id="step-badge-2" class="inline-block text-[9px] font-bold uppercase tracking-wider text-ink-subtle bg-line-strong/50 px-2 py-0.5 rounded">Locked</span>
@@ -178,7 +178,7 @@
           <i data-lucide="arrow-down" class="w-5 h-5 block lg:hidden"></i>
         </div>
 
-        <!-- Step 4: Actions -->
+        <!-- Step 4: Actions & Sign Registration -->
         <div id="step-card-4" onclick="openStepDrawer(4)"
              class="node-transition flex-1 min-w-[210px] bg-gray-50 border border-line-strong rounded-xl p-5 cursor-not-allowed opacity-50 flex flex-col justify-between">
           <div class="space-y-3">
@@ -189,7 +189,7 @@
               </div>
             </div>
             <h3 class="font-bold text-ink text-sm leading-snug">Output Actions</h3>
-            <p id="step-summary-4" class="text-xs text-ink-muted leading-relaxed">SMS warning templates, active sirens, sign triggers.</p>
+            <p id="step-summary-4" class="text-xs text-ink-muted leading-relaxed">SMS warning templates, warning sign registers.</p>
           </div>
           <div class="pt-4 mt-auto">
             <span id="step-badge-4" class="inline-block text-[9px] font-bold uppercase tracking-wider text-ink-subtle bg-line-strong/50 px-2 py-0.5 rounded">Locked</span>
@@ -302,29 +302,37 @@
     // Track active completion steps
     let stepsStatus = {
       1: { unlocked: true, completed: false, summary: "Name, use case context, priority levels." },
-      2: { unlocked: false, completed: false, summary: "Object types, confidence margins." },
+      2: { unlocked: false, completed: false, summary: "Object types, camera register filters." },
       3: { unlocked: false, completed: false, summary: "Required event counts, verification windows." },
-      4: { unlocked: false, completed: false, summary: "SMS warning templates, active sirens, sign triggers." },
-      5: { unlocked: false, completed: false, summary: "Final review, activation in backend database." }
+      4: { unlocked: false, completed: false, summary: "SMS warning templates, warning sign registers." },
+      5: { unlocked: false, completed: false, summary: "Final review, activation in database." }
     };
 
     let activeDrawerStep = null;
     let useCases = [];
     let stakeholders = [];
+    let zones = [];
 
     // Fetch database dependencies on load
     async function loadDependencies() {
       try {
-        const [ucRes, shRes] = await Promise.all([
+        const [ucRes, shRes, zoneRes] = await Promise.all([
           fetch('https://web-production-31cc0e.up.railway.app/api/use-cases'),
-          fetch('https://web-production-31cc0e.up.railway.app/api/stakeholders')
+          fetch('https://web-production-31cc0e.up.railway.app/api/stakeholders'),
+          fetch('https://web-production-31cc0e.up.railway.app/api/zones')
         ]);
         if (ucRes.ok) useCases = await ucRes.json();
         if (shRes.ok) stakeholders = await shRes.json();
+        if (zoneRes.ok) zones = await zoneRes.json();
       } catch (e) {
         console.warn('API connection failed. Using fallback layout lists.');
         useCases = [
           { id: "UC-001", name: "Elephant Detection – Road Corridor", color: "#E60000" }
+        ];
+        zones = [
+          { id: "ZONE-B43", name: "B43 Yala Road Corridor", road: "B43" },
+          { id: "ZONE-A2",  name: "A2 Southern Highway",     road: "A2" },
+          { id: "ZONE-KTR", name: "Kataragama Road",         road: "KTR" }
         ];
         stakeholders = [
           {
@@ -363,7 +371,6 @@
 
       saveBtn.innerText = stepNum === 5 ? "Submit & Activate" : "Save Step";
       
-      // Inject correct templates dynamically
       if (stepNum === 1) {
         title.innerText = "Step 1: Rule Details";
         subtitle.innerText = "Basic Rule configurations";
@@ -401,49 +408,7 @@
         subtitle.innerText = "Rule Evaluation Parameters";
         icon.setAttribute('data-lucide', 'git-fork');
 
-        let rowsHtml = currentRule.conditions.map((c, i) => `
-          <div class="flex items-center gap-2 w-full condition-row mb-2" data-index="${i}">
-            <div class="flex-1 min-w-0">
-              <select class="w-full border border-line-strong bg-white rounded-lg p-2 text-xs text-ink cond-field" onchange="onFieldChange(${i}, this)">
-                <option value="object_type" ${c.field === 'object_type' ? 'selected' : ''}>Object Type</option>
-                <option value="confidence" ${c.field === 'confidence' ? 'selected' : ''}>Confidence %</option>
-              </select>
-            </div>
-            <div class="w-24 shrink-0">
-              <select class="w-full border border-line-strong bg-white rounded-lg p-2 text-xs text-ink cond-op">
-                ${c.field === 'confidence' ? `
-                  <option value="gte" ${c.op === 'gte' ? 'selected' : ''}>&ge;</option>
-                  <option value="lte" ${c.op === 'lte' ? 'selected' : ''}>&le;</option>
-                ` : `
-                  <option value="eq" ${c.op === 'eq' ? 'selected' : ''}>=</option>
-                  <option value="neq" ${c.op === 'neq' ? 'selected' : ''}>&ne;</option>
-                `}
-              </select>
-            </div>
-            <div class="flex-1 min-w-0">
-              <input type="text" value="${c.value}" class="w-full border border-line-strong rounded-lg p-2 text-xs text-ink cond-val" placeholder="${c.field === 'confidence' ? '70' : 'elephant'}">
-            </div>
-            ${currentRule.conditions.length > 1 ? `
-              <button onclick="removeConditionRow(${i})" class="text-ink-subtle hover:text-brand shrink-0 p-1">
-                <i data-lucide="trash-2" class="w-4 h-4"></i>
-              </button>
-            ` : ''}
-          </div>
-        `).join('');
-
-        content.innerHTML = `
-          <div class="space-y-4">
-            <p class="text-[11px] text-ink-muted leading-relaxed">
-              All conditions must match (AND logic). The workflow triggers when an incoming telemetry event satisfies every row.
-            </p>
-            <div id="conditions-list-container">
-              ${rowsHtml}
-            </div>
-            <button onclick="addConditionRow()" class="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold border border-line bg-white hover:bg-line/40 rounded-lg transition-colors text-ink">
-              <i data-lucide="plus" class="w-3.5 h-3.5"></i> Add Condition
-            </button>
-          </div>
-        `;
+        renderStep2Conditions();
       } 
       else if (stepNum === 3) {
         title.innerText = "Step 3: Confirmation Settings";
@@ -497,7 +462,6 @@
           ? `Requires <strong>${currentRule.confirmation.required_count} detections</strong> within <strong>${currentRule.confirmation.window_seconds}s</strong> (same zone).`
           : "Immediate activation.";
 
-        // Find recipient names
         let actIds = currentRule.actions.on_trigger.notify_stakeholder_ids || [];
         let recipientNames = stakeholders
           .filter(sh => actIds.includes(sh.id))
@@ -538,7 +502,138 @@
       drawer.classList.remove('translate-x-full');
     }
 
-    // Render Step 4 form fields
+    // Render Step 2 Conditions list & Camera Registry Button
+    function renderStep2Conditions() {
+      const content = document.getElementById('drawer-content');
+      
+      let rowsHtml = currentRule.conditions.map((c, i) => `
+        <div class="flex items-center gap-2 w-full condition-row mb-2" data-index="${i}">
+          <div class="flex-1 min-w-0">
+            <select class="w-full border border-line-strong bg-white rounded-lg p-2 text-xs text-ink cond-field" onchange="onFieldChange(${i}, this)">
+              <option value="object_type" ${c.field === 'object_type' ? 'selected' : ''}>Object Type</option>
+              <option value="confidence" ${c.field === 'confidence' ? 'selected' : ''}>Confidence %</option>
+            </select>
+          </div>
+          <div class="w-24 shrink-0">
+            <select class="w-full border border-line-strong bg-white rounded-lg p-2 text-xs text-ink cond-op">
+              ${c.field === 'confidence' ? `
+                <option value="gte" ${c.op === 'gte' ? 'selected' : ''}>&ge;</option>
+                <option value="lte" ${c.op === 'lte' ? 'selected' : ''}>&le;</option>
+              ` : `
+                <option value="eq" ${c.op === 'eq' ? 'selected' : ''}>=</option>
+                <option value="neq" ${c.op === 'neq' ? 'selected' : ''}>&ne;</option>
+              `}
+            </select>
+          </div>
+          <div class="flex-1 min-w-0">
+            <input type="text" value="${c.value}" class="w-full border border-line-strong rounded-lg p-2 text-xs text-ink cond-val" placeholder="${c.field === 'confidence' ? '70' : 'elephant'}">
+          </div>
+          ${currentRule.conditions.length > 1 ? `
+            <button onclick="removeConditionRow(${i})" class="text-ink-subtle hover:text-brand shrink-0 p-1">
+              <i data-lucide="trash-2" class="w-4 h-4"></i>
+            </button>
+          ` : ''}
+        </div>
+      `).join('');
+
+      let zoneOptions = zones.map(z => `<option value="${z.id}">${z.name}</option>`).join('');
+
+      content.innerHTML = `
+        <div class="space-y-4">
+          <p class="text-[11px] text-ink-muted leading-relaxed">
+            All conditions must match (AND logic). The workflow triggers when an incoming telemetry event satisfies every row.
+          </p>
+          
+          <div id="conditions-list-container">
+            ${rowsHtml}
+          </div>
+
+          <div class="flex items-center justify-between pt-1">
+            <button onclick="addConditionRow()" class="flex items-center gap-1 px-2.5 py-1.5 text-xs font-semibold border border-line bg-white hover:bg-line/40 rounded-lg transition-colors text-ink">
+              <i data-lucide="plus" class="w-3.5 h-3.5"></i> Add Condition
+            </button>
+            <button onclick="toggleNewDeviceForm()" class="text-[10px] text-brand hover:text-brand-hover font-bold flex items-center gap-0.5">
+              <i data-lucide="camera" class="w-3 h-3"></i> + Register Camera Device
+            </button>
+          </div>
+
+          <!-- Inline Register Camera / Sensor Form -->
+          <div id="new-dev-form" class="hidden p-3 border border-dashed border-line-strong bg-gray-50/50 rounded-xl space-y-2.5">
+            <h5 class="text-[11px] font-bold text-ink uppercase tracking-wider">Register New Camera Sensor</h5>
+            <div class="grid grid-cols-2 gap-2">
+              <input type="text" id="dev-id" placeholder="Device ID (e.g. DEV-006)" class="w-full border border-line-strong bg-white rounded p-1.5 text-xs text-ink">
+              <input type="text" id="dev-name" placeholder="Name (e.g. Camera Trap B43)" class="w-full border border-line-strong bg-white rounded p-1.5 text-xs text-ink">
+            </div>
+            <div class="grid grid-cols-2 gap-2">
+              <select id="dev-type" class="w-full border border-line-strong bg-white rounded p-1.5 text-xs text-ink">
+                <option value="camera">Camera Trap</option>
+                <option value="thermal">Thermal Sensor</option>
+              </select>
+              <select id="dev-zone" class="w-full border border-line-strong bg-white rounded p-1.5 text-xs text-ink">
+                <option value="">Select Zone...</option>
+                ${zoneOptions}
+              </select>
+            </div>
+            <div class="flex gap-2">
+              <input type="text" id="dev-key" placeholder="API Authentication Key" class="flex-1 border border-line-strong bg-white rounded p-1.5 text-xs text-ink">
+              <button onclick="submitNewDevice()" class="px-3 py-1.5 bg-brand hover:bg-brand-hover text-white text-xs font-bold rounded-lg transition-colors">
+                Register
+              </button>
+            </div>
+          </div>
+        </div>
+      `;
+      lucide.createIcons();
+    }
+
+    // Toggle Camera Device inline form
+    function toggleNewDeviceForm() {
+      const form = document.getElementById('new-dev-form');
+      form.classList.toggle('hidden');
+    }
+
+    // Submit new camera device to database API
+    async function submitNewDevice() {
+      const id = document.getElementById('dev-id').value.trim();
+      const name = document.getElementById('dev-name').value.trim();
+      const type = document.getElementById('dev-type').value;
+      const zoneId = document.getElementById('dev-zone').value;
+      const key = document.getElementById('dev-key').value.trim() || 'default-key';
+
+      if (!id) { alert('Device ID is required.'); return; }
+      if (!name) { alert('Device name is required.'); return; }
+      if (!zoneId) { alert('Zone location is required.'); return; }
+
+      const newDevice = {
+        id: id,
+        name: name,
+        type: type,
+        zone_id: zoneId,
+        use_case_id: currentRule.use_case_id || "UC-001",
+        lat: 6.3800,
+        lng: 81.4000,
+        api_key: key,
+        online: true
+      };
+
+      try {
+        const response = await fetch('https://web-production-31cc0e.up.railway.app/api/devices', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(newDevice)
+        });
+        if (response.ok) {
+          alert(`Success: Camera ${id} registered in database!`);
+          document.getElementById('new-dev-form').classList.add('hidden');
+        } else {
+          alert('Failed to register device. Verify unique Device ID.');
+        }
+      } catch (e) {
+        alert('Network connection error. Unable to register device.');
+      }
+    }
+
+    // Render Step 4 Actions & Sign Board Registry
     function renderStep4Actions() {
       const content = document.getElementById('drawer-content');
       const act = currentRule.actions.on_trigger;
@@ -555,6 +650,8 @@
           </label>
         `;
       }).join('');
+
+      let zoneOptions = zones.map(z => `<option value="${z.id}">${z.name}</option>`).join('');
 
       content.innerHTML = `
         <div class="space-y-4">
@@ -603,6 +700,42 @@
             </div>
           </div>
 
+          <!-- Actuators (Warning signs registration) -->
+          <div class="border-t border-line pt-2">
+            <div class="flex items-center justify-between mb-1">
+              <span class="text-xs font-bold text-ink">Local Warning Signs & Sirens</span>
+              <button onclick="toggleNewSignForm()" class="text-[10px] text-brand hover:text-brand-hover font-bold flex items-center gap-0.5">
+                <i data-lucide="monitor" class="w-3 h-3"></i> + Register Sign Board
+              </button>
+            </div>
+
+            <!-- Inline Register Sign Board Form -->
+            <div id="new-sign-form" class="hidden p-3 border border-dashed border-line-strong bg-gray-50/50 rounded-xl space-y-2.5">
+              <h5 class="text-[11px] font-bold text-ink uppercase tracking-wider">Register New LED Warning Board</h5>
+              <div class="grid grid-cols-2 gap-2">
+                <input type="text" id="sign-id" placeholder="Sign ID (e.g. RS-012)" class="w-full border border-line-strong bg-white rounded p-1.5 text-xs text-ink">
+                <input type="text" id="sign-name" placeholder="Name (e.g. B43 Board 9)" class="w-full border border-line-strong bg-white rounded p-1.5 text-xs text-ink">
+              </div>
+              <div class="grid grid-cols-2 gap-2">
+                <input type="text" id="sign-road" placeholder="Road (e.g. B43 Yala Road)" class="w-full border border-line-strong bg-white rounded p-1.5 text-xs text-ink">
+                <select id="sign-zone" class="w-full border border-line-strong bg-white rounded p-1.5 text-xs text-ink">
+                  <option value="">Select Zone...</option>
+                  ${zoneOptions}
+                </select>
+              </div>
+              <div class="flex gap-2">
+                <input type="number" id="sign-km" placeholder="KM Marker (e.g. 1.8)" step="0.1" class="flex-1 border border-line-strong bg-white rounded p-1.5 text-xs text-ink">
+                <button onclick="submitNewSign()" class="px-3 py-1.5 bg-brand hover:bg-brand-hover text-white text-xs font-bold rounded-lg transition-colors font-semibold">
+                  Register
+                </button>
+              </div>
+            </div>
+            
+            <p class="text-[10px] text-ink-muted leading-relaxed">
+              LED boards and zone sirens are automatically triggered by proximity radius modes in the spatial server. Newly registered signs will flash RED automatically when incidents open in their assigned zones.
+            </p>
+          </div>
+
           <div>
             <label class="block text-xs font-semibold text-ink mb-1.5 font-bold">SMS Message Template</label>
             <textarea id="form-act-template" class="w-full border border-line-strong rounded-lg p-2.5 text-xs text-ink resize-none focus:outline-none focus:ring-1 focus:ring-brand font-mono" rows="3">${act.message_template}</textarea>
@@ -610,6 +743,52 @@
         </div>
       `;
       lucide.createIcons();
+    }
+
+    // Toggle Sign Board inline form
+    function toggleNewSignForm() {
+      const form = document.getElementById('new-sign-form');
+      form.classList.toggle('hidden');
+    }
+
+    // Submit new sign board to database API
+    async function submitNewSign() {
+      const id = document.getElementById('sign-id').value.trim();
+      const name = document.getElementById('sign-name').value.trim();
+      const road = document.getElementById('sign-road').value.trim();
+      const zoneId = document.getElementById('sign-zone').value;
+      const km = parseFloat(document.getElementById('sign-km').value) || 1.0;
+
+      if (!id) { alert('Sign Board ID is required.'); return; }
+      if (!name) { alert('Sign Board name is required.'); return; }
+      if (!zoneId) { alert('Zone location is required.'); return; }
+
+      const newSign = {
+        id: id,
+        name: name,
+        zone_id: zoneId,
+        road: road || "Yala Road Corridor",
+        km_marker: km,
+        lat: 6.3800,
+        lng: 81.4000,
+        online: true
+      };
+
+      try {
+        const response = await fetch('https://web-production-31cc0e.up.railway.app/api/road-signs', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(newSign)
+        });
+        if (response.ok) {
+          alert(`Success: Sign Board ${id} registered in database!`);
+          document.getElementById('new-sign-form').classList.add('hidden');
+        } else {
+          alert('Failed to register sign board. Verify unique Sign ID.');
+        }
+      } catch (e) {
+        alert('Network connection error. Unable to register sign board.');
+      }
     }
 
     // Toggle stakeholder inline form visibility
@@ -646,7 +825,6 @@
         });
         if (response.ok) {
           const created = await response.json();
-          // Add to local list and select
           stakeholders.push(created);
           currentRule.actions.on_trigger.notify_stakeholder_ids.push(created.id);
           renderStep4Actions();
@@ -891,9 +1069,9 @@
 
       stepsStatus = {
         1: { unlocked: true, completed: false, summary: "Name, use case context, priority levels." },
-        2: { unlocked: false, completed: false, summary: "Object types, confidence margins." },
+        2: { unlocked: false, completed: false, summary: "Object types, camera register filters." },
         3: { unlocked: false, completed: false, summary: "Required event counts, verification windows." },
-        4: { unlocked: false, completed: false, summary: "SMS warning templates, active sirens, sign triggers." },
+        4: { unlocked: false, completed: false, summary: "SMS warning templates, warning sign registers." },
         5: { unlocked: false, completed: false, summary: "Final review, activation in database." }
       };
 
