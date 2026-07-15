@@ -104,16 +104,14 @@ async def dispatch(incident: dict, rule: dict, action_key: str, event: dict) -> 
                 sender_port = os.environ.get("IDEABIZ_SENDER_PORT", "tel:87798")
                 sender_name = os.environ.get("IDEABIZ_SENDER_NAME", "smartalerts")
                 
-                # Normalize to tel:+94... format required by Ideabiz
-                clean_num = "".join(c for c in address if c.isdigit() or c == "+")
-                if clean_num.startswith("+"):
+                # Normalize to tel:94... format required by Ideabiz (no '+' sign)
+                clean_num = "".join(c for c in address if c.isdigit())
+                if clean_num.startswith("94"):
                     recipient_num = f"tel:{clean_num}"
-                elif clean_num.startswith("94"):
-                    recipient_num = f"tel:+{clean_num}"
                 elif clean_num.startswith("0"):
-                    recipient_num = f"tel:+94{clean_num[1:]}"
+                    recipient_num = f"tel:94{clean_num[1:]}"
                 else:
-                    recipient_num = f"tel:+94{clean_num}"
+                    recipient_num = f"tel:94{clean_num}"
                 
                 # Send the exact rendered message template as configured in the Rule Engine.
                 sms_body = message
