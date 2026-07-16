@@ -79,8 +79,7 @@ def _closed_incident_event_ids(cutoff_iso: str) -> set[str]:
     ids: set[str] = set()
     for inc in data_store.get_all("incidents"):
         if inc.get("status") in ("CLOSED", "RESOLVED"):
-            if (inc.get("opened_at") or "") >= cutoff_iso:
-                ids.update(inc.get("event_ids") or [])
+            ids.update(inc.get("event_ids") or [])
     return ids
 
 
