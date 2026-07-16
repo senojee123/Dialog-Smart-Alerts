@@ -10,12 +10,12 @@
     "channels": [
       {
         "type": "sms",
-        "address": "+94771000001",
+        "address": "94740525967",
         "language": "en"
       },
       {
         "type": "whatsapp",
-        "address": "+94771000001",
+        "address": "94740525967",
         "language": "en"
       }
     ],
