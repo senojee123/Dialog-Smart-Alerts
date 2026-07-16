@@ -29,7 +29,7 @@
         ],
         "actuate_sign_ids": [],
         "sign_state": "CAUTION",
-        "message_template": "[HIGH] Possible elephant near {zone_name} ({device_name}). Confidence {confidence}%. Please verify. Incident {incident_id}"
+        "message_template": "[HIGH] Elephant warning near {zone_name}. Confidence {confidence} percent. Verify incident {incident_id}"
       }
     },
     "created_at": "2026-06-19T10:01:44.065247+00:00",
