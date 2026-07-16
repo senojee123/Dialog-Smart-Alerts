@@ -68,6 +68,32 @@ def _post_sms(url, token, recipient_num, sender_port, sender_name, message, clie
         return json.loads(response.read().decode("utf-8"))
 
 
+SMS_STAGGER_S = 0.6        # min gap between consecutive Ideabiz sends in one batch — rapid-fire
+                            # requests were observed getting rejected with a misleading "not
+                            # whitelisted" fault even for numbers confirmed whitelisted.
+SMS_RETRY_BACKOFF_S = 1.5  # backoff before a single retry on failure
+
+
+async def _send_sms(api_url, api_token, recipient_num, sender_port, sender_name, sms_body, notif_id):
+    """One send attempt. Returns (status, detail) — status is 'sent' or 'failed: ...'."""
+    try:
+        res_data = await asyncio.to_thread(
+            _post_sms, api_url, api_token, recipient_num, sender_port, sender_name, sms_body, notif_id
+        )
+        outbound = res_data.get("outboundSMSMessageRequest", {})
+        if "serverReferenceCode" in outbound:
+            return "sent", f"Ref: {outbound['serverReferenceCode']}"
+        return f"failed: {res_data}", str(res_data)
+    except Exception as e:
+        err_msg = str(e)
+        if hasattr(e, "read"):
+            try:
+                err_msg += f" - Response: {e.read().decode('utf-8')}"
+            except Exception:
+                pass
+        return f"failed: {err_msg}", err_msg
+
+
 async def dispatch(incident: dict, rule: dict, action_key: str, event: dict) -> list[dict]:
     """
     Fires notifications for the given action_key ('on_trigger' or 'on_confirm').
@@ -89,6 +115,7 @@ async def dispatch(incident: dict, rule: dict, action_key: str, event: dict) -> 
     message = _render(template, ctx)
 
     saved = []
+    sms_sent_count = 0
     for sh_id in stakeholder_ids:
         stakeholder = data_store.get_by_id("stakeholders", sh_id)
         if not stakeholder:
@@ -99,6 +126,10 @@ async def dispatch(incident: dict, rule: dict, action_key: str, event: dict) -> 
             if not address:
                 continue
 
+            # Unique per send: Ideabiz's clientCorrelator is a dedup key — reusing
+            # the incident id across stakeholders/channels/re-notifies makes the
+            # gateway treat every send after the first as a retry and drop it.
+            notif_id = f"NOTIF-{uuid.uuid4().hex[:8].upper()}"
             status = "simulated"
             if ch_type == "sms":
                 # Fetch credentials (defaulting to your production credentials)
@@ -121,39 +152,31 @@ async def dispatch(incident: dict, rule: dict, action_key: str, event: dict) -> 
                 
                 # Send the exact rendered message template as configured in the Rule Engine.
                 sms_body = message
-                
-                try:
-                    # Run blocking network call in thread executor with isolated parameters to prevent race conditions
-                    res_data = await asyncio.to_thread(
-                        _post_sms, 
-                        api_url, 
-                        api_token, 
-                        recipient_num, 
-                        sender_port, 
-                        sender_name, 
-                        sms_body, 
-                        incident.get("id", "123456")
+
+                # Stagger consecutive sends in this batch — see SMS_STAGGER_S above.
+                if sms_sent_count > 0:
+                    await asyncio.sleep(SMS_STAGGER_S)
+                sms_sent_count += 1
+
+                status, detail = await _send_sms(
+                    api_url, api_token, recipient_num, sender_port, sender_name, sms_body, notif_id
+                )
+                if status != "sent":
+                    print(f"  [SMS] → {address}: Attempt 1 failed ({detail}) — retrying once")
+                    await asyncio.sleep(SMS_RETRY_BACKOFF_S)
+                    status, detail = await _send_sms(
+                        api_url, api_token, recipient_num, sender_port, sender_name, sms_body, notif_id
                     )
-                    if "serverReferenceCode" in res_data.get("outboundSMSMessageRequest", {}):
-                        status = "sent"
-                        print(f"  [SMS] → {address}: Successfully sent via Ideabiz (Ref: {res_data['outboundSMSMessageRequest']['serverReferenceCode']})")
-                    else:
-                        status = f"failed: {res_data}"
-                        print(f"  [SMS] → {address}: Failed to send via Ideabiz (Response: {res_data})")
-                except Exception as e:
-                    err_msg = str(e)
-                    if hasattr(e, 'read'):
-                        try:
-                            err_msg += f" - Response: {e.read().decode('utf-8')}"
-                        except Exception:
-                            pass
-                    status = f"failed: {err_msg}"
-                    print(f"  [SMS] → {address}: Error dispatching via Ideabiz API: {err_msg}")
+
+                if status == "sent":
+                    print(f"  [SMS] → {address}: Successfully sent via Ideabiz ({detail})")
+                else:
+                    print(f"  [SMS] → {address}: Failed to send via Ideabiz ({detail})")
             else:
                 print(f"  [{ch_type.upper()}] (SIMULATED) → {address}: {message}")
 
             record = data_store.create("notifications", {
-                "id":               f"NOTIF-{uuid.uuid4().hex[:8].upper()}",
+                "id":               notif_id,
                 "incident_id":      incident.get("id"),
                 "event_id":         event.get("id"),
                 "stakeholder_id":   sh_id,
