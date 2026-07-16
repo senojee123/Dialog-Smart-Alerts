@@ -126,18 +126,20 @@ class MQTTClientManager:
             
             print(f"[MQTT] Successfully ingested event: {event['id']} (Incident: {incident['id'] if incident else 'None'})")
 
-            # 3. Apply threshold evaluation logic
-            # If the alert is "elephant" and confidence value >= 90.0 (value >= 0.90)
-            if event_body["object_type"] == "elephant" and event_body["confidence"] >= 90.0:
-                print(f"[MQTT ALERT] Critical warning trigger for {event_body['object_type']} (Confidence: {event_body['confidence']}%)")
-                
-                # Actuate Warning LED Sign
-                self.actuate_led(station_id, "RED")
-                
-                # Trigger Siren/Audible Alarm
-                self.actuate_siren(station_id, "ON")
+            # 3. Actuate hardware based on evaluated incident severity
+            if incident:
+                sev = incident.get("severity", "HIGH")
+                if sev == "CRITICAL":
+                    print(f"[MQTT ALERT] Critical warning trigger for {event_body['object_type']} (Incident: {incident['id']})")
+                    self.actuate_led(station_id, "RED")
+                    self.actuate_siren(station_id, "ON")
+                elif sev == "HIGH":
+                    print(f"[MQTT ALERT] High warning trigger for {event_body['object_type']} (Incident: {incident['id']})")
+                    self.actuate_led(station_id, "AMBER")
+                else:
+                    print(f"[MQTT ALERT] Warning trigger for {event_body['object_type']} (Incident: {incident['id']}, Severity: {sev})")
             else:
-                print(f"[MQTT MONITOR] Event processed. Confidence {event_body['confidence']}% is below critical threshold (90%). Continuing monitoring.")
+                print(f"[MQTT MONITOR] Event processed. No active incident generated.")
 
         except Exception as e:
             print(f"[MQTT] Error processing ingested event: {e}")
