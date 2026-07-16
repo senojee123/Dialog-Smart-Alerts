@@ -104,6 +104,9 @@ async def dispatch(incident: dict, rule: dict, action_key: str, event: dict) -> 
                 sender_port = os.environ.get("IDEABIZ_SENDER_PORT", "tel:87798")
                 sender_name = os.environ.get("IDEABIZ_SENDER_NAME", "smartalerts")
                 
+                # Diagnostic printing to verify environment variable configuration
+                print(f"  [SMS Debug] Using URL: {api_url} | Port: {sender_port} | Token: ...{api_token[-5:]}")
+                
                 # Normalize to tel:94... format required by Ideabiz (no '+' sign)
                 clean_num = "".join(c for c in address if c.isdigit())
                 if clean_num.startswith("94"):
