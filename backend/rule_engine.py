@@ -128,18 +128,19 @@ async def evaluate_event(event: dict) -> tuple[dict | None, str | None]:
             and _matches_conditions(e, rule.get("conditions", []))
         ]
         required = int(confirmation.get("required_count", 2))
+        past_ids = [e.get("id") for e in matching_past]
         if len(matching_past) + 1 >= required:   # current event counts as 1
-            confirmed.append(rule)
+            confirmed.append((rule, past_ids))
         else:
-            pending.append(rule)
+            pending.append((rule, past_ids))
 
     if confirmed:
-        return confirmed[0], "on_confirm"
+        return confirmed[0][0], "on_confirm", confirmed[0][1]
     if immediate:
-        return immediate[0], "on_trigger"
+        return immediate[0], "on_trigger", []
     if pending:
-        return pending[0], "pending"
-    return None, None
+        return pending[0][0], "pending", pending[0][1]
+    return None, None, []
 
 
 def _parse_dt(s) -> datetime:

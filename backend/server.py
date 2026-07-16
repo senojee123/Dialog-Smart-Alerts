@@ -662,7 +662,7 @@ def _broadcast_sign_states():
 
 
 async def _run_rule_engine(event: dict, device: dict) -> dict | None:
-    matched_rule, action_key = await rule_engine.evaluate_event(event)
+    matched_rule, action_key, contributing_ids = await rule_engine.evaluate_event(event)
     if not matched_rule or action_key not in ("on_trigger", "on_confirm"):
         if matched_rule:
             data_store.update("detection_events", event["id"], {
@@ -690,8 +690,8 @@ async def _run_rule_engine(event: dict, device: dict) -> dict | None:
 
     if open_incidents:
         incident = open_incidents[0]
-        # Always link the new event; escalate severity if this rule is higher
-        merged_event_ids = list(dict.fromkeys((incident.get("event_ids") or []) + [event["id"]]))
+        # Always link the new event and all contributing events; escalate severity if this rule is higher
+        merged_event_ids = list(dict.fromkeys((incident.get("event_ids") or []) + contributing_ids + [event["id"]]))
         patch = {"event_ids": merged_event_ids}
         if sev_order.get(severity, 0) > sev_order.get(incident.get("severity"), 0):
             patch["severity"] = severity
@@ -720,7 +720,7 @@ async def _run_rule_engine(event: dict, device: dict) -> dict | None:
             "opened_at":   _now(),
             "source":      "auto",
             "simulated":   event.get("source") == "simulation",
-            "event_ids":   [event["id"]],
+            "event_ids":   list(dict.fromkeys(contributing_ids + [event["id"]])),
         })
         _broadcast_incident("incident_new", incident)
 
