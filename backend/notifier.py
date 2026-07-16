@@ -40,6 +40,8 @@ def _build_context(incident: dict, event: dict) -> dict:
 
 
 def _post_sms(url, token, recipient_num, sender_port, sender_name, message, client_correlator):
+    # Ensure client_correlator is clean alphanumeric (no hyphens)
+    clean_correlator = "".join(c for c in str(client_correlator) if c.isalnum())
     payload = {
         "outboundSMSMessageRequest": {
             "address": [recipient_num],
@@ -47,6 +49,7 @@ def _post_sms(url, token, recipient_num, sender_port, sender_name, message, clie
             "outboundSMSTextMessage": {
                 "message": message
             },
+            "clientCorrelator": clean_correlator or "test001",
             "senderName": sender_name
         }
     }
@@ -107,14 +110,14 @@ async def dispatch(incident: dict, rule: dict, action_key: str, event: dict) -> 
                 # Diagnostic printing to verify environment variable configuration
                 print(f"  [SMS Debug] Using URL: {api_url} | Port: {sender_port} | Token: ...{api_token[-5:]}")
                 
-                # Normalize to tel:94... format required by Ideabiz (no '+' sign)
+                # Normalize to tel:+94... format required by Ideabiz (must include '+' sign)
                 clean_num = "".join(c for c in address if c.isdigit())
                 if clean_num.startswith("94"):
-                    recipient_num = f"tel:{clean_num}"
+                    recipient_num = f"tel:+{clean_num}"
                 elif clean_num.startswith("0"):
-                    recipient_num = f"tel:94{clean_num[1:]}"
+                    recipient_num = f"tel:+94{clean_num[1:]}"
                 else:
-                    recipient_num = f"tel:94{clean_num}"
+                    recipient_num = f"tel:+94{clean_num}"
                 
                 # Send the exact rendered message template as configured in the Rule Engine.
                 sms_body = message
