@@ -158,15 +158,18 @@ async def dispatch(incident: dict, rule: dict, action_key: str, event: dict) -> 
                     await asyncio.sleep(SMS_STAGGER_S)
                 sms_sent_count += 1
 
-                status, detail = await _send_sms(
-                    api_url, api_token, recipient_num, sender_port, sender_name, sms_body, notif_id
-                )
-                if status != "sent":
-                    print(f"  [SMS] → {address}: Attempt 1 failed ({detail}) — retrying once")
-                    await asyncio.sleep(SMS_RETRY_BACKOFF_S)
+                max_attempts = 3
+                for attempt in range(1, max_attempts + 1):
                     status, detail = await _send_sms(
                         api_url, api_token, recipient_num, sender_port, sender_name, sms_body, notif_id
                     )
+                    if status == "sent":
+                        break
+                    
+                    if attempt < max_attempts:
+                        backoff = attempt * 2.0
+                        print(f"  [SMS] → {address}: Attempt {attempt} failed ({detail}) — retrying in {backoff}s...")
+                        await asyncio.sleep(backoff)
 
                 if status == "sent":
                     print(f"  [SMS] → {address}: Successfully sent via Ideabiz ({detail})")
