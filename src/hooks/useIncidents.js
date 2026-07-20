@@ -43,10 +43,6 @@ export function useIncidents() {
 
   const applyEvent = useCallback((event) => {
     setIncidents(prev => {
-      if (event.event_type === 'incident_deleted' || event.status === 'deleted') {
-        const delId = event.incident_id || event.id
-        return prev.filter(i => i.incident_id !== delId && i.id !== delId)
-      }
       const idx = prev.findIndex(i => i.incident_id === event.incident_id)
       if (idx === -1) return [event, ...prev]
       const updated = [...prev]
@@ -59,11 +55,7 @@ export function useIncidents() {
 
   const updateIncident = useCallback(async (id, patch) => {
     // Optimistic local update first…
-    if (patch.status === 'CLOSED' || patch.status === 'RESOLVED') {
-      setIncidents(prev => prev.filter(i => i.incident_id !== id && i.id !== id))
-    } else {
-      setIncidents(prev => prev.map(i => i.incident_id === id ? { ...i, ...patch } : i))
-    }
+    setIncidents(prev => prev.map(i => i.incident_id === id ? { ...i, ...patch } : i))
     // …then persist to the backend (id === incident_id) and adopt its response.
     try {
       const res = await fetch(`/api/incidents/${id}`, {
@@ -72,10 +64,8 @@ export function useIncidents() {
         body: JSON.stringify(patch),
       })
       if (res.ok) {
-        const data = await res.json()
-        if (data.status === 'deleted') {
-          setIncidents(prev => prev.filter(i => i.incident_id !== id && i.id !== id))
-        }
+        const updated = await res.json()
+        setIncidents(prev => prev.map(i => i.incident_id === id ? updated : i))
       }
     } catch {
       // Backend unavailable — keep the optimistic update

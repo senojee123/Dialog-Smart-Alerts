@@ -539,27 +539,12 @@ async def get_incident(id: str):
 @app.put("/api/incidents/{id}")
 async def update_incident(id: str, req: Request):
     body = await req.json()
-    if body.get("status") in ("CLOSED", "RESOLVED"):
-        inc = data_store.get_by_id("incidents", id)
-        if inc:
-            for evt_id in inc.get("event_ids", []):
-                data_store.update("detection_events", evt_id, {"consumed": True})
-            data_store.delete("incidents", id)
-            _broadcast_incident("incident_deleted", {"id": id, "incident_id": id})
-            return {"status": "deleted", "id": id}
     incident = _update("incidents", id, body)
     _broadcast_incident("incident_updated", incident)
     return _enrich_incident(incident)
 
 @app.delete("/api/incidents/{id}")
 async def delete_incident(id: str):
-    inc = data_store.get_by_id("incidents", id)
-    if inc:
-        for evt_id in inc.get("event_ids", []):
-            data_store.update("detection_events", evt_id, {"consumed": True})
-        data_store.delete("incidents", id)
-        _broadcast_incident("incident_deleted", {"id": id, "incident_id": id})
-        return {"status": "deleted", "id": id}
     return _delete("incidents", id)
 
 

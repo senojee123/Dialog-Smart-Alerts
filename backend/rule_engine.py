@@ -75,11 +75,8 @@ def _recent_matching_events(use_case_id: str, zone_id: str | None,
 
 
 def _closed_incident_event_ids(cutoff_iso: str) -> set[str]:
-    """Event IDs consumed by closed incidents or explicitly marked consumed."""
+    """Event IDs consumed by recently-closed incidents (confirmation scoping)."""
     ids: set[str] = set()
-    for e in data_store.get_all("detection_events"):
-        if e.get("consumed"):
-            ids.add(e.get("id"))
     for inc in data_store.get_all("incidents"):
         if inc.get("status") in ("CLOSED", "RESOLVED"):
             ids.update(inc.get("event_ids") or [])
