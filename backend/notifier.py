@@ -158,7 +158,7 @@ async def dispatch(incident: dict, rule: dict, action_key: str, event: dict) -> 
                     await asyncio.sleep(SMS_STAGGER_S)
                 sms_sent_count += 1
 
-                max_attempts = 3
+                max_attempts = 4
                 for attempt in range(1, max_attempts + 1):
                     status, detail = await _send_sms(
                         api_url, api_token, recipient_num, sender_port, sender_name, sms_body, notif_id
