@@ -276,8 +276,8 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* ── 1. System Overview Cards (8 Dynamic Cards) ───────────────────────── */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3">
+      {/* ── 1. System Overview Cards (6 Dynamic Cards) ───────────────────────── */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3.5">
         {/* Card 1: Active Incidents */}
         <div className="bg-surface border border-line rounded-xl p-3.5 shadow-sm space-y-2">
           <div className="flex items-center justify-between">
@@ -360,34 +360,6 @@ export default function Dashboard() {
             <span className="text-[10px] font-bold text-sev-critical">Dual Confirmed</span>
           </div>
           <p className="text-[10px] text-ink-subtle">High Priority</p>
-        </div>
-
-        {/* Card 7: AI Confidence */}
-        <div className="bg-surface border border-line rounded-xl p-3.5 shadow-sm space-y-2">
-          <div className="flex items-center justify-between">
-            <span className="text-[11px] font-semibold text-ink-muted">AI Confidence</span>
-            <Cpu className="w-4 h-4 text-purple-600" />
-          </div>
-          <div className="flex items-baseline justify-between">
-            <span className="text-2xl font-black text-ink">{avgConfidence}%</span>
-            <span className="text-[10px] font-bold text-emerald-600">Model Avg</span>
-          </div>
-          <p className="text-[10px] text-ink-subtle">YOLOv8 Edge AI</p>
-        </div>
-
-        {/* Card 8: System Health */}
-        <div className="bg-surface border border-line rounded-xl p-3.5 shadow-sm space-y-2">
-          <div className="flex items-center justify-between">
-            <span className="text-[11px] font-semibold text-ink-muted">System Status</span>
-            <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-          </div>
-          <div className="flex items-baseline justify-between">
-            <span className="text-sm font-extrabold text-emerald-600">
-              {health?.status === 'ok' || !health ? 'HEALTHY' : 'DEGRADED'}
-            </span>
-            <span className="text-[10px] font-bold text-emerald-600">100%</span>
-          </div>
-          <p className="text-[10px] text-ink-subtle">API & MQTT Online</p>
         </div>
       </div>
 
