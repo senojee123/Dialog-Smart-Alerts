@@ -3,13 +3,27 @@ import json
 import asyncio
 import time
 import uuid
+import io
 from pathlib import Path
 import paho.mqtt.client as mqtt
+from PIL import Image
 
 # Setup paths (matches server.py uploads)
 BASE_DIR = Path(__file__).parent
 UPLOADS_DIR = BASE_DIR / "uploads"
 UPLOADS_DIR.mkdir(exist_ok=True)
+
+
+def _assert_valid_image(img_bytes: bytes) -> None:
+    """Raise if img_bytes isn't a complete, decodable image.
+
+    base64.b64decode() silently "succeeds" on corrupted input (a single
+    dropped/altered character mid-stream still decodes without error, it just
+    produces garbage past that point) — so a clean decode alone doesn't mean
+    the photo is intact. Actually opening it is the only way to catch that.
+    """
+    with Image.open(io.BytesIO(img_bytes)) as im:
+        im.load()
 
 class MQTTClientManager:
     def __init__(self, app):
@@ -119,6 +133,7 @@ class MQTTClientManager:
                         b64_data += "=" * (4 - missing_padding)
                     
                     img_bytes = base64.b64decode(b64_data)
+                    _assert_valid_image(img_bytes)
                     img_filename = f"img_mqtt_{entity_id}_{uuid.uuid4().hex[:6]}.jpg"
                     img_path = UPLOADS_DIR / img_filename
                     with open(img_path, "wb") as f:
@@ -172,6 +187,7 @@ class MQTTClientManager:
                     if missing_padding:
                         b64_data += "=" * (4 - missing_padding)
                     img_bytes = base64.b64decode(b64_data)
+                    _assert_valid_image(img_bytes)
                     img_filename = f"img_mqtt_raw_{uuid.uuid4().hex[:6]}.jpg"
                     img_path = UPLOADS_DIR / img_filename
                     with open(img_path, "wb") as f:
