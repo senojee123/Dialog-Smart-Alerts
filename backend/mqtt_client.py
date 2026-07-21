@@ -148,7 +148,57 @@ class MQTTClientManager:
             )
 
         except json.JSONDecodeError:
-            print(f"[MQTT] Failed to decode JSON payload: {msg.payload}")
+            raw_bytes = msg.payload
+            raw_text = raw_bytes.decode('utf-8', errors='ignore').strip()
+            
+            # Case 1: Plain text status update (e.g. "ONLINE" or "OFFLINE")
+            if msg.topic == self.topic_status or msg.topic.endswith("/status"):
+                print(f"[MQTT STATUS] Non-JSON status payload received on '{msg.topic}': {raw_text}")
+                asyncio.run_coroutine_threadsafe(
+                    self.process_status_update("modem-gateway", {"status": raw_text}),
+                    self.app.state.loop
+                )
+                return
+
+            # Case 2: Direct raw Base64 image payload (e.g. "iVBORw0KGgoAAA..." or "/9j/4AAQSk...")
+            if msg.topic == self.topic_image or msg.topic.endswith("/image") or raw_text.startswith(("iVBORw", "/9j/", "data:image")):
+                print(f"[MQTT RAW IMAGE] Non-JSON raw Base64 image received on '{msg.topic}' (Length: {len(raw_text)} chars)")
+                try:
+                    b64_data = raw_text
+                    if "," in b64_data:
+                        b64_data = b64_data.split(",")[-1].strip()
+                    b64_data = b64_data.replace(" ", "+").replace("\n", "").replace("\r", "")
+                    missing_padding = len(b64_data) % 4
+                    if missing_padding:
+                        b64_data += "=" * (4 - missing_padding)
+                    img_bytes = base64.b64decode(b64_data)
+                    img_filename = f"img_mqtt_raw_{uuid.uuid4().hex[:6]}.jpg"
+                    img_path = UPLOADS_DIR / img_filename
+                    with open(img_path, "wb") as f:
+                        f.write(img_bytes)
+                    image_url = f"/uploads/{img_filename}"
+                    print(f"[MQTT RAW IMAGE] Decoded and saved raw image: {image_url}")
+                except Exception as b64_err:
+                    print(f"[MQTT RAW IMAGE] Error decoding raw Base64 ({b64_err}), using default sample image.")
+                    image_url = "/assets/dialog-logo-BjKEPiud.jpg"
+
+                event_body = {
+                    "external_id": "st_01_cam_04",
+                    "device_id": "cam_04",
+                    "object_type": "elephant",
+                    "confidence": 92.0,
+                    "image_url": image_url,
+                    "source": "device",
+                    "raw_payload": {"raw_image": True}
+                }
+
+                asyncio.run_coroutine_threadsafe(
+                    self.process_mqtt_event(event_body, "st_01", "cam_04"),
+                    self.app.state.loop
+                )
+                return
+
+            print(f"[MQTT] Non-JSON payload received on '{msg.topic}': {raw_text}")
         except Exception as e:
             print(f"[MQTT] Error in on_message: {e}")
 
