@@ -6,7 +6,12 @@ import uuid
 import io
 from pathlib import Path
 import paho.mqtt.client as mqtt
-from PIL import Image
+
+try:
+    from PIL import Image
+except ImportError:
+    Image = None
+    print("[MQTT] Pillow not installed — image corruption validation disabled (decode still works)")
 
 # Setup paths (matches server.py uploads)
 BASE_DIR = Path(__file__).parent
@@ -21,7 +26,10 @@ def _assert_valid_image(img_bytes: bytes) -> None:
     dropped/altered character mid-stream still decodes without error, it just
     produces garbage past that point) — so a clean decode alone doesn't mean
     the photo is intact. Actually opening it is the only way to catch that.
+    A missing Pillow install must never crash the server over an optional check.
     """
+    if Image is None:
+        return
     with Image.open(io.BytesIO(img_bytes)) as im:
         im.load()
 
