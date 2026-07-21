@@ -2,6 +2,7 @@ import os
 import json
 import asyncio
 import time
+import uuid
 from pathlib import Path
 import paho.mqtt.client as mqtt
 
