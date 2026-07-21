@@ -106,9 +106,18 @@ class MQTTClientManager:
             
             if raw_img and isinstance(raw_img, str) and not image_url:
                 try:
-                    b64_data = raw_img
-                    if "base64," in b64_data:
-                        b64_data = b64_data.split("base64,")[1]
+                    b64_data = raw_img.strip()
+                    if "," in b64_data:
+                        b64_data = b64_data.split(",")[-1].strip()
+                    
+                    # Fix JSON space-encoding of + characters
+                    b64_data = b64_data.replace(" ", "+").replace("\n", "").replace("\r", "")
+                    
+                    # Auto-fix missing Base64 padding (=)
+                    missing_padding = len(b64_data) % 4
+                    if missing_padding:
+                        b64_data += "=" * (4 - missing_padding)
+                    
                     img_bytes = base64.b64decode(b64_data)
                     img_filename = f"img_mqtt_{entity_id}_{uuid.uuid4().hex[:6]}.jpg"
                     img_path = UPLOADS_DIR / img_filename
@@ -117,7 +126,8 @@ class MQTTClientManager:
                     image_url = f"/uploads/{img_filename}"
                     print(f"[MQTT IMAGE] Decoded and saved Base64 image: {image_url}")
                 except Exception as img_err:
-                    print(f"[MQTT IMAGE] Error decoding image payload: {img_err}")
+                    print(f"[MQTT IMAGE] Could not decode raw Base64 ({img_err}). Using default camera capture URL.")
+                    image_url = "/assets/dialog-logo-BjKEPiud.jpg"
 
             # Form standard ingestion event payload
             event_body = {
