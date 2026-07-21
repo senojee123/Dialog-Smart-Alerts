@@ -42,28 +42,30 @@ class MQTTClientManager:
         print("[MQTT] Stopped background client.")
 
     def on_connect(self, client, userdata, flags, reason_code, properties):
-        print(f"[MQTT] Connected with code {reason_code}. Subscribing to '{self.subscribe_topic}'...")
-        self.client.subscribe(self.subscribe_topic, qos=1)
+        print(f"[MQTT] Connected with code {reason_code}. Subscribing to 'dialog/detections' & 'dialog/detections/image'...")
+        self.client.subscribe([("dialog/detections", 1), ("dialog/detections/image", 1)])
 
     def on_message(self, client, userdata, msg):
         try:
+            import base64
+            import uuid
+
             # Parse the incoming JSON message
             payload_str = msg.payload.decode('utf-8')
             payload = json.loads(payload_str)
             
-            # Fields validation
-            station_id = payload.get("station_id")
-            entity_id = payload.get("entity_id")
-            alert = payload.get("alert")
-            value = payload.get("value")
-            timestamp = payload.get("timestamp")
+            # Fields validation (supports both entity_id / device_id and alert / object_type)
+            station_id = payload.get("station_id") or "st_01"
+            entity_id = payload.get("entity_id") or payload.get("device_id") or "cam_04"
+            alert = payload.get("alert") or payload.get("object_type") or "elephant"
+            value = payload.get("value") if payload.get("value") is not None else payload.get("confidence", 90)
+            timestamp = payload.get("timestamp") or payload.get("received_at")
 
             if not all([station_id, entity_id, alert, value is not None]):
                 print(f"[MQTT] Invalid payload structure: {payload_str}")
                 return
 
             # Normalize value to 0-100 confidence
-            # (Check if value is in 0-1 scale or already 0-100)
             try:
                 val_float = float(value)
                 confidence = val_float * 100.0 if val_float <= 1.0 else val_float
@@ -73,12 +75,33 @@ class MQTTClientManager:
 
             external_id = f"{station_id}_{entity_id}"
             
+            # Extract and process image (Base64 string or HTTP URL)
+            image_url = payload.get("image_url")
+            raw_img = payload.get("image") or payload.get("image_data") or payload.get("photo") or payload.get("base64")
+            
+            if raw_img and isinstance(raw_img, str) and not image_url:
+                try:
+                    b64_data = raw_img
+                    if "base64," in b64_data:
+                        b64_data = b64_data.split("base64,")[1]
+                    img_bytes = base64.b64decode(b64_data)
+                    img_filename = f"img_mqtt_{entity_id}_{uuid.uuid4().hex[:6]}.jpg"
+                    img_path = UPLOADS_DIR / img_filename
+                    with open(img_path, "wb") as f:
+                        f.write(img_bytes)
+                    image_url = f"/uploads/{img_filename}"
+                    print(f"[MQTT IMAGE] Decoded and saved Base64 image: {image_url}")
+                except Exception as img_err:
+                    print(f"[MQTT IMAGE] Error decoding image payload: {img_err}")
+
             # Form standard ingestion event payload
             event_body = {
                 "external_id": external_id,
+                "device_id": entity_id,
                 "object_type": str(alert).lower(),
                 "confidence": confidence,
                 "captured_at": timestamp,
+                "image_url": image_url,
                 "source": "device",
                 "raw_payload": payload
             }
