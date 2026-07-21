@@ -1,18 +1,19 @@
 import { NavLink } from 'react-router-dom'
 import {
-  AlertTriangle, Map, Camera, Cpu, Users, GitBranch,
+  LayoutDashboard, AlertTriangle, Map, Camera, Cpu, Users, GitBranch,
   Settings, Monitor, Layers, Bell, Rocket, Palette, PlayCircle,
 } from 'lucide-react'
 
 const NAV = [
   // Operations
   { section: 'Operations' },
-  { to: '/incidents',   icon: AlertTriangle, label: 'Live Incidents' },
-  { to: '/map',         icon: Map,           label: 'Map View' },
-  { to: '/road-signs',  icon: Monitor,       label: 'Road Signs' },
-  { to: '/devices',     icon: Camera,        label: 'Devices' },
-  { to: '/hardware',    icon: Cpu,           label: 'Hardware Units' },
-  { to: '/simulator',   icon: PlayCircle,    label: 'Simulator' },
+  { to: '/',            icon: LayoutDashboard, label: 'Dashboard' },
+  { to: '/incidents',   icon: AlertTriangle,   label: 'Live Incidents' },
+  { to: '/map',         icon: Map,             label: 'Map View' },
+  { to: '/road-signs',  icon: Monitor,         label: 'Road Signs' },
+  { to: '/devices',     icon: Camera,          label: 'Devices' },
+  { to: '/hardware',    icon: Cpu,             label: 'Hardware Units' },
+  { to: '/simulator',   icon: PlayCircle,      label: 'Simulator' },
 
   null, // divider
 

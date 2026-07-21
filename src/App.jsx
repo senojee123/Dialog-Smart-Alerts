@@ -3,6 +3,7 @@ import AppShell from './components/shell/AppShell.jsx'
 import ErrorBoundary from './components/common/ErrorBoundary.jsx'
 
 // Operations pages
+import Dashboard from './pages/Dashboard.jsx'
 import LiveIncidents from './pages/LiveIncidents.jsx'
 import MapView from './pages/MapView.jsx'
 import RoadSigns from './pages/RoadSigns.jsx'
@@ -40,9 +41,10 @@ export default function App() {
         <Route path="/device/:deviceId" element={<Wrap><KioskDisplay /></Wrap>} />
 
         <Route element={<AppShell />}>
-          <Route index element={<Navigate to="/incidents" replace />} />
+          <Route index element={<Wrap><Dashboard /></Wrap>} />
 
           {/* Operations */}
+          <Route path="/dashboard"  element={<Wrap><Dashboard /></Wrap>} />
           <Route path="/incidents"  element={<Wrap><LiveIncidents /></Wrap>} />
           <Route path="/map"        element={<Wrap><MapView /></Wrap>} />
           <Route path="/road-signs" element={<Wrap><RoadSigns /></Wrap>} />
