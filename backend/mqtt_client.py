@@ -267,13 +267,36 @@ class MQTTClientManager:
     async def process_status_update(self, device_id, payload):
         try:
             import repo
+            import data_store
+            
+            # 1. Resolve device by external_id or id
             device = await repo.device_by_external_id(device_id) or await repo.get("devices", device_id)
+            if not device:
+                all_devs = data_store.get_all("devices")
+                device = next((d for d in all_devs if d["id"].lower() == device_id.lower() or d.get("external_id") == device_id or device_id.lower() in d["name"].lower()), None)
+            
             status_val = str(payload.get("status", "online")).lower()
             is_online = status_val not in ("offline", "disconnected", "down", "error")
-            if device:
+            
+            # 2. Auto-register if new device status arrives
+            if not device:
+                print(f"[MQTT STATUS] Auto-registering new gateway device from status heartbeat: {device_id}...")
+                device = await repo.create("devices", {
+                    "name": f"Modem Gateway {device_id}",
+                    "type": "camera",
+                    "use_case_id": "UC-001",
+                    "zone_id": "ZONE-B43",
+                    "lat": 6.3805,
+                    "lng": 81.4800,
+                    "external_id": device_id,
+                    "online": is_online,
+                    "status": status_val,
+                })
+            else:
                 await repo.update("devices", device["id"], {
                     "online": is_online,
                     "status": status_val,
                 })
+            print(f"[MQTT STATUS] Updated device status for '{device['name']}': Online={is_online}")
         except Exception as e:
             print(f"[MQTT STATUS] Error updating device status: {e}")
