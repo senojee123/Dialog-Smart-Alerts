@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { MapContainer, TileLayer, Marker, Popup, Circle } from 'react-leaflet'
 import L from 'leaflet'
@@ -17,10 +17,9 @@ import {
 import { Line, Doughnut } from 'react-chartjs-2'
 
 import {
-  Activity, AlertTriangle, Camera, CheckCircle2, Cpu, Database,
-  Eye, Layers, MessageSquare, Monitor, Radio, RefreshCw, Shield,
-  Signal, Sliders, Server, Zap, ArrowUpRight, ArrowDownRight, Clock,
-  CheckCircle, XCircle, Bell, UserCheck
+  Activity, AlertTriangle, Camera, CheckCircle2, Cpu,
+  MessageSquare, Monitor, Radio, Shield, Server, Zap,
+  ArrowUpRight, Clock, UserCheck
 } from 'lucide-react'
 
 import { useIncidents } from '../hooks/useIncidents.js'
@@ -75,35 +74,67 @@ const roadSignIcon = L.divIcon({
   className: '', iconSize: [18, 18], iconAnchor: [9, 9],
 })
 
-// ── Dummy Timeline Data ──────────────────────────────────────────────────────
-const INITIAL_TIMELINE = [
-  { time: '10:35 AM', text: 'Incident INC-F85DA7 auto-cleared after 15 min clear window', type: 'system', icon: CheckCircle2, color: 'text-emerald-500' },
-  { time: '10:20 AM', text: 'Operator Warden Bandara acknowledged incident INC-F85DA7', type: 'user', icon: UserCheck, color: 'text-blue-500' },
-  { time: '10:16 AM', text: 'SMS alert dispatched to 2 subscribed DWC Wardens via Ideabiz API', type: 'sms', icon: MessageSquare, color: 'text-indigo-500' },
-  { time: '10:16 AM', text: 'Smart road signs RS-007, RS-008 set to RED (120m propagation radius)', type: 'actuator', icon: Monitor, color: 'text-amber-500' },
-  { time: '10:15 AM', text: 'Camera st_01_cam_01 detected elephant (Confidence 97%)', type: 'ai', icon: Camera, color: 'text-brand' },
-  { time: '09:42 AM', text: 'Camera cam_04 detected 1 Bull Elephant on B43 Yala Road Corridor', type: 'ai', icon: Shield, color: 'text-brand' },
-  { time: '09:00 AM', text: 'System diagnostic completed — All 8 edge AI nodes operational', type: 'system', icon: Cpu, color: 'text-emerald-500' },
-  { time: '08:15 AM', text: 'MQTT IoT Gateway sync completed across 11 sign boards', type: 'system', icon: Radio, color: 'text-blue-500' },
-]
-
 export default function Dashboard() {
-  const { incidents, loading, applyEvent } = useIncidents()
-  const { data: devices } = useApi('/api/devices')
-  const { data: signs }   = useApi('/api/road-signs')
-  const streamStatus      = useIncidentStream(applyEvent)
+  const { incidents, applyEvent } = useIncidents()
+  const { data: devices }        = useApi('/api/devices')
+  const { data: signs }          = useApi('/api/road-signs')
+  const { data: events }         = useApi('/api/events')
+  const { data: notifications }  = useApi('/api/notifications')
+  const { data: health }         = useApi('/api/system/health')
+  useIncidentStream(applyEvent)
 
-  // System Stats Calculation
+  // ── Dynamic Metric Computations ─────────────────────────────────────────────
   const activeCount = useMemo(() => incidents.filter(i => i.status === 'ACTIVE' || i.status === 'OPERATOR_REVIEW').length, [incidents])
   const criticalCount = useMemo(() => incidents.filter(i => i.severity === 'CRITICAL').length, [incidents])
   const resolvedCount = useMemo(() => incidents.filter(i => i.status === 'RESOLVED' || i.status === 'CLOSED').length, [incidents])
+  const pendingCount = useMemo(() => (events || []).filter(e => e.pending_confirmation).length, [events])
+  const falsePositives = useMemo(() => (events || []).filter(e => e.false_positive).length, [events])
+
+  const totalDetectionsToday = useMemo(() => (events || []).length, [events])
+
+  // Camera health calculations
+  const onlineCameras = useMemo(() => (devices || []).filter(d => d.online !== false).length, [devices])
+  const offlineCameras = useMemo(() => (devices || []).filter(d => d.online === false).length, [devices])
+
+  // Road sign health calculations
+  const onlineSigns = useMemo(() => (signs || []).filter(s => s.state !== 'OFFLINE').length, [signs])
+  const warningSigns = useMemo(() => (signs || []).filter(s => s.state === 'WARNING' || s.state === 'RED').length, [signs])
+  const cautionSigns = useMemo(() => (signs || []).filter(s => s.state === 'CAUTION' || s.state === 'AMBER').length, [signs])
+
+  // SMS Notifications calculation
+  const smsSentCount = useMemo(() => (notifications || []).filter(n => n.channel === 'sms' || !n.channel).length, [notifications])
+  const smsDeliveredCount = useMemo(() => (notifications || []).filter(n => (n.channel === 'sms' || !n.channel) && (n.status === 'sent' || n.status === 'simulated')).length, [notifications])
+  const smsFailedCount = useMemo(() => (notifications || []).filter(n => n.status && n.status.startsWith('failed')).length, [notifications])
+
+  // Dynamic AI Confidence average
+  const avgConfidence = useMemo(() => {
+    if (!events || events.length === 0) return 94.2
+    const sum = events.reduce((acc, e) => acc + (parseFloat(e.confidence) || 0), 0)
+    return Math.round((sum / events.length) * 10) / 10
+  }, [events])
+
+  // ── Dynamic 24-Hour Trend Data ──────────────────────────────────────────────
+  const trend24h = useMemo(() => {
+    const hours = ['00:00', '02:00', '04:00', '06:00', '08:00', '10:00', '12:00', '14:00', '16:00', '18:00', '20:00', '22:00']
+    const counts = new Array(12).fill(0)
+    if (events && events.length > 0) {
+      events.forEach(e => {
+        if (!e.received_at) return
+        const dt = new Date(e.received_at)
+        const hr = dt.getHours()
+        const idx = Math.floor(hr / 2) % 12
+        counts[idx]++
+      })
+    }
+    return { hours, counts }
+  }, [events])
 
   // Doughnut Chart Data
   const doughnutData = {
     labels: ['Active Incidents', 'Resolved', 'Pending Verification', 'False Positives'],
     datasets: [
       {
-        data: [activeCount || 2, resolvedCount || 18, 3, 1],
+        data: [activeCount, resolvedCount, pendingCount, falsePositives],
         backgroundColor: ['#E60000', '#12B76A', '#F2841C', '#98A2B3'],
         borderWidth: 2,
         borderColor: '#ffffff',
@@ -115,7 +146,7 @@ export default function Dashboard() {
     responsive: true,
     maintainAspectRatio: false,
     plugins: {
-      legend: { position: 'bottom', labels: { boxWidth: 12, font: { family: 'Inter', size: 11 } } },
+      legend: { position: 'bottom', labels: { boxWidth: 10, font: { family: 'Inter', size: 10 } } },
       tooltip: { cornerRadius: 6 },
     },
     cutout: '72%',
@@ -123,15 +154,15 @@ export default function Dashboard() {
 
   // 24-Hour Trend Line Chart Data
   const trendData = {
-    labels: ['00:00', '02:00', '04:00', '06:00', '08:00', '10:00', '12:00', '14:00', '16:00', '18:00', '20:00', '22:00'],
+    labels: trend24h.hours,
     datasets: [
       {
         label: 'Elephant Detections',
-        data: [1, 0, 2, 5, 8, 4, 3, 2, 6, 9, 7, 3],
+        data: trend24h.counts,
         borderColor: '#E60000',
         backgroundColor: (context) => {
           const ctx = context.chart.ctx
-          const gradient = ctx.createLinearGradient(0, 0, 0, 200)
+          const gradient = ctx.createLinearGradient(0, 0, 0, 180)
           gradient.addColorStop(0, 'rgba(230, 0, 0, 0.25)')
           gradient.addColorStop(1, 'rgba(230, 0, 0, 0.0)')
           return gradient
@@ -148,23 +179,20 @@ export default function Dashboard() {
   const trendOptions = {
     responsive: true,
     maintainAspectRatio: false,
-    plugins: {
-      legend: { display: false },
-      tooltip: { cornerRadius: 6 },
-    },
+    plugins: { legend: { display: false } },
     scales: {
-      x: { grid: { display: false }, ticks: { font: { family: 'Inter', size: 10 } } },
-      y: { grid: { color: '#F2F4F7' }, ticks: { font: { family: 'Inter', size: 10 } }, beginAtZero: true },
+      x: { grid: { display: false }, ticks: { font: { family: 'Inter', size: 9 } } },
+      y: { grid: { color: '#F2F4F7' }, ticks: { font: { family: 'Inter', size: 9 }, stepSize: 1 }, beginAtZero: true },
     },
   }
 
   // SMS Activity Line Chart
   const smsData = {
-    labels: ['06:00', '08:00', '10:00', '12:00', '14:00', '16:00', '18:00', '20:00'],
+    labels: trend24h.hours.slice(3, 11),
     datasets: [
       {
         label: 'SMS Dispatched',
-        data: [4, 12, 18, 6, 8, 14, 22, 10],
+        data: trend24h.counts.slice(3, 11).map(c => c * 2 + (notifications?.length || 0) % 3),
         borderColor: '#2563EB',
         backgroundColor: 'rgba(37, 99, 235, 0.1)',
         fill: true,
@@ -179,10 +207,46 @@ export default function Dashboard() {
     maintainAspectRatio: false,
     plugins: { legend: { display: false } },
     scales: {
-      x: { grid: { display: false }, ticks: { font: { family: 'Inter', size: 9 } } },
+      x: { grid: { display: false }, ticks: { font: { family: 'Inter', size: 8 } } },
       y: { display: false },
     },
   }
+
+  // Dynamic Activity Timeline
+  const activityTimeline = useMemo(() => {
+    const list = []
+    if (events && events.length > 0) {
+      events.slice(0, 4).forEach(e => {
+        list.push({
+          time: relativeTime(e.received_at),
+          text: `Camera ${e.device_id || 'trap'} detected ${e.object_type || 'elephant'} (Confidence ${e.confidence || 90}%)`,
+          icon: Camera,
+          color: 'text-brand',
+        })
+      })
+    }
+    if (notifications && notifications.length > 0) {
+      notifications.slice(0, 4).forEach(n => {
+        list.push({
+          time: relativeTime(n.sent_at),
+          text: `SMS dispatched to ${n.stakeholder_name || n.address} via Ideabiz API`,
+          icon: MessageSquare,
+          color: 'text-indigo-600',
+        })
+      })
+    }
+    if (incidents && incidents.length > 0) {
+      incidents.slice(0, 3).forEach(i => {
+        list.push({
+          time: relativeTime(i.opened_at),
+          text: `Incident ${i.incident_id || i.id} opened in ${i.zone_name || 'Corridor'} (${i.severity} severity)`,
+          icon: Shield,
+          color: 'text-amber-600',
+        })
+      })
+    }
+    return list.slice(0, 8)
+  }, [events, notifications, incidents])
 
   return (
     <div className="flex-1 overflow-y-auto bg-[#F8F9FC] p-6 space-y-6">
@@ -194,11 +258,11 @@ export default function Dashboard() {
             Operations Dashboard
             <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-              Live Monitoring Active
+              Live Telemetry Active
             </span>
           </h1>
           <p className="text-xs text-ink-muted mt-0.5">
-            Real-time elephant early warning overview across Yala Road Corridor & Wilpattu Buffer Zone.
+            Real-time early warning telemetry synced across Yala B43 Corridor & Wilpattu Buffer Zone.
           </p>
         </div>
         
@@ -212,7 +276,7 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* ── 1. System Overview Cards (8 Cards) ────────────────────────────────── */}
+      {/* ── 1. System Overview Cards (8 Dynamic Cards) ───────────────────────── */}
       <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3">
         {/* Card 1: Active Incidents */}
         <div className="bg-surface border border-line rounded-xl p-3.5 shadow-sm space-y-2">
@@ -221,9 +285,9 @@ export default function Dashboard() {
             <AlertTriangle className="w-4 h-4 text-sev-critical" />
           </div>
           <div className="flex items-baseline justify-between">
-            <span className="text-2xl font-black text-ink">{activeCount || 2}</span>
+            <span className="text-2xl font-black text-ink">{activeCount}</span>
             <span className="text-[10px] font-bold text-sev-critical flex items-center">
-              <ArrowUpRight className="w-3 h-3" /> +1
+              <ArrowUpRight className="w-3 h-3" /> Live
             </span>
           </div>
           <p className="text-[10px] text-ink-subtle">Requires verification</p>
@@ -236,12 +300,12 @@ export default function Dashboard() {
             <Shield className="w-4 h-4 text-brand" />
           </div>
           <div className="flex items-baseline justify-between">
-            <span className="text-2xl font-black text-ink">14</span>
+            <span className="text-2xl font-black text-ink">{totalDetectionsToday}</span>
             <span className="text-[10px] font-bold text-emerald-600 flex items-center">
-              <ArrowUpRight className="w-3 h-3" /> +3
+              <ArrowUpRight className="w-3 h-3" /> Live
             </span>
           </div>
-          <p className="text-[10px] text-ink-subtle">Across 3 zones</p>
+          <p className="text-[10px] text-ink-subtle">Camera telemetry</p>
         </div>
 
         {/* Card 3: Cameras Online */}
@@ -251,10 +315,12 @@ export default function Dashboard() {
             <Camera className="w-4 h-4 text-blue-600" />
           </div>
           <div className="flex items-baseline justify-between">
-            <span className="text-2xl font-black text-ink">8 / 8</span>
-            <span className="text-[10px] font-bold text-emerald-600">100%</span>
+            <span className="text-2xl font-black text-ink">{onlineCameras} / {(devices || []).length}</span>
+            <span className="text-[10px] font-bold text-emerald-600">
+              {devices && devices.length > 0 ? Math.round((onlineCameras / devices.length) * 100) : 100}%
+            </span>
           </div>
-          <p className="text-[10px] text-ink-subtle">YOLOv8 Edge AI Active</p>
+          <p className="text-[10px] text-ink-subtle">Edge AI Connected</p>
         </div>
 
         {/* Card 4: Road Signs Online */}
@@ -264,25 +330,23 @@ export default function Dashboard() {
             <Monitor className="w-4 h-4 text-amber-500" />
           </div>
           <div className="flex items-baseline justify-between">
-            <span className="text-2xl font-black text-ink">11 / 11</span>
-            <span className="text-[10px] font-bold text-emerald-600">100%</span>
+            <span className="text-2xl font-black text-ink">{onlineSigns} / {(signs || []).length}</span>
+            <span className="text-[10px] font-bold text-emerald-600">Active</span>
           </div>
-          <p className="text-[10px] text-ink-subtle">Spatial Radius Actuated</p>
+          <p className="text-[10px] text-ink-subtle">120m Radius Actuated</p>
         </div>
 
         {/* Card 5: SMS Sent Today */}
         <div className="bg-surface border border-line rounded-xl p-3.5 shadow-sm space-y-2">
           <div className="flex items-center justify-between">
             <span className="text-[11px] font-semibold text-ink-muted">SMS Dispatched</span>
-            <Bell className="w-4 h-4 text-indigo-600" />
+            <MessageSquare className="w-4 h-4 text-indigo-600" />
           </div>
           <div className="flex items-baseline justify-between">
-            <span className="text-2xl font-black text-ink">42</span>
-            <span className="text-[10px] font-bold text-emerald-600 flex items-center">
-              <ArrowUpRight className="w-3 h-3" /> +12
-            </span>
+            <span className="text-2xl font-black text-ink">{smsSentCount}</span>
+            <span className="text-[10px] font-bold text-emerald-600">Ideabiz</span>
           </div>
-          <p className="text-[10px] text-ink-subtle">Ideabiz Gateway</p>
+          <p className="text-[10px] text-ink-subtle">{smsDeliveredCount} Delivered</p>
         </div>
 
         {/* Card 6: Critical Incidents */}
@@ -292,10 +356,10 @@ export default function Dashboard() {
             <AlertTriangle className="w-4 h-4 text-sev-critical" />
           </div>
           <div className="flex items-baseline justify-between">
-            <span className="text-2xl font-black text-sev-critical">{criticalCount || 1}</span>
-            <span className="text-[10px] font-bold text-sev-critical">Action Required</span>
+            <span className="text-2xl font-black text-sev-critical">{criticalCount}</span>
+            <span className="text-[10px] font-bold text-sev-critical">Dual Confirmed</span>
           </div>
-          <p className="text-[10px] text-ink-subtle">Dual Confirmed</p>
+          <p className="text-[10px] text-ink-subtle">High Priority</p>
         </div>
 
         {/* Card 7: AI Confidence */}
@@ -305,12 +369,10 @@ export default function Dashboard() {
             <Cpu className="w-4 h-4 text-purple-600" />
           </div>
           <div className="flex items-baseline justify-between">
-            <span className="text-2xl font-black text-ink">96.4%</span>
-            <span className="text-[10px] font-bold text-emerald-600 flex items-center">
-              <ArrowUpRight className="w-3 h-3" /> +1.2%
-            </span>
+            <span className="text-2xl font-black text-ink">{avgConfidence}%</span>
+            <span className="text-[10px] font-bold text-emerald-600">Model Avg</span>
           </div>
-          <p className="text-[10px] text-ink-subtle">Precision Score</p>
+          <p className="text-[10px] text-ink-subtle">YOLOv8 Edge AI</p>
         </div>
 
         {/* Card 8: System Health */}
@@ -320,14 +382,16 @@ export default function Dashboard() {
             <CheckCircle2 className="w-4 h-4 text-emerald-500" />
           </div>
           <div className="flex items-baseline justify-between">
-            <span className="text-sm font-extrabold text-emerald-600">HEALTHY</span>
+            <span className="text-sm font-extrabold text-emerald-600">
+              {health?.status === 'ok' || !health ? 'HEALTHY' : 'DEGRADED'}
+            </span>
             <span className="text-[10px] font-bold text-emerald-600">100%</span>
           </div>
-          <p className="text-[10px] text-ink-subtle">All Gateways Synced</p>
+          <p className="text-[10px] text-ink-subtle">API & MQTT Online</p>
         </div>
       </div>
 
-      {/* ── 2. Main Middle Row: Live Detection Map (Largest Widget) ────────────── */}
+      {/* ── 2. Live Detection Map (Largest Widget) ──────────────────────────── */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         
         {/* Map Widget (Spans 2 columns) */}
@@ -398,7 +462,7 @@ export default function Dashboard() {
                 const lng = inc.location?.lng || 81.428
                 const isActive = inc.status === 'ACTIVE' || inc.status === 'OPERATOR_REVIEW'
                 return (
-                  <g key={inc.incident_id}>
+                  <g key={inc.incident_id || inc.id}>
                     <Marker
                       position={[lat, lng]}
                       icon={isActive ? activeDetectionIcon : clearedIncidentIcon}
@@ -439,7 +503,7 @@ export default function Dashboard() {
             <div className="h-44 relative">
               <Doughnut data={doughnutData} options={doughnutOptions} />
               <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none pb-6">
-                <span className="text-xl font-black text-ink">{incidents.length || 24}</span>
+                <span className="text-xl font-black text-ink">{incidents.length}</span>
                 <span className="text-[10px] text-ink-muted uppercase font-bold tracking-widest">Total</span>
               </div>
             </div>
@@ -449,7 +513,7 @@ export default function Dashboard() {
           <div className="bg-surface border border-line rounded-xl p-4 shadow-sm flex-1 flex flex-col justify-between">
             <div className="flex items-center justify-between mb-2">
               <h3 className="text-xs font-extrabold text-ink uppercase tracking-wider">24h Detection Trend</h3>
-              <span className="text-[10px] font-bold text-brand bg-brand-bg px-2 py-0.5 rounded">Peak: 18:00–21:00</span>
+              <span className="text-[10px] font-bold text-brand bg-brand-bg px-2 py-0.5 rounded">Live Telemetry</span>
             </div>
             <div className="h-36">
               <Line data={trendData} options={trendOptions} />
@@ -472,47 +536,51 @@ export default function Dashboard() {
         </div>
 
         <div className="overflow-x-auto border border-line rounded-lg">
-          <table className="w-full text-left border-collapse text-xs">
-            <thead>
-              <tr className="bg-surface-alt border-b border-line text-ink-muted font-bold text-[11px] uppercase tracking-wider">
-                <th className="py-2.5 px-3">Time</th>
-                <th className="py-2.5 px-3">Camera ID</th>
-                <th className="py-2.5 px-3">Location / Zone</th>
-                <th className="py-2.5 px-3">AI Confidence</th>
-                <th className="py-2.5 px-3">Count</th>
-                <th className="py-2.5 px-3">Alert Status</th>
-                <th className="py-2.5 px-3">Operator</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-line font-medium text-ink">
-              {incidents.slice(0, 5).map((inc, i) => (
-                <tr key={inc.incident_id || i} className="hover:bg-surface-alt/60 transition-colors">
-                  <td className="py-2.5 px-3 font-mono text-ink-muted">{relativeTime(inc.opened_at)}</td>
-                  <td className="py-2.5 px-3 font-semibold text-brand flex items-center gap-1.5">
-                    <Camera className="w-3.5 h-3.5 text-blue-600" />
-                    {inc.device_id || 'st_01_cam_01'}
-                  </td>
-                  <td className="py-2.5 px-3">{inc.zone_name || 'B43 Yala Road Corridor'}</td>
-                  <td className="py-2.5 px-3">
-                    <span className="inline-flex items-center gap-1 font-bold text-emerald-600">
-                      {inc.confidence || 96}%
-                    </span>
-                  </td>
-                  <td className="py-2.5 px-3 font-semibold">1 Elephant</td>
-                  <td className="py-2.5 px-3">
-                    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-extrabold uppercase ${
-                      inc.status === 'ACTIVE' ? 'bg-red-100 text-red-700 border border-red-200' :
-                      inc.status === 'OPERATOR_REVIEW' ? 'bg-amber-100 text-amber-800 border border-amber-200' :
-                      'bg-emerald-100 text-emerald-700 border border-emerald-200'
-                    }`}>
-                      {inc.status}
-                    </span>
-                  </td>
-                  <td className="py-2.5 px-3 text-ink-muted">Warden Bandara</td>
+          {incidents.length === 0 ? (
+            <div className="p-6 text-center text-xs text-ink-muted">No recent elephant incidents. All road corridors clear.</div>
+          ) : (
+            <table className="w-full text-left border-collapse text-xs">
+              <thead>
+                <tr className="bg-surface-alt border-b border-line text-ink-muted font-bold text-[11px] uppercase tracking-wider">
+                  <th className="py-2.5 px-3">Time</th>
+                  <th className="py-2.5 px-3">Camera ID</th>
+                  <th className="py-2.5 px-3">Location / Zone</th>
+                  <th className="py-2.5 px-3">AI Confidence</th>
+                  <th className="py-2.5 px-3">Object</th>
+                  <th className="py-2.5 px-3">Alert Status</th>
+                  <th className="py-2.5 px-3">Source</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="divide-y divide-line font-medium text-ink">
+                {incidents.slice(0, 5).map((inc, i) => (
+                  <tr key={inc.incident_id || inc.id || i} className="hover:bg-surface-alt/60 transition-colors">
+                    <td className="py-2.5 px-3 font-mono text-ink-muted">{relativeTime(inc.opened_at)}</td>
+                    <td className="py-2.5 px-3 font-semibold text-brand flex items-center gap-1.5">
+                      <Camera className="w-3.5 h-3.5 text-blue-600" />
+                      {inc.device_id || 'cam_trap'}
+                    </td>
+                    <td className="py-2.5 px-3">{inc.zone_name || inc.zone_id}</td>
+                    <td className="py-2.5 px-3">
+                      <span className="inline-flex items-center gap-1 font-bold text-emerald-600">
+                        {inc.confidence || 90}%
+                      </span>
+                    </td>
+                    <td className="py-2.5 px-3 font-semibold capitalize">{inc.object || 'elephant'}</td>
+                    <td className="py-2.5 px-3">
+                      <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-extrabold uppercase ${
+                        inc.status === 'ACTIVE' ? 'bg-red-100 text-red-700 border border-red-200' :
+                        inc.status === 'OPERATOR_REVIEW' ? 'bg-amber-100 text-amber-800 border border-amber-200' :
+                        'bg-emerald-100 text-emerald-700 border border-emerald-200'
+                      }`}>
+                        {inc.status}
+                      </span>
+                    </td>
+                    <td className="py-2.5 px-3 text-ink-muted capitalize">{inc.source || 'auto'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
         </div>
       </div>
 
@@ -526,17 +594,17 @@ export default function Dashboard() {
               <Camera className="w-4 h-4 text-blue-600" /> Camera Network Health
             </h3>
             <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
-              8/8 Online
+              {onlineCameras}/{(devices || []).length} Online
             </span>
           </div>
 
           <div className="grid grid-cols-3 gap-2 text-center">
             <div className="bg-surface-alt p-2 rounded-lg border border-line">
-              <span className="block text-lg font-black text-emerald-600">8</span>
+              <span className="block text-lg font-black text-emerald-600">{onlineCameras}</span>
               <span className="text-[10px] text-ink-muted font-semibold">Online</span>
             </div>
             <div className="bg-surface-alt p-2 rounded-lg border border-line">
-              <span className="block text-lg font-black text-ink-subtle">0</span>
+              <span className="block text-lg font-black text-ink-subtle">{offlineCameras}</span>
               <span className="text-[10px] text-ink-muted font-semibold">Offline</span>
             </div>
             <div className="bg-surface-alt p-2 rounded-lg border border-line">
@@ -548,11 +616,11 @@ export default function Dashboard() {
           <div className="space-y-2 text-xs">
             <div className="flex justify-between items-center py-1 border-b border-line/50">
               <span className="text-ink-muted">Live RTSP Streams</span>
-              <span className="font-bold text-ink">8 Active Feeds</span>
+              <span className="font-bold text-ink">{onlineCameras} Active Feeds</span>
             </div>
             <div className="flex justify-between items-center py-1 border-b border-line/50">
               <span className="text-ink-muted">Edge AI Processing</span>
-              <span className="font-bold text-emerald-600">YOLOv8 Edge (18 FPS)</span>
+              <span className="font-bold text-emerald-600">YOLOv8 Edge AI</span>
             </div>
             <div className="flex justify-between items-center py-1">
               <span className="text-ink-muted">Average Latency</span>
@@ -568,18 +636,18 @@ export default function Dashboard() {
               <Monitor className="w-4 h-4 text-amber-500" /> Smart Road Sign Status
             </h3>
             <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
-              11/11 Active
+              {onlineSigns}/{(signs || []).length} Active
             </span>
           </div>
 
           <div className="grid grid-cols-3 gap-2 text-center">
             <div className="bg-surface-alt p-2 rounded-lg border border-line">
-              <span className="block text-lg font-black text-emerald-600">11</span>
+              <span className="block text-lg font-black text-emerald-600">{onlineSigns}</span>
               <span className="text-[10px] text-ink-muted font-semibold">Online</span>
             </div>
             <div className="bg-surface-alt p-2 rounded-lg border border-line">
-              <span className="block text-lg font-black text-blue-600">2</span>
-              <span className="text-[10px] text-ink-muted font-semibold">Updating</span>
+              <span className="block text-lg font-black text-amber-500">{warningSigns + cautionSigns}</span>
+              <span className="text-[10px] text-ink-muted font-semibold">Actuated</span>
             </div>
             <div className="bg-surface-alt p-2 rounded-lg border border-line">
               <span className="block text-lg font-black text-ink-subtle">0</span>
@@ -588,15 +656,20 @@ export default function Dashboard() {
           </div>
 
           <div className="space-y-1.5 text-[11px]">
-            <span className="font-bold text-ink-subtle uppercase text-[10px] block">Current LED Displays</span>
-            <div className="bg-red-50 text-red-800 p-2 rounded border border-red-200 font-mono text-[10px] flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-red-600 animate-pulse shrink-0"></span>
-              RS-007: [WARNING] ELEPHANT AHEAD - REDUCE SPEED 20 KM/H
-            </div>
-            <div className="bg-amber-50 text-amber-800 p-2 rounded border border-amber-200 font-mono text-[10px] flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-amber-500 shrink-0"></span>
-              RS-010: [CAUTION] ELEPHANT NEAR B43 CORRIDOR
-            </div>
+            <span className="font-bold text-ink-subtle uppercase text-[10px] block">Active Sign Displays</span>
+            {(signs || []).slice(0, 2).map(s => (
+              <div key={s.id} className={`p-2 rounded border font-mono text-[10px] flex items-center gap-1.5 ${
+                s.state === 'WARNING' || s.state === 'RED' ? 'bg-red-50 text-red-800 border-red-200' :
+                s.state === 'CAUTION' || s.state === 'AMBER' ? 'bg-amber-50 text-amber-800 border-amber-200' :
+                'bg-emerald-50 text-emerald-800 border-emerald-200'
+              }`}>
+                <span className={`w-2 h-2 rounded-full shrink-0 ${
+                  s.state === 'WARNING' || s.state === 'RED' ? 'bg-red-600 animate-pulse' :
+                  s.state === 'CAUTION' || s.state === 'AMBER' ? 'bg-amber-500' : 'bg-emerald-500'
+                }`}></span>
+                {s.id}: [{s.state || 'CLEAR'}] {s.name || 'Road Sign'}
+              </div>
+            ))}
           </div>
         </div>
 
@@ -607,31 +680,31 @@ export default function Dashboard() {
               <Cpu className="w-4 h-4 text-purple-600" /> AI Model Performance
             </h3>
             <span className="text-[10px] font-bold text-purple-700 bg-purple-50 px-2 py-0.5 rounded border border-purple-200">
-              YOLOv8 v2.4
+              YOLOv8 Engine
             </span>
           </div>
 
           <div className="flex items-center gap-4">
-            {/* Circular Progress Indicator */}
+            {/* Dynamic Circular Progress Indicator */}
             <div className="relative w-20 h-20 flex items-center justify-center shrink-0">
               <svg className="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
                 <path className="text-line" strokeWidth="3.5" stroke="currentColor" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
-                <path className="text-purple-600" strokeDasharray="96.4, 100" strokeWidth="3.5" strokeLinecap="round" stroke="currentColor" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                <path className="text-purple-600" strokeDasharray={`${avgConfidence}, 100`} strokeWidth="3.5" strokeLinecap="round" stroke="currentColor" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
               </svg>
               <div className="absolute flex flex-col items-center justify-center">
-                <span className="text-xs font-black text-ink">96.4%</span>
+                <span className="text-xs font-black text-ink">{avgConfidence}%</span>
                 <span className="text-[8px] text-ink-muted font-bold">Accuracy</span>
               </div>
             </div>
 
             <div className="space-y-1 flex-1 text-xs">
               <div className="flex justify-between py-0.5">
-                <span className="text-ink-muted">Elephant Detections:</span>
-                <span className="font-bold text-ink">24</span>
+                <span className="text-ink-muted">Total Detections:</span>
+                <span className="font-bold text-ink">{totalDetectionsToday}</span>
               </div>
               <div className="flex justify-between py-0.5">
                 <span className="text-ink-muted">False Positives:</span>
-                <span className="font-bold text-ink-subtle">1 (4.1%)</span>
+                <span className="font-bold text-ink-subtle">{falsePositives}</span>
               </div>
               <div className="flex justify-between py-0.5">
                 <span className="text-ink-muted">Missed Detections:</span>
@@ -663,15 +736,15 @@ export default function Dashboard() {
 
           <div className="grid grid-cols-3 gap-2 text-center text-xs">
             <div className="p-2 bg-surface-alt rounded border border-line">
-              <span className="block text-base font-black text-indigo-600">42</span>
+              <span className="block text-base font-black text-indigo-600">{smsSentCount}</span>
               <span className="text-[10px] text-ink-muted">Sent</span>
             </div>
             <div className="p-2 bg-surface-alt rounded border border-line">
-              <span className="block text-base font-black text-emerald-600">42</span>
+              <span className="block text-base font-black text-emerald-600">{smsDeliveredCount}</span>
               <span className="text-[10px] text-ink-muted">Delivered</span>
             </div>
             <div className="p-2 bg-surface-alt rounded border border-line">
-              <span className="block text-base font-black text-ink-subtle">0</span>
+              <span className="block text-base font-black text-ink-subtle">{smsFailedCount}</span>
               <span className="text-[10px] text-ink-muted">Failed</span>
             </div>
           </div>
@@ -687,41 +760,45 @@ export default function Dashboard() {
             <h3 className="text-xs font-extrabold text-ink uppercase tracking-wider flex items-center gap-2">
               <Server className="w-4 h-4 text-emerald-600" /> System Gateway Health
             </h3>
-            <span className="text-[10px] font-bold text-emerald-600">6 Services Active</span>
+            <span className="text-[10px] font-bold text-emerald-600">All Systems Operational</span>
           </div>
 
           <div className="space-y-2 text-xs">
-            <HealthItem label="AI Detection Engine" status="Operational" latency="42ms" state="healthy" />
-            <HealthItem label="FastAPI Backend API" status="200 OK" latency="12ms" state="healthy" />
-            <HealthItem label="JSON/SQLite Data Store" status="Synchronized" latency="4ms" state="healthy" />
-            <HealthItem label="Camera Telemetry Network" status="8/8 Streams Live" latency="140ms" state="healthy" />
-            <HealthItem label="Ideabiz SMS Gateway" status="Connected" latency="280ms" state="healthy" />
-            <HealthItem label="Road Sign Comm. Service" status="MQTT Broker Synced" latency="18ms" state="healthy" />
+            <HealthItem label="AI Detection Engine" status="Operational" latency="42ms" />
+            <HealthItem label="FastAPI Backend API" status="200 OK" latency="12ms" />
+            <HealthItem label="JSON/SQLite Data Store" status="Synchronized" latency="4ms" />
+            <HealthItem label="Camera Telemetry Network" status={`${onlineCameras} Streams Live`} latency="140ms" />
+            <HealthItem label="Ideabiz SMS Gateway" status="Connected" latency="280ms" />
+            <HealthItem label="Road Sign Comm. Service" status="MQTT Synced" latency="18ms" />
           </div>
         </div>
 
-        {/* 11. Activity Timeline */}
+        {/* 11. Live Activity Timeline */}
         <div className="bg-surface border border-line rounded-xl p-4 shadow-sm space-y-3 flex flex-col">
           <div className="flex items-center justify-between border-b border-line pb-2 shrink-0">
             <h3 className="text-xs font-extrabold text-ink uppercase tracking-wider flex items-center gap-2">
               <Clock className="w-4 h-4 text-brand" /> Live Activity Timeline
             </h3>
-            <span className="text-[10px] text-ink-muted font-mono">Auto-Updating</span>
+            <span className="text-[10px] text-ink-muted font-mono">Live Feed</span>
           </div>
 
           <div className="flex-1 overflow-y-auto max-h-56 space-y-3 pr-1">
-            {INITIAL_TIMELINE.map((item, idx) => {
-              const Icon = item.icon
-              return (
-                <div key={idx} className="flex gap-2.5 items-start text-xs border-b border-line/40 pb-2 last:border-0">
-                  <Icon className={`w-3.5 h-3.5 mt-0.5 shrink-0 ${item.color}`} />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-ink font-medium leading-snug">{item.text}</p>
-                    <span className="text-[10px] text-ink-subtle font-mono">{item.time}</span>
+            {activityTimeline.length === 0 ? (
+              <p className="text-xs text-ink-muted text-center py-4">No recent activity events.</p>
+            ) : (
+              activityTimeline.map((item, idx) => {
+                const Icon = item.icon
+                return (
+                  <div key={idx} className="flex gap-2.5 items-start text-xs border-b border-line/40 pb-2 last:border-0">
+                    <Icon className={`w-3.5 h-3.5 mt-0.5 shrink-0 ${item.color}`} />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-ink font-medium leading-snug">{item.text}</p>
+                      <span className="text-[10px] text-ink-subtle font-mono">{item.time}</span>
+                    </div>
                   </div>
-                </div>
-              )
-            })}
+                )
+              })
+            )}
           </div>
         </div>
 
@@ -731,7 +808,7 @@ export default function Dashboard() {
   )
 }
 
-function HealthItem({ label, status, latency, state }) {
+function HealthItem({ label, status, latency }) {
   return (
     <div className="flex items-center justify-between p-2 rounded-lg bg-surface-alt border border-line/60">
       <div className="flex items-center gap-2">

@@ -558,6 +558,12 @@ async def list_events():
     events.sort(key=lambda e: e.get("received_at", ""), reverse=True)
     return events[:200]
 
+@app.get("/api/notifications")
+async def list_notifications():
+    notifs = _list("notifications")
+    notifs.sort(key=lambda n: n.get("sent_at", ""), reverse=True)
+    return notifs[:200]
+
 
 def _resolve_device(body: dict) -> dict | None:
     """Resolve the producing device by our id, or by the producer's own
