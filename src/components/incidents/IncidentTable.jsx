@@ -9,7 +9,7 @@ const COLS = ['Severity', 'Incident', 'Time', 'Area / Location', 'Object', 'Conf
 const SEVERITIES = ['ALL', 'CRITICAL', 'HIGH', 'MEDIUM', 'LOW']
 const STATUSES   = ['ALL', 'ACTIVE', 'OPERATOR_REVIEW', 'RESOLVED', 'CLOSED']
 
-export default function IncidentTable({ incidents, loading, selectedId, onSelect, mapOpen, onToggleMap }) {
+export default function IncidentTable({ incidents, loading, selectedId, onSelect }) {
   const [sevFilter,    setSevFilter]    = useState('ALL')
   const [statusFilter, setStatusFilter] = useState('ALL')
 
@@ -34,16 +34,6 @@ export default function IncidentTable({ incidents, loading, selectedId, onSelect
         <FilterSelect label="Status"   value={statusFilter} onChange={setStatusFilter} options={STATUSES} />
         <div className="ml-auto flex items-center gap-3">
           <span className="text-xs text-ink-muted">{filtered.length} incidents</span>
-          {onToggleMap && (
-            <button
-              onClick={onToggleMap}
-              className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium border border-line rounded bg-surface-alt hover:bg-line text-ink transition-colors"
-              title={mapOpen ? "Hide Map" : "Show Map"}
-            >
-              {mapOpen ? <EyeOff size={14} /> : <Eye size={14} />}
-              <span>{mapOpen ? "Hide Map" : "Show Map"}</span>
-            </button>
-          )}
         </div>
       </div>
 
