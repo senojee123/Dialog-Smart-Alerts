@@ -204,15 +204,16 @@ class MQTTClientManager:
 
     async def process_mqtt_event(self, event_body, station_id, entity_id):
         try:
-            import repo
-            
-            # 1. Resolve device using external_id
-            device = await repo.device_by_external_id(event_body["external_id"])
-            
+            import data_store
+
+            # 1. Resolve device using external_id (same store _resolve_device reads)
+            device = next((d for d in data_store.get_all("devices")
+                           if d.get("external_id") == event_body["external_id"]), None)
+
             if not device:
                 # Dynamic auto-registration for multi-station support
                 print(f"[MQTT] New device detected. Registering: {event_body['external_id']}...")
-                device = await repo.create("devices", {
+                device = data_store.create("devices", {
                     "name": f"MQTT Camera Trap {entity_id} (Station {station_id})",
                     "type": "camera",
                     "use_case_id": "UC-001",
@@ -225,7 +226,7 @@ class MQTTClientManager:
                 })
             else:
                 # Keep device state updated
-                await repo.update("devices", device["id"], {"online": True})
+                data_store.update("devices", device["id"], {"online": True})
 
             # 2. Ingest the event into the system's pipeline
             # Import dynamically to avoid circular import issues
@@ -266,22 +267,22 @@ class MQTTClientManager:
 
     async def process_status_update(self, device_id, payload):
         try:
-            import repo
             import data_store
-            
-            # 1. Resolve device by external_id or id
-            device = await repo.device_by_external_id(device_id) or await repo.get("devices", device_id)
-            if not device:
-                all_devs = data_store.get_all("devices")
-                device = next((d for d in all_devs if d["id"].lower() == device_id.lower() or d.get("external_id") == device_id or device_id.lower() in d["name"].lower()), None)
-            
+
+            # 1. Resolve device by external_id, our own id, or a fuzzy name match
+            all_devs = data_store.get_all("devices")
+            device = next((d for d in all_devs
+                           if d.get("external_id") == device_id
+                           or d["id"].lower() == device_id.lower()
+                           or device_id.lower() in d.get("name", "").lower()), None)
+
             status_val = str(payload.get("status", "online")).lower()
             is_online = status_val not in ("offline", "disconnected", "down", "error")
-            
+
             # 2. Auto-register if new device status arrives
             if not device:
                 print(f"[MQTT STATUS] Auto-registering new gateway device from status heartbeat: {device_id}...")
-                device = await repo.create("devices", {
+                device = data_store.create("devices", {
                     "name": f"Modem Gateway {device_id}",
                     "type": "camera",
                     "use_case_id": "UC-001",
@@ -293,7 +294,7 @@ class MQTTClientManager:
                     "status": status_val,
                 })
             else:
-                await repo.update("devices", device["id"], {
+                data_store.update("devices", device["id"], {
                     "online": is_online,
                     "status": status_val,
                 })
