@@ -49,8 +49,6 @@ class MQTTClientManager:
             (self.topic_alerts, 1),
             (self.topic_image, 1),
             (self.topic_status, 1),
-            ("dialog/detections", 1),
-            ("dialog/detections/image", 1),
         ]
         self.client.subscribe(topics)
 
