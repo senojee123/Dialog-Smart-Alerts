@@ -15,7 +15,9 @@ class MQTTClientManager:
         self.app = app
         self.broker_host = os.getenv("MQTT_BROKER_HOST", "broker.emqx.io")
         self.broker_port = int(os.getenv("MQTT_BROKER_PORT", 1883))
-        self.subscribe_topic = os.getenv("MQTT_SUBSCRIBE_TOPIC", "dialog/detections")
+        self.topic_alerts = os.getenv("MQTT_TOPIC", "devices/modem-gateway/alerts")
+        self.topic_image = os.getenv("MQTT_IMAGE_TOPIC", "devices/modem-gateway/alerts/image")
+        self.topic_status = os.getenv("MQTT_STATUS_TOPIC", "devices/modem-gateway/status")
         
         # Paho MQTT Client utilizing modern API Version 2
         self.client = mqtt.Client(
@@ -42,8 +44,15 @@ class MQTTClientManager:
         print("[MQTT] Stopped background client.")
 
     def on_connect(self, client, userdata, flags, reason_code, properties):
-        print(f"[MQTT] Connected with code {reason_code}. Subscribing to 'dialog/detections' & 'dialog/detections/image'...")
-        self.client.subscribe([("dialog/detections", 1), ("dialog/detections/image", 1)])
+        print(f"[MQTT] Connected with code {reason_code}. Subscribing to modem-gateway topics...")
+        topics = [
+            (self.topic_alerts, 1),
+            (self.topic_image, 1),
+            (self.topic_status, 1),
+            ("dialog/detections", 1),
+            ("dialog/detections/image", 1),
+        ]
+        self.client.subscribe(topics)
 
     def on_message(self, client, userdata, msg):
         try:
@@ -53,6 +62,16 @@ class MQTTClientManager:
             # Parse the incoming JSON message
             payload_str = msg.payload.decode('utf-8')
             payload = json.loads(payload_str)
+
+            # 1. Check if this is a Modem Gateway Status/Heartbeat topic
+            if msg.topic == self.topic_status or msg.topic.endswith("/status"):
+                device_id = payload.get("device_id") or payload.get("entity_id") or payload.get("gateway_id") or "modem-gateway"
+                print(f"[MQTT STATUS] Modem Gateway heartbeat received from '{device_id}' ({msg.topic}): {payload}")
+                asyncio.run_coroutine_threadsafe(
+                    self.process_status_update(device_id, payload),
+                    self.app.state.loop
+                )
+                return
             
             # Fields validation (supports both entity_id / device_id and alert / object_type)
             station_id = payload.get("station_id") or "st_01"
@@ -178,3 +197,17 @@ class MQTTClientManager:
         payload = {"state": state, "duration_seconds": 30}
         self.client.publish(topic, json.dumps(payload), qos=1)
         print(f"[MQTT ACTUATOR] Published Siren command to '{topic}': {payload}")
+
+    async def process_status_update(self, device_id, payload):
+        try:
+            import repo
+            device = await repo.device_by_external_id(device_id) or await repo.get("devices", device_id)
+            status_val = str(payload.get("status", "online")).lower()
+            is_online = status_val not in ("offline", "disconnected", "down", "error")
+            if device:
+                await repo.update("devices", device["id"], {
+                    "online": is_online,
+                    "status": status_val,
+                })
+        except Exception as e:
+            print(f"[MQTT STATUS] Error updating device status: {e}")
