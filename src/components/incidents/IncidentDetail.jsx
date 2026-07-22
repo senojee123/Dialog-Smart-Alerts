@@ -7,6 +7,7 @@ import Timeline from './Timeline.jsx'
 import HardwareControl from './HardwareControl.jsx'
 import ConfirmDialog from '../common/ConfirmDialog.jsx'
 import { relativeTime, absoluteTime, formatDistance } from '../../lib/format.js'
+import { resolveMediaUrl } from '../../api/client.js'
 
 export default function IncidentDetail({ incident, onClose, onCloseIncident, onDeleteIncident, onHardwareOverride }) {
   const [confirmClose, setConfirmClose] = useState(false)
@@ -59,7 +60,7 @@ export default function IncidentDetail({ incident, onClose, onCloseIncident, onD
         <section className="p-4">
           <h4 className="text-xs font-semibold text-ink-muted uppercase tracking-wide mb-3">Evidence</h4>
           {incident.incident_media
-            ? <img src={incident.incident_media} alt="Incident media" className="rounded-lg w-full object-cover max-h-48" />
+            ? <img src={resolveMediaUrl(incident.incident_media)} alt="Incident media" className="rounded-lg w-full object-cover max-h-48" />
             : (
               <div className="flex items-center gap-2 p-4 bg-surface rounded-lg text-ink-muted text-sm">
                 <Image size={16} /> Media attaching…

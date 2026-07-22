@@ -1,5 +1,17 @@
 const BASE = import.meta.env.VITE_API_BASE ?? '/api'
 
+// Backend origin without the trailing /api — used to resolve relative media
+// paths (e.g. incident.incident_media = "/uploads/x.jpg") when the frontend
+// is deployed separately from the backend (e.g. Vercel + Railway), so an
+// <img> tag doesn't resolve them against the frontend's own origin instead.
+const ORIGIN = BASE.replace(/\/api\/?$/, '')
+
+export function resolveMediaUrl(path) {
+  if (!path) return path
+  if (/^https?:\/\//i.test(path)) return path
+  return `${ORIGIN}${path}`
+}
+
 export async function apiFetch(path, options = {}) {
   const res = await fetch(`${BASE}${path}`, {
     headers: { 'Content-Type': 'application/json', ...options.headers },
