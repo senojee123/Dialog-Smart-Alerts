@@ -10,7 +10,7 @@ import {
 
 const BLANK = {
   name: '', type: 'camera', zone_id: '', use_case_id: '',
-  lat: null, lng: null, online: true, api_key: '',
+  lat: null, lng: null, online: false, api_key: '',
 }
 
 const DEVICE_TYPES = ['camera', 'thermal', 'drone', 'pressure_pad', 'acoustic', 'manual']
@@ -176,22 +176,18 @@ export default function Devices() {
                    placeholder="e.g. Camera Trap – B43 North Gate" />
           </Field>
 
-          <div className="grid grid-cols-2 gap-4">
-            <Field label="Type" required>
-              <Select value={form.type} onChange={e => set('type', e.target.value)}>
-                {DEVICE_TYPES.map(t => (
-                  <option key={t} value={t} className="capitalize">{t.replace('_', ' ')}</option>
-                ))}
-              </Select>
+          <Field label="Type" required>
+            <Select value={form.type} onChange={e => set('type', e.target.value)}>
+              {DEVICE_TYPES.map(t => (
+                <option key={t} value={t} className="capitalize">{t.replace('_', ' ')}</option>
+              ))}
+            </Select>
+          </Field>
+          {editing && (
+            <Field label="Status" hint="Driven automatically by device heartbeats — not editable here.">
+              <StatusDot online={form.online} />
             </Field>
-            <Field label="Status">
-              <Select value={form.online ? 'true' : 'false'}
-                      onChange={e => set('online', e.target.value === 'true')}>
-                <option value="true">Online</option>
-                <option value="false">Offline</option>
-              </Select>
-            </Field>
-          </div>
+          )}
 
           <Field label="Use Case" required>
             <Select value={form.use_case_id} onChange={e => { set('use_case_id', e.target.value); set('zone_id', '') }}>
