@@ -9,14 +9,12 @@ tagged `source="simulation"` and every derived incident is flagged
 Two modes: single event (use-case aware) and scenario run (a moving target
 stepped along a path over time). Transport-agnostic: server.py injects an
 `emit(body)` coroutine (the real ingestion function).
-
-Stage B1: data access is async via repo.
 """
 
 import asyncio
 import uuid
 
-import repo
+import data_store
 import spatial
 
 # run_id -> meta dict (includes the asyncio Task under "_task")
@@ -27,7 +25,7 @@ _runs: dict[str, dict] = {}
 
 async def _placed_devices(use_case_id: str) -> list[dict]:
     return [
-        d for d in await repo.get_all("devices")
+        d for d in data_store.get_all("devices")
         if d.get("use_case_id") == use_case_id
         and d.get("lat") is not None and d.get("lng") is not None
     ]
@@ -148,23 +146,23 @@ async def reset_simulation() -> dict:
         stop(rid)
     _runs.clear()
 
-    events = await repo.get_all("detection_events")
+    events = data_store.get_all("detection_events")
     sim_event_ids = {e["id"] for e in events if e.get("source") == "simulation"}
 
-    incidents = await repo.get_all("incidents")
+    incidents = data_store.get_all("incidents")
     sim_incident_ids = {i["id"] for i in incidents if i.get("simulated")}
 
-    notifs = await repo.get_all("notifications")
+    notifs = data_store.get_all("notifications")
     removed_notifs = 0
     for n in notifs:
         if n.get("incident_id") in sim_incident_ids:
-            if await repo.delete("notifications", n["id"]):
+            if data_store.delete("notifications", n["id"]):
                 removed_notifs += 1
 
     for iid in sim_incident_ids:
-        await repo.delete("incidents", iid)
+        data_store.delete("incidents", iid)
     for eid in sim_event_ids:
-        await repo.delete("detection_events", eid)
+        data_store.delete("detection_events", eid)
 
     return {
         "events_removed":        len(sim_event_ids),

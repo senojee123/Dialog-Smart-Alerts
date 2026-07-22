@@ -10,19 +10,19 @@ makes the lit region travel up the road.
 """
 
 import asyncio
-import repo
+import data_store
 
 LNG = 81.4800  # B43 corridor runs along this longitude
 
 
 async def run():
-    if await repo.count("use_cases") > 0:
+    if data_store.get_all("use_cases"):
         return  # Already seeded
 
     print("[SEED] Initialising Elephant Detection use case...")
 
     # ── Use Case (with spatial actuation config) ────────────────────────────
-    await repo.upsert("use_cases", {
+    data_store.upsert("use_cases", {
         "id":          "UC-001",
         "name":        "Elephant Detection – Road Corridor",
         "description": "Detect elephants near road corridors and alert stakeholders. "
@@ -46,7 +46,7 @@ async def run():
         {"id": "ZONE-KTR", "name": "Kataragama Road",         "use_case_id": "UC-001", "road": "KTR", "lat": 6.3720, "lng": 81.3310},
     ]
     for z in zones:
-        await repo.upsert("zones", z)
+        data_store.upsert("zones", z)
 
     # ── Devices ──────────────────────────────────────────────────────────────
     # Three sensors interleaved along the B43 corridor, plus two on other roads.
@@ -58,7 +58,7 @@ async def run():
         {"id": "DEV-005", "name": "Camera Trap – Kataragama Rd","type": "camera",  "zone_id": "ZONE-KTR", "use_case_id": "UC-001", "lat": 6.3720, "lng": 81.3310, "api_key": "dev-key-005", "online": False},
     ]
     for d in devices:
-        await repo.upsert("devices", d)
+        data_store.upsert("devices", d)
 
     # ── Stakeholders ────────────────────────────────────────────────────────
     stakeholders = [
@@ -103,7 +103,7 @@ async def run():
         },
     ]
     for s in stakeholders:
-        await repo.upsert("stakeholders", s)
+        data_store.upsert("stakeholders", s)
 
     # ── Road Signs (LED boards) ──────────────────────────────────────────────
     # 8 boards along B43 at ~55 m spacing (0.0005° lat), interleaved with cameras.
@@ -127,7 +127,7 @@ async def run():
         {"id": "RS-011", "name": "Kataragama LED Board 1","zone_id": "ZONE-KTR", "road": "Kataragama Road",     "km_marker": 6,  "lat": 6.3722, "lng": 81.3312, "online": False},
     ]
     for s in road_signs:
-        await repo.upsert("road_signs", s)
+        data_store.upsert("road_signs", s)
 
     # ── Rules ────────────────────────────────────────────────────────────────
     # Rules drive INCIDENTS + NOTIFICATIONS. Sign lighting is handled by the
@@ -195,15 +195,11 @@ async def run():
         },
     ]
     for r in rules:
-        await repo.upsert("rules", r)
+        data_store.upsert("rules", r)
 
     print("[SEED] Done — Elephant Detection use case loaded "
           "(3 sensors, 11 LED boards, radius actuation).")
 
 
 if __name__ == "__main__":
-    import db
-    async def _main():
-        await db.init_db()
-        await run()
-    asyncio.run(_main())
+    asyncio.run(run())
