@@ -707,6 +707,11 @@ async def _run_rule_engine(event: dict, device: dict) -> dict | None:
         # Always update confidence to the highest seen so far
         if event.get("confidence", 0) > incident.get("confidence", 0):
             patch["confidence"] = event["confidence"]
+        # Backfill evidence: the opening event may not have carried a photo
+        # (e.g. a plain alert with no image) while a later merged event did —
+        # don't leave the incident stuck with no evidence once one exists.
+        if not incident.get("image_url") and event.get("image_url"):
+            patch["image_url"] = event["image_url"]
         incident = data_store.update("incidents", incident["id"], patch)
         _broadcast_incident("incident_updated", incident)
     else:
