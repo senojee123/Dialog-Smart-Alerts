@@ -46,6 +46,7 @@ from fastapi.staticfiles import StaticFiles
 BASE_DIR    = Path(__file__).parent
 DIST_DIR    = BASE_DIR.parent / "dist"
 UPLOADS_DIR = BASE_DIR / "uploads"
+STATIC_DIR  = BASE_DIR / "static"
 UPLOADS_DIR.mkdir(exist_ok=True)
 
 # ── App ──────────────────────────────────────────────────────────────────────
@@ -1046,6 +1047,12 @@ async function upload() {
 
 if UPLOADS_DIR.exists():
     app.mount("/uploads", StaticFiles(directory=str(UPLOADS_DIR)), name="uploads")
+
+# Mounted unconditionally (unlike /assets below) — this backend's own fallback
+# placeholder must be servable even when the frontend isn't built/deployed
+# alongside it (e.g. a split Railway backend + Vercel frontend deployment).
+if STATIC_DIR.exists():
+    app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
 
 if DIST_DIR.exists() and (DIST_DIR / "assets").exists():
     app.mount("/assets", StaticFiles(directory=str(DIST_DIR / "assets")), name="assets")

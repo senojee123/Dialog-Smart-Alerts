@@ -150,7 +150,7 @@ class MQTTClientManager:
                     print(f"[MQTT IMAGE] Decoded and saved Base64 image: {image_url}")
                 except Exception as img_err:
                     print(f"[MQTT IMAGE] Could not decode raw Base64 ({img_err}). Using default camera capture URL.")
-                    image_url = "/assets/dialog-logo-BjKEPiud.jpg"
+                    image_url = "/static/placeholder.jpg"
 
             # Form standard ingestion event payload
             event_body = {
@@ -204,7 +204,7 @@ class MQTTClientManager:
                     print(f"[MQTT RAW IMAGE] Decoded and saved raw image: {image_url}")
                 except Exception as b64_err:
                     print(f"[MQTT RAW IMAGE] Error decoding raw Base64 ({b64_err}), using default sample image.")
-                    image_url = "/assets/dialog-logo-BjKEPiud.jpg"
+                    image_url = "/static/placeholder.jpg"
 
                 event_body = {
                     "external_id": "st_01_cam_04",
