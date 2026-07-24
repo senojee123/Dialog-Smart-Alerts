@@ -13,7 +13,6 @@ const NAV = [
   { to: '/road-signs',  icon: Monitor,         label: 'Road Signs' },
   { to: '/devices',     icon: Camera,          label: 'Devices' },
   { to: '/hardware',    icon: Cpu,             label: 'Hardware Units' },
-  { to: '/simulator',   icon: PlayCircle,      label: 'Simulator' },
 
   null, // divider
 
