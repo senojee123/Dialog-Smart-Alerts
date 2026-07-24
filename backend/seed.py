@@ -56,6 +56,11 @@ async def run():
         {"id": "DEV-003", "name": "Thermal Sensor – B43 km 1.4","type": "thermal", "zone_id": "ZONE-B43", "use_case_id": "UC-001", "lat": 6.3835, "lng": LNG,     "api_key": "dev-key-003", "online": True},
         {"id": "DEV-004", "name": "Camera Trap – A2 Junction",  "type": "camera",  "zone_id": "ZONE-A2",  "use_case_id": "UC-001", "lat": 6.2812, "lng": 81.3902, "api_key": "dev-key-004", "online": True},
         {"id": "DEV-005", "name": "Camera Trap – Kataragama Rd","type": "camera",  "zone_id": "ZONE-KTR", "use_case_id": "UC-001", "lat": 6.3720, "lng": 81.3310, "api_key": "dev-key-005", "online": False},
+        # Actuation Hardware Units (Sirens/Gates) registered as devices
+        {"id": "HW-001", "name": "Siren Unit A", "type": "siren", "zone_id": "ZONE-B43", "use_case_id": "UC-001", "lat": 6.3810, "lng": LNG, "api_key": "hw-key-001", "online": True, "state": "OFF"},
+        {"id": "HW-002", "name": "Siren Unit B", "type": "siren", "zone_id": "ZONE-B43", "use_case_id": "UC-001", "lat": 6.3825, "lng": LNG, "api_key": "hw-key-002", "online": True, "state": "OFF"},
+        {"id": "HW-003", "name": "Siren Unit C", "type": "siren", "zone_id": "ZONE-B43", "use_case_id": "UC-001", "lat": 6.3840, "lng": LNG, "api_key": "hw-key-003", "online": False, "state": "OFFLINE"},
+        {"id": "HW-004", "name": "Gate Unit D",  "type": "gate",  "zone_id": "ZONE-B43", "use_case_id": "UC-001", "lat": 6.3855, "lng": LNG, "api_key": "hw-key-004", "online": False, "state": "OFFLINE"},
     ]
     for d in devices:
         data_store.upsert("devices", d)

@@ -13,7 +13,7 @@ const BLANK = {
   lat: null, lng: null, online: false, api_key: '',
 }
 
-const DEVICE_TYPES = ['camera', 'thermal', 'drone', 'pressure_pad', 'acoustic', 'manual']
+const DEVICE_TYPES = ['camera', 'thermal', 'drone', 'pressure_pad', 'acoustic', 'manual', 'siren', 'gate']
 
 function MapClickHandler({ onPick }) {
   useMapEvents({ click(e) { onPick(e.latlng) } })
