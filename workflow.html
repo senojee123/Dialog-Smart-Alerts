@@ -327,10 +327,10 @@
     async function loadDependencies() {
       try {
         const [ucRes, shRes, zoneRes, ruleRes] = await Promise.all([
-          fetch('https://web-production-31cc0e.up.railway.app/api/use-cases'),
-          fetch('https://web-production-31cc0e.up.railway.app/api/stakeholders'),
-          fetch('https://web-production-31cc0e.up.railway.app/api/zones'),
-          fetch('https://web-production-31cc0e.up.railway.app/api/rules')
+          fetch('https://dialog-smart-alerts-production.up.railway.app/api/use-cases'),
+          fetch('https://dialog-smart-alerts-production.up.railway.app/api/stakeholders'),
+          fetch('https://dialog-smart-alerts-production.up.railway.app/api/zones'),
+          fetch('https://dialog-smart-alerts-production.up.railway.app/api/rules')
         ]);
         if (ucRes.ok) useCases = await ucRes.json();
         if (shRes.ok) stakeholders = await shRes.json();
@@ -794,7 +794,7 @@
       };
 
       try {
-        const res = await fetch('https://web-production-31cc0e.up.railway.app/api/devices', {
+        const res = await fetch('https://dialog-smart-alerts-production.up.railway.app/api/devices', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(newDevice)
@@ -833,7 +833,7 @@
       };
 
       try {
-        const res = await fetch('https://web-production-31cc0e.up.railway.app/api/stakeholders', {
+        const res = await fetch('https://dialog-smart-alerts-production.up.railway.app/api/stakeholders', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(newSh)
@@ -878,7 +878,7 @@
       };
 
       try {
-        const res = await fetch('https://web-production-31cc0e.up.railway.app/api/road-signs', {
+        const res = await fetch('https://dialog-smart-alerts-production.up.railway.app/api/road-signs', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(newSign)
@@ -1001,8 +1001,8 @@
       try {
         await Promise.all(rules.map(rule => {
           const url = rule.id.startsWith('RULE-NEW-') 
-            ? 'https://web-production-31cc0e.up.railway.app/api/rules'
-            : `https://web-production-31cc0e.up.railway.app/api/rules/${rule.id}`;
+            ? 'https://dialog-smart-alerts-production.up.railway.app/api/rules'
+            : `https://dialog-smart-alerts-production.up.railway.app/api/rules/${rule.id}`;
           const method = rule.id.startsWith('RULE-NEW-') ? 'POST' : 'PUT';
 
           if (rule.id.startsWith('RULE-NEW-')) {

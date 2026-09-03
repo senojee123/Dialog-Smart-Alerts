@@ -329,9 +329,9 @@
     async function loadDependencies() {
       try {
         const [ucRes, shRes, zoneRes] = await Promise.all([
-          fetch('https://web-production-31cc0e.up.railway.app/api/use-cases'),
-          fetch('https://web-production-31cc0e.up.railway.app/api/stakeholders'),
-          fetch('https://web-production-31cc0e.up.railway.app/api/zones')
+          fetch('https://dialog-smart-alerts-production.up.railway.app/api/use-cases'),
+          fetch('https://dialog-smart-alerts-production.up.railway.app/api/stakeholders'),
+          fetch('https://dialog-smart-alerts-production.up.railway.app/api/zones')
         ]);
         if (ucRes.ok) useCases = await ucRes.json();
         if (shRes.ok) stakeholders = await shRes.json();
@@ -629,7 +629,7 @@
       };
 
       try {
-        const response = await fetch('https://web-production-31cc0e.up.railway.app/api/devices', {
+        const response = await fetch('https://dialog-smart-alerts-production.up.railway.app/api/devices', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(newDevice)
@@ -787,7 +787,7 @@
       };
 
       try {
-        const response = await fetch('https://web-production-31cc0e.up.railway.app/api/road-signs', {
+        const response = await fetch('https://dialog-smart-alerts-production.up.railway.app/api/road-signs', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(newSign)
@@ -830,7 +830,7 @@
       };
 
       try {
-        const response = await fetch('https://web-production-31cc0e.up.railway.app/api/stakeholders', {
+        const response = await fetch('https://dialog-smart-alerts-production.up.railway.app/api/stakeholders', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(newSh)
@@ -989,7 +989,7 @@
     // Submit rule to backend API
     async function submitWorkflow() {
       try {
-        const response = await fetch('https://web-production-31cc0e.up.railway.app/api/rules', {
+        const response = await fetch('https://dialog-smart-alerts-production.up.railway.app/api/rules', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(currentRule)
