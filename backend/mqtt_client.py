@@ -36,32 +36,51 @@ def _assert_valid_image(img_bytes: bytes) -> None:
 class MQTTClientManager:
     def __init__(self, app):
         self.app = app
-        self.broker_host = os.getenv("MQTT_BROKER_HOST", "broker.emqx.io")
+        # HiveMQ public broker is the platform default (the modem-gateway hardware
+        # and the backend/scratch/*_live.py test scripts all use it). Override with
+        # MQTT_BROKER_HOST for a private/authenticated broker.
+        self.broker_host = os.getenv("MQTT_BROKER_HOST", "broker.hivemq.com")
         self.broker_port = int(os.getenv("MQTT_BROKER_PORT", 1883))
+        # Auth + TLS are optional — empty username = anonymous (public brokers).
+        # Accept both the current names and the older MQTT_BROKER_USER/PASSWORD ones.
+        self.username = os.getenv("MQTT_USERNAME") or os.getenv("MQTT_BROKER_USER") or ""
+        self.password = os.getenv("MQTT_PASSWORD") or os.getenv("MQTT_BROKER_PASSWORD") or ""
+        self.use_tls = os.getenv("MQTT_USE_TLS", "false").strip().lower() in ("1", "true", "yes", "on")
         self.topic_alerts = os.getenv("MQTT_TOPIC", "devices/modem-gateway/alerts")
         self.topic_image = os.getenv("MQTT_IMAGE_TOPIC", "devices/modem-gateway/alerts/image")
         self.topic_status = os.getenv("MQTT_STATUS_TOPIC", "devices/modem-gateway/status")
-        
+
         # Generate unique client ID to prevent client_id collisions on public broker
         unique_id = f"dialog-alert-{uuid.uuid4().hex[:6]}"
         client_id_val = os.getenv("MQTT_CLIENT_ID", unique_id)
-        
+
         # Paho MQTT Client utilizing modern API Version 2
         self.client = mqtt.Client(
-            callback_api_version=mqtt.CallbackAPIVersion.VERSION2, 
+            callback_api_version=mqtt.CallbackAPIVersion.VERSION2,
             client_id=client_id_val
         )
         self.client.on_connect = self.on_connect
         self.client.on_message = self.on_message
-        
+
+        if self.username:
+            self.client.username_pw_set(self.username, self.password or None)
+        if self.use_tls:
+            import ssl
+            # Default port for MQTT-over-TLS if the caller didn't set one explicitly.
+            if not os.getenv("MQTT_BROKER_PORT"):
+                self.broker_port = 8883
+            self.client.tls_set(cert_reqs=ssl.CERT_REQUIRED)
+
         # In-memory deduplication/processing map if needed
         self.last_processed_timestamps = {}
 
     def start(self):
         try:
+            auth = f"auth={self.username or '(anon)'} tls={self.use_tls}"
             self.client.connect(self.broker_host, self.broker_port, keepalive=60)
             self.client.loop_start()
-            print(f"[MQTT] Started background client ({self.client._client_id}) and connected to {self.broker_host}:{self.broker_port}")
+            print(f"[MQTT] Started background client ({self.client._client_id}) — "
+                  f"connecting to {self.broker_host}:{self.broker_port} ({auth})")
         except Exception as e:
             print(f"[MQTT] Failed to start MQTT client: {e}")
 

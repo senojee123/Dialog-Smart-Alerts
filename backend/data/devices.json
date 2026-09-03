@@ -120,8 +120,8 @@
     "online": true,
     "id": "DEV-622F99",
     "created_at": "2026-07-08T09:35:05.138183+00:00",
-    "updated_at": "2026-07-10T05:49:14.004995+00:00",
-    "last_seen": "2026-07-10T05:49:14.004713+00:00"
+    "updated_at": "2026-07-23T03:00:44.535860+00:00",
+    "last_seen": "2026-07-23T03:00:44.535622+00:00"
   },
   {
     "name": "MQTT Camera cam_01 (Station st_02)",
@@ -168,5 +168,19 @@
     "created_at": "2026-07-10T03:20:58.733550+00:00",
     "updated_at": "2026-07-10T03:33:29.408776+00:00",
     "last_seen": "2026-07-10T03:33:29.408177+00:00"
+  },
+  {
+    "name": "Modem Gateway modem-gateway",
+    "type": "camera",
+    "use_case_id": "UC-001",
+    "zone_id": "ZONE-B43",
+    "lat": 6.3805,
+    "lng": 81.48,
+    "external_id": "modem-gateway",
+    "online": false,
+    "status": "offline",
+    "id": "DEV-27A601",
+    "created_at": "2026-07-23T02:58:43.426630+00:00",
+    "updated_at": "2026-07-23T02:58:43.426643+00:00"
   }
 ]
