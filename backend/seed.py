@@ -111,28 +111,10 @@ async def run():
         data_store.upsert("stakeholders", s)
 
     # ── Road Signs (LED boards) ──────────────────────────────────────────────
-    # 8 boards along B43 at ~55 m spacing (0.0005° lat), interleaved with cameras.
-    road_signs = []
-    for i in range(8):
-        lat = round(6.3800 + i * 0.0005, 5)
-        road_signs.append({
-            "id":        f"RS-{i+1:03d}",
-            "name":      f"B43 LED Board {i+1}",
-            "zone_id":   "ZONE-B43",
-            "road":      "B43 Yala Road",
-            "km_marker": round(1.0 + i * 0.055, 2),
-            "lat":       lat,
-            "lng":       LNG,
-            "online":    True,
-        })
-    # Other roads (sparse)
-    road_signs += [
-        {"id": "RS-009", "name": "A2 LED Board 1",        "zone_id": "ZONE-A2",  "road": "A2 Southern Highway", "km_marker": 44, "lat": 6.2815, "lng": 81.3905, "online": True},
-        {"id": "RS-010", "name": "A2 LED Board 2",        "zone_id": "ZONE-A2",  "road": "A2 Southern Highway", "km_marker": 45, "lat": 6.2808, "lng": 81.3899, "online": True},
-        {"id": "RS-011", "name": "Kataragama LED Board 1","zone_id": "ZONE-KTR", "road": "Kataragama Road",     "km_marker": 6,  "lat": 6.3722, "lng": 81.3312, "online": False},
-    ]
-    for s in road_signs:
-        data_store.upsert("road_signs", s)
+    # No seeded boards — real LED boards are registered through the Road Sign
+    # Boards registry (/admin/road-signs) or POST /api/road-signs, so the sign
+    # IDs match the physical hardware's actuator topic
+    # (dialog/actuators/signs/{sign_id}/command).
 
     # ── Rules ────────────────────────────────────────────────────────────────
     # Rules drive INCIDENTS + NOTIFICATIONS. Sign lighting is handled by the
