@@ -116,10 +116,18 @@ class MQTTClientManager:
 
             api_key = payload.get("api_key")
 
-            # 1. Status / heartbeat topics — device liveness, not a detection
+            # 1. Status / heartbeat topics — device liveness, not a detection.
+            # The gateway multiplexes one status message per camera on this topic,
+            # identifying each by station_id + entity_id (same as a detection), so
+            # resolve the external_id the same way.
             if (msg.topic in (self.topic_status, self.topic_heartbeat)
                     or msg.topic.endswith(("/status", "/heartbeat"))):
-                device_id = payload.get("device_id") or payload.get("entity_id") or payload.get("gateway_id") or "modem-gateway"
+                st, en = payload.get("station_id"), payload.get("entity_id") or payload.get("device_id")
+                if st and en:
+                    device_id = f"{st}_{en}"
+                else:
+                    device_id = (payload.get("device_id") or payload.get("entity_id")
+                                 or payload.get("gateway_id") or "modem-gateway")
                 print(f"[MQTT STATUS] liveness from '{device_id}' ({msg.topic}): {payload}")
                 asyncio.run_coroutine_threadsafe(
                     self.process_status_update(device_id, payload, api_key),
