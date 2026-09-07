@@ -3,6 +3,7 @@ import { Plus, MapPin, Copy } from 'lucide-react'
 import { MapContainer, TileLayer, Marker, Popup, useMapEvents } from 'react-leaflet'
 import L from 'leaflet'
 import { useApi } from '../../hooks/useApi.js'
+import { relativeTime, absoluteTime } from '../../lib/format.js'
 import {
   PageHeader, Btn, Badge, StatusDot, Table, SlideOver,
   Field, Input, Select, SaveBar, ConfirmDialog, ErrorBanner,
@@ -105,7 +106,11 @@ export default function Devices() {
     },
     { key: 'online', label: 'Status', render: row => <StatusDot online={row.online} /> },
     { key: 'last_seen', label: 'Last Seen',
-      render: row => <span className="text-xs text-ink-muted">{row.last_seen ? row.last_seen.slice(0, 16).replace('T', ' ') : 'Never'}</span> },
+      render: row => (
+        <span className="text-xs text-ink-muted" title={row.last_seen ? absoluteTime(row.last_seen) : ''}>
+          {row.last_seen ? relativeTime(row.last_seen) : 'Never'}
+        </span>
+      ) },
     { key: 'api_key', label: 'API Key',
       render: row => (
         <div className="flex items-center gap-1.5">

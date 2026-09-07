@@ -49,6 +49,8 @@ class MQTTClientManager:
         self.topic_alerts = os.getenv("MQTT_TOPIC", "devices/modem-gateway/alerts")
         self.topic_image = os.getenv("MQTT_IMAGE_TOPIC", "devices/modem-gateway/alerts/image")
         self.topic_status = os.getenv("MQTT_STATUS_TOPIC", "devices/modem-gateway/status")
+        # Recurring liveness beat (separate from the retained status message).
+        self.topic_heartbeat = os.getenv("MQTT_HEARTBEAT_TOPIC", "devices/modem-gateway/heartbeat")
 
         # Generate unique client ID to prevent client_id collisions on public broker
         unique_id = f"dialog-alert-{uuid.uuid4().hex[:6]}"
@@ -91,12 +93,14 @@ class MQTTClientManager:
 
     def on_connect(self, client, userdata, flags, reason_code, properties):
         if str(reason_code).lower() in ("0", "success", "success.") or reason_code == 0:
-            print(f"[MQTT] Connected SUCCESSFUL ({reason_code}). Subscribing to topics: {self.topic_alerts}, {self.topic_image}, {self.topic_status}...")
             topics = [
                 (self.topic_alerts, 1),
                 (self.topic_image, 1),
                 (self.topic_status, 1),
+                (self.topic_heartbeat, 1),
             ]
+            print(f"[MQTT] Connected SUCCESSFUL ({reason_code}). Subscribing to: "
+                  + ", ".join(t for t, _ in topics))
             self.client.subscribe(topics)
         else:
             print(f"[MQTT ERROR] Connection failed with code '{reason_code}'. Subscription skipped.")
@@ -112,10 +116,11 @@ class MQTTClientManager:
 
             api_key = payload.get("api_key")
 
-            # 1. Check if this is a Modem Gateway Status/Heartbeat topic
-            if msg.topic == self.topic_status or msg.topic.endswith("/status"):
+            # 1. Status / heartbeat topics — device liveness, not a detection
+            if (msg.topic in (self.topic_status, self.topic_heartbeat)
+                    or msg.topic.endswith(("/status", "/heartbeat"))):
                 device_id = payload.get("device_id") or payload.get("entity_id") or payload.get("gateway_id") or "modem-gateway"
-                print(f"[MQTT STATUS] Modem Gateway heartbeat received from '{device_id}' ({msg.topic}): {payload}")
+                print(f"[MQTT STATUS] liveness from '{device_id}' ({msg.topic}): {payload}")
                 asyncio.run_coroutine_threadsafe(
                     self.process_status_update(device_id, payload, api_key),
                     self.app.state.loop
@@ -195,9 +200,10 @@ class MQTTClientManager:
             raw_bytes = msg.payload
             raw_text = raw_bytes.decode('utf-8', errors='ignore').strip()
             
-            # Case 1: Plain text status update (e.g. "ONLINE" or "OFFLINE")
-            if msg.topic == self.topic_status or msg.topic.endswith("/status"):
-                print(f"[MQTT STATUS] Non-JSON status payload received on '{msg.topic}': {raw_text}")
+            # Case 1: Plain text status update (e.g. "ONLINE" or "OFFLINE" / "alive")
+            if (msg.topic in (self.topic_status, self.topic_heartbeat)
+                    or msg.topic.endswith(("/status", "/heartbeat"))):
+                print(f"[MQTT STATUS] Non-JSON liveness payload on '{msg.topic}': {raw_text}")
                 asyncio.run_coroutine_threadsafe(
                     self.process_status_update("modem-gateway", {"status": raw_text}, None),
                     self.app.state.loop
@@ -339,8 +345,10 @@ class MQTTClientManager:
                                     reason="bad_key", enforced=mqtt_auth_enforced())
 
             status_val = str(payload.get("status", "online")).lower()
-            is_online = status_val not in ("offline", "disconnected", "down", "error")
-            data_store.update("devices", device["id"], {"online": is_online, "status": status_val})
-            print(f"[MQTT STATUS] Updated device status for '{device['name']}': Online={is_online}")
+            is_online = status_val not in ("offline", "disconnected", "down", "error", "dead")
+            data_store.update("devices", device["id"], {
+                "online": is_online, "status": status_val, "last_seen": data_store._now(),
+            })
+            print(f"[MQTT STATUS] '{device['name']}' online={is_online} (last_seen updated)")
         except Exception as e:
             print(f"[MQTT STATUS] Error updating device status: {e}")
