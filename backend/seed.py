@@ -49,21 +49,9 @@ async def run():
         data_store.upsert("zones", z)
 
     # ── Devices ──────────────────────────────────────────────────────────────
-    # Three sensors interleaved along the B43 corridor, plus two on other roads.
-    devices = [
-        {"id": "DEV-001", "name": "Camera Trap – B43 km 1.0",  "type": "camera",  "zone_id": "ZONE-B43", "use_case_id": "UC-001", "lat": 6.3805, "lng": LNG,     "api_key": "dev-key-001", "online": True},
-        {"id": "DEV-002", "name": "Camera Trap – B43 km 1.2",  "type": "camera",  "zone_id": "ZONE-B43", "use_case_id": "UC-001", "lat": 6.3820, "lng": LNG,     "api_key": "dev-key-002", "online": True},
-        {"id": "DEV-003", "name": "Thermal Sensor – B43 km 1.4","type": "thermal", "zone_id": "ZONE-B43", "use_case_id": "UC-001", "lat": 6.3835, "lng": LNG,     "api_key": "dev-key-003", "online": True},
-        {"id": "DEV-004", "name": "Camera Trap – A2 Junction",  "type": "camera",  "zone_id": "ZONE-A2",  "use_case_id": "UC-001", "lat": 6.2812, "lng": 81.3902, "api_key": "dev-key-004", "online": True},
-        {"id": "DEV-005", "name": "Camera Trap – Kataragama Rd","type": "camera",  "zone_id": "ZONE-KTR", "use_case_id": "UC-001", "lat": 6.3720, "lng": 81.3310, "api_key": "dev-key-005", "online": False},
-        # Actuation Hardware Units (Sirens/Gates) registered as devices
-        {"id": "HW-001", "name": "Siren Unit A", "type": "siren", "zone_id": "ZONE-B43", "use_case_id": "UC-001", "lat": 6.3810, "lng": LNG, "api_key": "hw-key-001", "online": True, "state": "OFF"},
-        {"id": "HW-002", "name": "Siren Unit B", "type": "siren", "zone_id": "ZONE-B43", "use_case_id": "UC-001", "lat": 6.3825, "lng": LNG, "api_key": "hw-key-002", "online": True, "state": "OFF"},
-        {"id": "HW-003", "name": "Siren Unit C", "type": "siren", "zone_id": "ZONE-B43", "use_case_id": "UC-001", "lat": 6.3840, "lng": LNG, "api_key": "hw-key-003", "online": False, "state": "OFFLINE"},
-        {"id": "HW-004", "name": "Gate Unit D",  "type": "gate",  "zone_id": "ZONE-B43", "use_case_id": "UC-001", "lat": 6.3855, "lng": LNG, "api_key": "hw-key-004", "online": False, "state": "OFFLINE"},
-    ]
-    for d in devices:
-        data_store.upsert("devices", d)
+    # No seeded devices — cameras, sensors and actuation units are registered
+    # through the Device Registry (/admin/devices) or POST /api/devices, which
+    # issues each a random api_key. MQTT/HTTP producers must present that key.
 
     # ── Stakeholders ────────────────────────────────────────────────────────
     stakeholders = [
@@ -184,8 +172,8 @@ async def run():
     for r in rules:
         data_store.upsert("rules", r)
 
-    print("[SEED] Done — Elephant Detection use case loaded "
-          "(3 sensors, radius actuation). Register LED boards + cameras in the registry.")
+    print("[SEED] Done — Elephant Detection use case loaded (scenario config only). "
+          "Register cameras + LED boards in the registry.")
 
 
 if __name__ == "__main__":
