@@ -680,7 +680,15 @@ async def _ingest_event(body: dict, source: str = "device") -> tuple[dict, dict 
         "received_at":     _now(),
         "processed":       False,
     })
-    data_store.update("devices", device["id"], {"last_seen": _now(), "online": True})
+    # A detection is also a liveness signal. If the producer piggybacks a
+    # `status` on the message, apply it the same way a status-topic message would.
+    dev_patch = {"last_seen": _now(), "online": True}
+    st = body.get("status")
+    if st:
+        st = str(st).lower()
+        dev_patch["status"] = st
+        dev_patch["online"] = st not in ("offline", "disconnected", "down", "error", "dead")
+    data_store.update("devices", device["id"], dev_patch)
 
     incident = await _run_rule_engine(event, device)
     broadcast("event_received", {**event, "incident_id": incident["id"] if incident else None})

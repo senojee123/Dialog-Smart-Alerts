@@ -194,6 +194,7 @@ class MQTTClientManager:
                 "confidence": confidence,
                 "captured_at": timestamp,
                 "image_url": image_url,
+                "status": payload.get("status"),   # piggybacked liveness, if any
                 "source": "device",
                 "raw_payload": payload
             }
