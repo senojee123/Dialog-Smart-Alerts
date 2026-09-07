@@ -11,6 +11,7 @@ FastAPI backend serving:
 import asyncio
 import json
 import os
+import secrets
 import socket
 import sys
 import uuid
@@ -242,13 +243,22 @@ async def delete_zone(id: str):
 async def list_devices():
     return _list("devices")
 
+def _external_id_for(body: dict) -> str:
+    """A producer's MQTT identity is "{station_id}_{entity_id}" — fall back to
+    an explicit external_id, then to the api_key (legacy behaviour)."""
+    if body.get("external_id"):
+        return body["external_id"]
+    if body.get("station_id") and body.get("entity_id"):
+        return f"{body['station_id']}_{body['entity_id']}"
+    return body.get("api_key", "")
+
+
 @app.post("/api/devices")
 async def create_device(req: Request):
     body = await req.json()
     if not body.get("api_key"):
-        body["api_key"] = f"dev-key-{uuid.uuid4().hex[:8]}"
-    if not body.get("external_id"):
-        body["external_id"] = body["api_key"]
+        body["api_key"] = secrets.token_hex(16)   # 128-bit random, CSPRNG
+    body["external_id"] = _external_id_for(body)
     device = _create("devices", body)
     broadcast("device_created", device)
     return device
@@ -260,11 +270,23 @@ async def get_device(id: str):
 @app.put("/api/devices/{id}")
 async def update_device(id: str, req: Request):
     body = await req.json()
-    if body.get("api_key") and not body.get("external_id"):
+    if body.get("station_id") and body.get("entity_id") and not body.get("external_id"):
+        body["external_id"] = f"{body['station_id']}_{body['entity_id']}"
+    elif body.get("api_key") and not body.get("external_id"):
         body["external_id"] = body["api_key"]
     device = _update("devices", id, body)
     broadcast("device_updated", device)
     return device
+
+
+@app.post("/api/devices/{id}/regenerate-key")
+async def regenerate_device_key(id: str):
+    """Issue a fresh api_key for a device. Returns the plaintext key once —
+    the caller must hand it to the device operator."""
+    key = secrets.token_hex(16)
+    device = _update("devices", id, {"api_key": key})
+    broadcast("device_updated", device)
+    return {"id": id, "api_key": key}
 
 @app.delete("/api/devices/{id}")
 async def delete_device(id: str):
@@ -566,6 +588,43 @@ async def list_notifications():
     return notifs[:200]
 
 
+# ── Producer authentication (application layer) ──────────────────────────────
+# The MQTT broker (public HiveMQ) does not authenticate publishers, so the
+# backend verifies each detection carries a valid api_key for a registered
+# device. `MQTT_ENFORCE_AUTH` gates whether a failure drops the message
+# (true) or is only logged while still processing (false — grace period).
+
+def mqtt_auth_enforced() -> bool:
+    return os.getenv("MQTT_ENFORCE_AUTH", "false").strip().lower() in ("1", "true", "yes", "on")
+
+
+def record_auth_attempt(**fields):
+    """Append a rejected/suspect producer message to the audit log."""
+    try:
+        data_store.create("auth_attempts", {"ts": _now(), **fields})
+    except Exception as e:
+        print(f"[AUTH] failed to record attempt: {e}")
+
+
+def verify_device_key(device: dict | None, api_key: str | None) -> str | None:
+    """Returns a failure reason string, or None if the producer is authorised."""
+    if not device:
+        return "unknown_device"
+    if str(device.get("status", "")).lower() == "disabled":
+        return "disabled"
+    expected = device.get("api_key")
+    if not expected or not api_key or not secrets.compare_digest(str(api_key), str(expected)):
+        return "bad_key"
+    return None
+
+
+@app.get("/api/auth-attempts")
+async def list_auth_attempts():
+    rows = _list("auth_attempts")
+    rows.sort(key=lambda r: r.get("ts", ""), reverse=True)
+    return rows[:200]
+
+
 def _resolve_device(body: dict) -> dict | None:
     """Resolve the producing device by our id, or by the producer's own
     `external_id` (e.g. camera MAC/serial) so connectors can use native ids."""
@@ -635,14 +694,18 @@ async def intake_event(req: Request):
     or an upstream AI service). Authenticates with the device's api_key."""
     body = await req.json()
     device = _resolve_device(body)
-    if not device:
-        raise HTTPException(400, "Unknown device — register it (by id or external_id) first")
-
-    expected = device.get("api_key")
     presented = req.headers.get("X-API-Key") or body.get("api_key")
-    if expected and presented != expected:
-        raise HTTPException(401, "Invalid or missing API key for this device")
+    reason = verify_device_key(device, presented)
+    if reason:
+        record_auth_attempt(source="http", external_id=body.get("external_id"),
+                            device_id=body.get("device_id"), reason=reason, enforced=True,
+                            object_type=body.get("object_type"))
+        if reason == "unknown_device":
+            raise HTTPException(400, "Unknown device — register it (by id or external_id) first")
+        raise HTTPException(401, f"Device authentication failed: {reason}")
 
+    # never let the credential reach storage / raw_payload
+    body.pop("api_key", None)
     event, incident = await _ingest_event(body, body.get("source", "device"))
     return {
         "event_id":    event["id"],

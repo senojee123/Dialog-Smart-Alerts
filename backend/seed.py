@@ -185,7 +185,7 @@ async def run():
         data_store.upsert("rules", r)
 
     print("[SEED] Done — Elephant Detection use case loaded "
-          "(3 sensors, 11 LED boards, radius actuation).")
+          "(3 sensors, radius actuation). Register LED boards + cameras in the registry.")
 
 
 if __name__ == "__main__":

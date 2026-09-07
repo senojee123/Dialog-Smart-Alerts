@@ -11,6 +11,7 @@ import {
 const BLANK = {
   name: '', type: 'camera', zone_id: '', use_case_id: '',
   lat: null, lng: null, online: false, api_key: '',
+  station_id: '', entity_id: '',
 }
 
 const DEVICE_TYPES = ['camera', 'thermal', 'drone', 'pressure_pad', 'acoustic', 'manual', 'siren', 'gate']
@@ -81,7 +82,10 @@ export default function Devices() {
       render: row => (
         <div>
           <div className="font-medium text-ink">{row.name}</div>
-          <div className="text-xs text-ink-muted capitalize">{row.type}</div>
+          <div className="text-xs text-ink-muted capitalize">
+            {row.type}
+            {row.external_id && <span className="font-mono"> · {row.external_id}</span>}
+          </div>
         </div>
       ),
     },
@@ -182,6 +186,19 @@ export default function Devices() {
                 <option key={t} value={t} className="capitalize">{t.replace('_', ' ')}</option>
               ))}
             </Select>
+          </Field>
+
+          <Field label="Station ID / Entity ID"
+                 hint={form.station_id && form.entity_id
+                   ? `MQTT identity (external_id): ${form.station_id}_${form.entity_id}`
+                   : 'The station_id and entity_id the device sends over MQTT — together they form its external_id.'}>
+            <div className="flex items-center gap-2">
+              <Input value={form.station_id || ''} onChange={e => set('station_id', e.target.value.trim())}
+                     placeholder="st_05" className="flex-1" />
+              <span className="text-ink-muted">_</span>
+              <Input value={form.entity_id || ''} onChange={e => set('entity_id', e.target.value.trim())}
+                     placeholder="cam_02" className="flex-1" />
+            </div>
           </Field>
           {editing && (
             <Field label="Status" hint="Driven automatically by device heartbeats — not editable here.">

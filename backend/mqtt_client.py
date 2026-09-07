@@ -110,16 +110,18 @@ class MQTTClientManager:
             payload_str = msg.payload.decode('utf-8')
             payload = json.loads(payload_str)
 
+            api_key = payload.get("api_key")
+
             # 1. Check if this is a Modem Gateway Status/Heartbeat topic
             if msg.topic == self.topic_status or msg.topic.endswith("/status"):
                 device_id = payload.get("device_id") or payload.get("entity_id") or payload.get("gateway_id") or "modem-gateway"
                 print(f"[MQTT STATUS] Modem Gateway heartbeat received from '{device_id}' ({msg.topic}): {payload}")
                 asyncio.run_coroutine_threadsafe(
-                    self.process_status_update(device_id, payload),
+                    self.process_status_update(device_id, payload, api_key),
                     self.app.state.loop
                 )
                 return
-            
+
             # Fields validation (supports both entity_id / device_id and alert / object_type)
             station_id = payload.get("station_id") or "st_01"
             entity_id = payload.get("entity_id") or payload.get("device_id") or "cam_04"
@@ -185,7 +187,7 @@ class MQTTClientManager:
 
             # Safely schedule ingestion on the main event loop thread of FastAPI
             asyncio.run_coroutine_threadsafe(
-                self.process_mqtt_event(event_body, station_id, entity_id),
+                self.process_mqtt_event(event_body, station_id, entity_id, api_key),
                 self.app.state.loop
             )
 
@@ -197,7 +199,7 @@ class MQTTClientManager:
             if msg.topic == self.topic_status or msg.topic.endswith("/status"):
                 print(f"[MQTT STATUS] Non-JSON status payload received on '{msg.topic}': {raw_text}")
                 asyncio.run_coroutine_threadsafe(
-                    self.process_status_update("modem-gateway", {"status": raw_text}),
+                    self.process_status_update("modem-gateway", {"status": raw_text}, None),
                     self.app.state.loop
                 )
                 return
@@ -236,7 +238,7 @@ class MQTTClientManager:
                 }
 
                 asyncio.run_coroutine_threadsafe(
-                    self.process_mqtt_event(event_body, "st_01", "cam_04"),
+                    self.process_mqtt_event(event_body, "st_01", "cam_04", None),
                     self.app.state.loop
                 )
                 return
@@ -245,33 +247,38 @@ class MQTTClientManager:
         except Exception as e:
             print(f"[MQTT] Error in on_message: {e}")
 
-    async def process_mqtt_event(self, event_body, station_id, entity_id):
+    async def process_mqtt_event(self, event_body, station_id, entity_id, api_key=None):
         try:
             import data_store
+            from server import verify_device_key, record_auth_attempt, mqtt_auth_enforced
 
-            # 1. Resolve device using external_id (same store _resolve_device reads)
+            ext = event_body["external_id"]
+
+            # 1. Resolve device by external_id (same store _resolve_device reads)
             device = next((d for d in data_store.get_all("devices")
-                           if d.get("external_id") == event_body["external_id"]), None)
+                           if d.get("external_id") == ext), None)
 
-            if not device:
-                # Dynamic auto-registration for multi-station support
-                print(f"[MQTT] New device detected. Registering: {event_body['external_id']}...")
-                device = data_store.create("devices", {
-                    "name": f"MQTT Camera Trap {entity_id} (Station {station_id})",
-                    "type": "camera",
-                    "use_case_id": "UC-001",
-                    "zone_id": "ZONE-B43", # Defaults to Yala Road Corridor
-                    "lat": 6.3805,         # Default coordinates
-                    "lng": 81.4800,
-                    "external_id": event_body["external_id"],
-                    "api_key": f"mqtt-key-{entity_id}",
-                    "online": True
-                })
-            else:
-                # Keep device state updated
-                data_store.update("devices", device["id"], {"online": True})
+            # 2. Authenticate the producer. No auto-registration — an unknown or
+            #    unauthenticated device is logged and (when enforced) dropped.
+            reason = verify_device_key(device, api_key)
+            if reason:
+                enforced = mqtt_auth_enforced()
+                record_auth_attempt(source="mqtt", external_id=ext, station_id=station_id,
+                                    entity_id=entity_id, reason=reason, enforced=enforced,
+                                    object_type=event_body.get("object_type"))
+                if enforced or reason in ("unknown_device", "disabled"):
+                    print(f"[MQTT AUTH] rejected '{ext}': {reason}"
+                          f"{'' if enforced else ' (grace period)'}")
+                    return
+                print(f"[MQTT AUTH] '{ext}': {reason} — processing anyway (grace period, "
+                      f"set MQTT_ENFORCE_AUTH=true to reject)")
 
-            # 2. Ingest the event into the system's pipeline
+            # Keep device liveness fresh; strip the credential before storage.
+            data_store.update("devices", device["id"], {"online": True})
+            if isinstance(event_body.get("raw_payload"), dict):
+                event_body["raw_payload"].pop("api_key", None)
+
+            # 3. Ingest the event into the system's pipeline
             # Import dynamically to avoid circular import issues
             from server import _ingest_event
             event, incident = await _ingest_event(event_body, source="device")
@@ -308,39 +315,32 @@ class MQTTClientManager:
         self.client.publish(topic, json.dumps(payload), qos=1)
         print(f"[MQTT ACTUATOR] Published Siren command to '{topic}': {payload}")
 
-    async def process_status_update(self, device_id, payload):
+    async def process_status_update(self, device_id, payload, api_key=None):
         try:
             import data_store
+            from server import record_auth_attempt, mqtt_auth_enforced
 
-            # 1. Resolve device by external_id, our own id, or a fuzzy name match
+            # Resolve device by external_id or our own id (no fuzzy name match).
             all_devs = data_store.get_all("devices")
             device = next((d for d in all_devs
                            if d.get("external_id") == device_id
-                           or d["id"].lower() == device_id.lower()
-                           or device_id.lower() in d.get("name", "").lower()), None)
+                           or d["id"].lower() == device_id.lower()), None)
+
+            # No auto-registration — status from an unregistered device is logged, ignored.
+            if not device:
+                record_auth_attempt(source="mqtt-status", external_id=device_id,
+                                    reason="unknown_device", enforced=mqtt_auth_enforced())
+                print(f"[MQTT STATUS] ignored status from unregistered device '{device_id}'")
+                return
+
+            # Note a key mismatch for the audit trail, but never drop a status message.
+            if api_key and str(api_key) != str(device.get("api_key", "")):
+                record_auth_attempt(source="mqtt-status", external_id=device_id,
+                                    reason="bad_key", enforced=mqtt_auth_enforced())
 
             status_val = str(payload.get("status", "online")).lower()
             is_online = status_val not in ("offline", "disconnected", "down", "error")
-
-            # 2. Auto-register if new device status arrives
-            if not device:
-                print(f"[MQTT STATUS] Auto-registering new gateway device from status heartbeat: {device_id}...")
-                device = data_store.create("devices", {
-                    "name": f"Modem Gateway {device_id}",
-                    "type": "camera",
-                    "use_case_id": "UC-001",
-                    "zone_id": "ZONE-B43",
-                    "lat": 6.3805,
-                    "lng": 81.4800,
-                    "external_id": device_id,
-                    "online": is_online,
-                    "status": status_val,
-                })
-            else:
-                data_store.update("devices", device["id"], {
-                    "online": is_online,
-                    "status": status_val,
-                })
+            data_store.update("devices", device["id"], {"online": is_online, "status": status_val})
             print(f"[MQTT STATUS] Updated device status for '{device['name']}': Online={is_online}")
         except Exception as e:
             print(f"[MQTT STATUS] Error updating device status: {e}")
