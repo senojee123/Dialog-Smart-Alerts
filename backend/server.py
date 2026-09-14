@@ -639,12 +639,15 @@ def _resolve_device(body: dict) -> dict | None:
 
 
 def _resolve_event_zone(body: dict, device: dict) -> str:
-    """A stationary camera has no location of its own — its registered zone
-    (set once, by an admin) is always right. A roaming producer (a citizen
-    phone, a drone) sends its own lat/lng per event, so trusting the device's
-    zone from whenever it registered would pin every one of its reports to
-    wherever it happened to be that day. When the event carries real
-    coordinates, re-derive the nearest zone from *those* instead."""
+    """Cameras and other fixed hardware keep the zone an admin assigned them —
+    always, unconditionally, even if an event happens to carry coordinates.
+    Only a citizen phone (device type "manual") gets its zone re-derived per
+    event from its own GPS, since it roams — trusting its zone from whenever
+    it registered would pin every one of its reports to wherever it happened
+    to be that day."""
+    if device.get("type") != "manual":
+        return device.get("zone_id", body.get("zone_id", ""))
+
     lat, lng = body.get("lat"), body.get("lng")
     if lat is None or lng is None:
         return device.get("zone_id", body.get("zone_id", ""))
