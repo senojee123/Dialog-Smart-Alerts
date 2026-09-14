@@ -638,6 +638,29 @@ def _resolve_device(body: dict) -> dict | None:
     return None
 
 
+def _resolve_event_zone(body: dict, device: dict) -> str:
+    """A stationary camera has no location of its own — its registered zone
+    (set once, by an admin) is always right. A roaming producer (a citizen
+    phone, a drone) sends its own lat/lng per event, so trusting the device's
+    zone from whenever it registered would pin every one of its reports to
+    wherever it happened to be that day. When the event carries real
+    coordinates, re-derive the nearest zone from *those* instead."""
+    lat, lng = body.get("lat"), body.get("lng")
+    if lat is None or lng is None:
+        return device.get("zone_id", body.get("zone_id", ""))
+
+    use_case_id = device.get("use_case_id", body.get("use_case_id", ""))
+    candidates = [
+        z for z in data_store.get_all("zones")
+        if z.get("use_case_id") == use_case_id and z.get("lat") is not None and z.get("lng") is not None
+    ]
+    if not candidates:
+        return device.get("zone_id", body.get("zone_id", ""))
+
+    nearest = min(candidates, key=lambda z: spatial.haversine_m(lat, lng, z["lat"], z["lng"]))
+    return nearest["id"]
+
+
 async def _ingest_event(body: dict, source: str = "device") -> tuple[dict, dict | None]:
     """
     THE ingestion boundary. Every producer — real devices, the phone-camera
@@ -663,7 +686,7 @@ async def _ingest_event(body: dict, source: str = "device") -> tuple[dict, dict 
         "device_id":       device["id"],
         "device_name":     device.get("name", ""),
         "use_case_id":     device.get("use_case_id", body.get("use_case_id", "")),
-        "zone_id":         device.get("zone_id", body.get("zone_id", "")),
+        "zone_id":         _resolve_event_zone(body, device),
         "object_type":     body.get("object_type", "unknown"),
         "confidence":      float(body.get("confidence", 0)),
         "image_url":       body.get("image_url"),
