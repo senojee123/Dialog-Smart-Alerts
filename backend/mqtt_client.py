@@ -186,6 +186,15 @@ class MQTTClientManager:
                     print(f"[MQTT IMAGE] Could not decode raw Base64 ({img_err}). Using default camera capture URL.")
                     image_url = "/static/placeholder.jpg"
 
+            # A roaming producer (a citizen phone) sends its own current GPS
+            # fix per detection — the contract's HTTP path already documents
+            # lat/lng, but this MQTT path never read them, so a phone's
+            # coordinates never reached _ingest_event and every mobile report
+            # fell back to the device's registered location. A fixed camera
+            # sends none of this, and correctly keeps falling back.
+            lat = payload.get("lat", payload.get("latitude"))
+            lng = payload.get("lng", payload.get("longitude"))
+
             # Form standard ingestion event payload
             event_body = {
                 "external_id": external_id,
@@ -198,6 +207,9 @@ class MQTTClientManager:
                 "source": "device",
                 "raw_payload": payload
             }
+            if lat is not None and lng is not None:
+                event_body["lat"] = lat
+                event_body["lng"] = lng
 
             # Safely schedule ingestion on the main event loop thread of FastAPI
             asyncio.run_coroutine_threadsafe(
