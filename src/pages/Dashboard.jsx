@@ -15,6 +15,7 @@ import {
   Filler,
 } from 'chart.js'
 import { Line, Doughnut } from 'react-chartjs-2'
+import { isToday } from 'date-fns'
 
 import {
   Activity, AlertTriangle, Camera, CheckCircle2, Cpu,
@@ -88,7 +89,10 @@ export default function Dashboard() {
   const pendingCount = useMemo(() => (events || []).filter(e => e.pending_confirmation).length, [events])
   const falsePositives = useMemo(() => (events || []).filter(e => e.false_positive).length, [events])
 
-  const totalDetectionsToday = useMemo(() => (events || []).length, [events])
+  const totalDetectionsToday = useMemo(
+    () => (events || []).filter(e => e.received_at && isToday(new Date(e.received_at))).length,
+    [events]
+  )
 
   // Camera health calculations
   const onlineCameras = useMemo(() => (devices || []).filter(d => d.online !== false).length, [devices])
@@ -103,7 +107,10 @@ export default function Dashboard() {
   }, [incidents])
 
   // Total Incidents Today (Opened incidents count)
-  const totalIncidentsToday = useMemo(() => incidents.length, [incidents])
+  const totalIncidentsToday = useMemo(
+    () => incidents.filter(i => i.opened_at && isToday(new Date(i.opened_at))).length,
+    [incidents]
+  )
 
   // Dynamic AI Confidence average
   const avgConfidence = useMemo(() => {
