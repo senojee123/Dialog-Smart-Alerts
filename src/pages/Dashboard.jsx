@@ -96,28 +96,6 @@ export default function Dashboard() {
 
   // Camera health calculations
   const onlineCameras = useMemo(() => (devices || []).filter(d => d.online !== false).length, [devices])
-  const onlineSigns = useMemo(() => (signs || []).filter(s => s.state !== 'OFFLINE').length, [signs])
-
-  // Active Alert Locations (Unique zones containing active incidents)
-  const activeLocationsCount = useMemo(() => {
-    const activeZones = incidents
-      .filter(i => i.status === 'ACTIVE' || i.status === 'OPERATOR_REVIEW')
-      .map(i => i.zone_id)
-    return new Set(activeZones).size
-  }, [incidents])
-
-  // Total Incidents Today (Opened incidents count)
-  const totalIncidentsToday = useMemo(
-    () => incidents.filter(i => i.opened_at && isToday(new Date(i.opened_at))).length,
-    [incidents]
-  )
-
-  // Dynamic AI Confidence average
-  const avgConfidence = useMemo(() => {
-    if (!events || events.length === 0) return 94.2
-    const sum = events.reduce((acc, e) => acc + (parseFloat(e.confidence) || 0), 0)
-    return Math.round((sum / events.length) * 10) / 10
-  }, [events])
 
   // ── Dynamic 24-Hour Trend Data ──────────────────────────────────────────────
   const trend24h = useMemo(() => {
@@ -342,8 +320,8 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* ── 1. Overview Cards (8 Summary Cards) ───────────────────────── */}
-      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3">
+      {/* ── 1. Overview Cards (4 Summary Cards) ───────────────────────── */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {/* Card 1: Active Elephant Incidents */}
         <div className="bg-white border border-[#EAECF0] rounded-xl p-3 shadow-sm space-y-2 flex flex-col justify-between">
           <div className="flex items-center justify-between">
@@ -396,62 +374,6 @@ export default function Dashboard() {
             <div className="text-xl font-black text-ink">{onlineCameras} / {(devices || []).length}</div>
             <div className="flex items-center gap-0.5 text-[9px] font-extrabold text-emerald-600">
               <CheckCircle2 className="w-2.5 h-2.5" /> 100% operational
-            </div>
-          </div>
-        </div>
-
-        {/* Card 5: Smart Road Signs Online */}
-        <div className="bg-white border border-[#EAECF0] rounded-xl p-3 shadow-sm space-y-2 flex flex-col justify-between">
-          <div className="flex items-center justify-between">
-            <span className="text-[10.5px] font-bold text-ink-muted leading-tight">Smart Road Signs Online</span>
-            <Monitor className="w-3.5 h-3.5 text-amber-500" />
-          </div>
-          <div className="space-y-1">
-            <div className="text-xl font-black text-ink">{onlineSigns} / {(signs || []).length}</div>
-            <div className="flex items-center gap-0.5 text-[9px] font-extrabold text-emerald-600">
-              <CheckCircle2 className="w-2.5 h-2.5" /> 90.9% active
-            </div>
-          </div>
-        </div>
-
-        {/* Card 6: Active Alert Locations */}
-        <div className="bg-white border border-[#EAECF0] rounded-xl p-3 shadow-sm space-y-2 flex flex-col justify-between">
-          <div className="flex items-center justify-between">
-            <span className="text-[10.5px] font-bold text-ink-muted leading-tight">Active Alert Locations</span>
-            <MapPin className="w-3.5 h-3.5 text-amber-500 animate-pulse" />
-          </div>
-          <div className="space-y-1">
-            <div className="text-xl font-black text-ink">{activeLocationsCount}</div>
-            <div className="flex items-center gap-0.5 text-[9px] font-extrabold text-amber-600">
-              <ArrowUpRight className="w-2.5 h-2.5" /> +1 new corridor
-            </div>
-          </div>
-        </div>
-
-        {/* Card 7: Average AI Detection Confidence */}
-        <div className="bg-white border border-[#EAECF0] rounded-xl p-3 shadow-sm space-y-2 flex flex-col justify-between">
-          <div className="flex items-center justify-between">
-            <span className="text-[10.5px] font-bold text-ink-muted leading-tight">Average AI Confidence</span>
-            <Cpu className="w-3.5 h-3.5 text-purple-600" />
-          </div>
-          <div className="space-y-1">
-            <div className="text-xl font-black text-ink">{avgConfidence}%</div>
-            <div className="flex items-center gap-0.5 text-[9px] font-extrabold text-emerald-600">
-              <ArrowUpRight className="w-2.5 h-2.5" /> +0.4% vs yesterday
-            </div>
-          </div>
-        </div>
-
-        {/* Card 8: Total Incidents Today */}
-        <div className="bg-white border border-[#EAECF0] rounded-xl p-3 shadow-sm space-y-2 flex flex-col justify-between">
-          <div className="flex items-center justify-between">
-            <span className="text-[10.5px] font-bold text-ink-muted leading-tight">Total Incidents Today</span>
-            <Clock className="w-3.5 h-3.5 text-indigo-600" />
-          </div>
-          <div className="space-y-1">
-            <div className="text-xl font-black text-ink">{totalIncidentsToday}</div>
-            <div className="flex items-center gap-0.5 text-[9px] font-extrabold text-emerald-600">
-              <ArrowUpRight className="w-2.5 h-2.5" /> +3 vs yesterday
             </div>
           </div>
         </div>
