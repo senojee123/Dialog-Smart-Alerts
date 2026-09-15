@@ -74,13 +74,6 @@ def _recent_matching_events(use_case_id: str, zone_id: str | None,
     return events
 
 
-def _closed_incident_event_ids(cutoff_iso: str) -> set[str]:
-    """Event IDs consumed by recently-closed incidents (confirmation scoping)."""
-    ids: set[str] = set()
-    for inc in data_store.get_all("incidents"):
-        if inc.get("status") in ("CLOSED", "RESOLVED"):
-            ids.update(inc.get("event_ids") or [])
-    return ids
 
 
 # ── main evaluator ────────────────────────────────────────────────────────────
@@ -118,13 +111,17 @@ async def evaluate_event(event: dict) -> tuple[dict | None, str | None]:
             use_case_id, event.get("zone_id"), cutoff_iso,
             bool(confirmation.get("same_zone"))
         )
-        # Events already consumed by a closed/resolved incident don't re-confirm
-        consumed = _closed_incident_event_ids(cutoff_iso)
 
+        # An event that already contributed to some incident (open, closed,
+        # or since-deleted) is stamped `consumed` permanently at the time it
+        # was attached — see server.py's _run_rule_engine(). This is checked
+        # on the event record itself rather than by scanning for a still-
+        # existing closed incident, so deleting an incident later can't
+        # un-consume its events and let them re-confirm a fresh one.
         matching_past = [
             e for e in past
             if e.get("id") != event.get("id")
-            and e.get("id") not in consumed
+            and not e.get("consumed")
             and _matches_conditions(e, rule.get("conditions", []))
         ]
         required = int(confirmation.get("required_count", 2))

@@ -765,6 +765,17 @@ def _broadcast_sign_states():
             app.state.mqtt_client.actuate_led(sid, color)
 
 
+def _mark_events_consumed(event_ids: list[str]) -> None:
+    """
+    Stamp events as having already contributed to an incident, permanently.
+    Checked by rule_engine's confirmation matching instead of scanning for a
+    still-existing closed incident — so deleting an incident later can't
+    silently un-consume its events and let them re-confirm a fresh one.
+    """
+    for eid in event_ids:
+        data_store.update("detection_events", eid, {"consumed": True})
+
+
 async def _run_rule_engine(event: dict, device: dict) -> dict | None:
     matched_rule, action_key, contributing_ids = await rule_engine.evaluate_event(event)
     if not matched_rule or action_key not in ("on_trigger", "on_confirm"):
@@ -797,6 +808,7 @@ async def _run_rule_engine(event: dict, device: dict) -> dict | None:
         # Always link the new event and all contributing events; escalate severity if this rule is higher
         merged_event_ids = list(dict.fromkeys((incident.get("event_ids") or []) + contributing_ids + [event["id"]]))
         patch = {"event_ids": merged_event_ids}
+        _mark_events_consumed(contributing_ids + [event["id"]])
         if sev_order.get(severity, 0) > sev_order.get(incident.get("severity"), 0):
             patch["severity"] = severity
             patch["rule_id"]  = matched_rule["id"]
@@ -831,6 +843,7 @@ async def _run_rule_engine(event: dict, device: dict) -> dict | None:
             "simulated":   event.get("source") == "simulation",
             "event_ids":   list(dict.fromkeys(contributing_ids + [event["id"]])),
         })
+        _mark_events_consumed(contributing_ids + [event["id"]])
         _broadcast_incident("incident_new", incident)
 
     # Notify only when it's worth an operator's attention — on first open, on a
