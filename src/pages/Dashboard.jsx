@@ -288,12 +288,6 @@ export default function Dashboard() {
     return list.slice(0, 10)
   }, [events, incidents])
 
-  // Operator rotating list
-  const getOperator = (idx) => {
-    const ops = ['Operator D. Silva', 'Operator K. Perera', 'Operator M. Fernando', 'Operator A. Gunawardena']
-    return ops[idx % ops.length]
-  }
-
   // Status mapping
   const mapStatusLabel = (status) => {
     if (status === 'ACTIVE') return 'Active'
@@ -543,7 +537,6 @@ export default function Dashboard() {
                     <th className="py-2.5 px-3">AI Confidence</th>
                     <th className="py-2.5 px-3">Number of Elephants</th>
                     <th className="py-2.5 px-3">Alert Status</th>
-                    <th className="py-2.5 px-3">Assigned Operator</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-line font-medium text-ink">
@@ -572,7 +565,6 @@ export default function Dashboard() {
                           {mapStatusLabel(inc.status)}
                         </span>
                       </td>
-                      <td className="py-2.5 px-3 text-ink-muted">{getOperator(i)}</td>
                     </tr>
                   ))}
                 </tbody>

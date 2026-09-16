@@ -20,7 +20,7 @@ function AutoPan({ incidents, selectedId }) {
   useEffect(() => {
     if (!selectedId || selectedId === prevSelected.current) return
     const inc = incidents.find(i => i.incident_id === selectedId)
-    if (inc?.location) {
+    if (inc?.location?.lat != null && inc?.location?.lng != null) {
       map.setView([inc.location.lat, inc.location.lng], Math.max(map.getZoom(), 13), { animate: true })
     }
     prevSelected.current = selectedId
@@ -47,7 +47,7 @@ export default function MapPanel({ incidents = [], selectedId, onSelectIncident 
       <AutoPan incidents={incidents} selectedId={selectedId} />
 
       {incidents.map(inc => {
-        if (!inc.location) return null
+        if (inc.location?.lat == null || inc.location?.lng == null) return null
         return (
           <Marker
             key={inc.incident_id}
