@@ -6,6 +6,7 @@ import ErrorBoundary from './components/common/ErrorBoundary.jsx'
 import Dashboard from './pages/Dashboard.jsx'
 import LiveIncidents from './pages/LiveIncidents.jsx'
 import MapView from './pages/MapView.jsx'
+import GIS from './pages/GIS.jsx'
 import RoadSigns from './pages/RoadSigns.jsx'
 import Devices from './pages/Devices.jsx'
 import HardwareUnits from './pages/HardwareUnits.jsx'
@@ -47,6 +48,7 @@ export default function App() {
           <Route path="/dashboard"  element={<Wrap><Dashboard /></Wrap>} />
           <Route path="/incidents"  element={<Wrap><LiveIncidents /></Wrap>} />
           <Route path="/map"        element={<Wrap><MapView /></Wrap>} />
+          <Route path="/gis"        element={<Wrap><GIS /></Wrap>} />
           <Route path="/road-signs" element={<Wrap><RoadSigns /></Wrap>} />
           <Route path="/devices"    element={<Wrap><Devices /></Wrap>} />
           <Route path="/hardware"   element={<Wrap><HardwareUnits /></Wrap>} />
