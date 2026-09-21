@@ -48,7 +48,7 @@ export default function Dashboard() {
   // ── Dynamic Metric Computations ─────────────────────────────────────────────
   const activeCount = useMemo(() => incidents.filter(i => i.status === 'ACTIVE' || i.status === 'OPERATOR_REVIEW').length, [incidents])
   const criticalCount = useMemo(() => incidents.filter(i => i.severity === 'CRITICAL').length, [incidents])
-  const resolvedCount = useMemo(() => incidents.filter(i => i.status === 'RESOLVED' || i.status === 'CLOSED').length, [incidents])
+  const resolvedCount = useMemo(() => incidents.filter(i => i.status === 'RESOLVED' || i.status === 'CLOSED' || i.status === 'EXPIRED').length, [incidents])
   const pendingCount = useMemo(() => (events || []).filter(e => e.pending_confirmation).length, [events])
   const falsePositives = useMemo(() => (events || []).filter(e => e.false_positive).length, [events])
 
@@ -255,6 +255,7 @@ export default function Dashboard() {
   const mapStatusLabel = (status) => {
     if (status === 'ACTIVE') return 'Active'
     if (status === 'OPERATOR_REVIEW') return 'Monitoring'
+    if (status === 'EXPIRED') return 'Expired'
     return 'Resolved'
   }
 
@@ -422,6 +423,7 @@ export default function Dashboard() {
                         <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-extrabold uppercase ${
                           inc.status === 'ACTIVE' ? 'bg-red-50 text-[#D92D20] border border-red-100' :
                           inc.status === 'OPERATOR_REVIEW' ? 'bg-amber-50 text-amber-800 border border-amber-100' :
+                          inc.status === 'EXPIRED' ? 'bg-gray-100 text-gray-500 border border-gray-200' :
                           'bg-emerald-50 text-emerald-700 border border-emerald-100'
                         }`}>
                           {mapStatusLabel(inc.status)}

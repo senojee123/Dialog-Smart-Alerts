@@ -106,6 +106,11 @@ def _parse_iso(s):
 # Re-notify the same incident at most once per this window unless it escalates.
 NOTIFY_COOLDOWN_S = 600
 
+# An alert stops counting as active on the dashboard once it's been open this
+# long, even if nobody resolved it — the incident record itself is never
+# deleted, so it still shows up in the full incident log/history.
+ALERT_EXPIRY_S = 3 * 60 * 60
+
 
 # Last broadcast sign states — so we only emit when something actually changes.
 _last_sign_states: dict = {}
@@ -121,6 +126,17 @@ async def _decay_tick():
     while True:
         await asyncio.sleep(5)
         try:
+            # Expire alerts that have been open longer than ALERT_EXPIRY_S —
+            # status only, the incident row itself is kept for the log.
+            now = datetime.now(timezone.utc)
+            for inc in _list("incidents"):
+                if inc.get("status") not in ("ACTIVE", "OPERATOR_REVIEW"):
+                    continue
+                opened = _parse_iso(inc.get("opened_at"))
+                if opened and (now - opened).total_seconds() >= ALERT_EXPIRY_S:
+                    updated = _update("incidents", inc["id"], {"status": "EXPIRED"})
+                    _broadcast_incident("incident_updated", updated)
+
             states = _compute_sign_states()
             changed = {sid: st for sid, st in states.items()
                        if _last_sign_states.get(sid) != st}
@@ -502,6 +518,8 @@ def _enrich_incident(inc: dict) -> dict:
                          "event": f"Stakeholders notified ({len(by_sh)} contacts, {len(notifs)} channels)"})
     if inc.get("status") in ("CLOSED", "RESOLVED"):
         timeline.append({"ts": inc.get("updated_at"), "event": f"Incident {inc.get('status').lower()}"})
+    elif inc.get("status") == "EXPIRED":
+        timeline.append({"ts": inc.get("updated_at"), "event": "Incident expired (no activity for 3 hours)"})
     timeline.sort(key=lambda t: t.get("ts") or "")
 
     raw_conf   = float(inc.get("confidence", 0) or 0)

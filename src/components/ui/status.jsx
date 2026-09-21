@@ -52,6 +52,7 @@ const STATUS_STYLES = {
   OPERATOR_REVIEW: 'bg-orange/10 text-orange border-orange/30',
   RESOLVED:        'bg-sev-low/10 text-sev-low border-sev-low/30',
   CLOSED:          'bg-surface-alt text-ink-muted border-line',
+  EXPIRED:         'bg-surface-alt text-ink-muted border-line',
 
   ON:              'bg-hw-on/10 text-hw-on border-hw-on/30',
   OFF:             'bg-surface-alt text-ink-muted border-line',

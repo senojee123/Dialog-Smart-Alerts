@@ -7,7 +7,7 @@ import { sevOrder } from '../../lib/severity.js'
 const COLS = ['Severity', 'Incident', 'Time', 'Area / Location', 'Object', 'Conf.', 'Notify', 'Hardware', 'State']
 
 const SEVERITIES = ['ALL', 'CRITICAL', 'HIGH', 'MEDIUM', 'LOW']
-const STATUSES   = ['ALL', 'ACTIVE', 'OPERATOR_REVIEW', 'RESOLVED', 'CLOSED']
+const STATUSES   = ['ALL', 'ACTIVE', 'OPERATOR_REVIEW', 'RESOLVED', 'CLOSED', 'EXPIRED']
 
 export default function IncidentTable({ incidents, loading, selectedId, onSelect }) {
   const [sevFilter,    setSevFilter]    = useState('ALL')
