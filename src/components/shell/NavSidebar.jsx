@@ -1,7 +1,7 @@
 import { NavLink } from 'react-router-dom'
 import {
   LayoutDashboard, AlertTriangle, Map, Camera, Cpu, Users, GitBranch,
-  Settings, Monitor, Layers, Bell, Rocket, Palette, PlayCircle, Globe,
+  Settings, Monitor, Layers, Bell, Rocket, Palette, PlayCircle, Globe, Clock,
 } from 'lucide-react'
 
 const NAV = [
@@ -9,6 +9,7 @@ const NAV = [
   { section: 'Operations' },
   { to: '/',            icon: LayoutDashboard, label: 'Dashboard' },
   { to: '/incidents',   icon: AlertTriangle,   label: 'Live Incidents' },
+  { to: '/incidents/log', icon: Clock,         label: 'Incident Log' },
   { to: '/map',         icon: Map,             label: 'Map View' },
   { to: '/gis',         icon: Globe,           label: 'GIS' },
   { to: '/road-signs',  icon: Monitor,         label: 'Road Signs' },
@@ -53,6 +54,7 @@ export default function NavSidebar() {
           <NavLink
             key={item.to}
             to={item.to}
+            end={item.to === '/incidents'}
             className={({ isActive }) =>
               `group flex items-center gap-3.5 px-3 py-2.5 text-[13px] font-medium rounded-md mx-3 transition-all relative
                ${isActive
