@@ -106,9 +106,10 @@ def _parse_iso(s):
 # Re-notify the same incident at most once per this window unless it escalates.
 NOTIFY_COOLDOWN_S = 600
 
-# An alert stops counting as active on the dashboard once it's been open this
-# long, even if nobody resolved it — the incident record itself is never
-# deleted, so it still shows up in the full incident log/history.
+# An incident — active or already closed — is pulled off the live dashboard
+# once it's been open this long. It isn't deleted outright: it's archived into
+# the "incident_log" store (GET /api/incidents/log) first, then removed from
+# "incidents" so the dashboard/API stop returning it.
 ALERT_EXPIRY_S = 3 * 60 * 60
 
 
@@ -126,16 +127,23 @@ async def _decay_tick():
     while True:
         await asyncio.sleep(5)
         try:
-            # Expire alerts that have been open longer than ALERT_EXPIRY_S —
-            # status only, the incident row itself is kept for the log.
+            # Archive + remove any incident (active or already closed) that's
+            # been open longer than ALERT_EXPIRY_S — it disappears from the
+            # dashboard but survives in the "incident_log" store.
             now = datetime.now(timezone.utc)
             for inc in _list("incidents"):
-                if inc.get("status") not in ("ACTIVE", "OPERATOR_REVIEW"):
-                    continue
                 opened = _parse_iso(inc.get("opened_at"))
-                if opened and (now - opened).total_seconds() >= ALERT_EXPIRY_S:
-                    updated = _update("incidents", inc["id"], {"status": "EXPIRED"})
-                    _broadcast_incident("incident_updated", updated)
+                if not opened or (now - opened).total_seconds() < ALERT_EXPIRY_S:
+                    continue
+                archived = {
+                    **inc,
+                    "status": inc.get("status") if inc.get("status") in
+                        ("RESOLVED", "CLOSED") else "EXPIRED",
+                    "expired_at": _now(),
+                }
+                data_store.create("incident_log", archived)
+                _delete("incidents", inc["id"])
+                broadcast("incident_expired", {"incident_id": inc.get("id")})
 
             states = _compute_sign_states()
             changed = {sid: st for sid, st in states.items()
@@ -572,6 +580,14 @@ async def create_incident_manual(req: Request):
     incident = _create("incidents", body)
     _broadcast_incident("incident_new", incident)
     return _enrich_incident(incident)
+
+@app.get("/api/incidents/log")
+async def list_incident_log():
+    """Archived incidents (active or closed) expired off the dashboard after
+    ALERT_EXPIRY_S — kept here so history isn't lost."""
+    log = _list("incident_log")
+    log.sort(key=lambda i: i.get("expired_at", ""), reverse=True)
+    return [_enrich_incident(i) for i in log]
 
 @app.get("/api/incidents/{id}")
 async def get_incident(id: str):
