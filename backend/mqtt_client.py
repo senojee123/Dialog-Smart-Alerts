@@ -82,7 +82,8 @@ class MQTTClientManager:
         # most recent one and hand it to the next alert that has no image of its
         # own, within PENDING_IMAGE_TTL_S, instead of inventing a fake device
         # event for it (which just gets auth-rejected and orphans the photo).
-        self._pending_raw_image = None       # {"image_url": ..., "ts": float}
+        self._pending_raw_image = None       # {"image_url": ..., "ts": float} — image arrived, no alert yet
+        self._pending_awaiting_image = None  # {"event_id","incident_id","ts"} — alert arrived, no image yet
         self.PENDING_IMAGE_TTL_S = 30
 
     def start(self):
@@ -293,13 +294,16 @@ class MQTTClientManager:
                     return
 
                 # This message carries no device/station id to join it to a
-                # detection — buffer it so the next alert that arrives without
-                # its own image (within PENDING_IMAGE_TTL_S either direction)
-                # can claim it, instead of inventing a fake device event that
-                # only gets auth-rejected and leaves the photo orphaned.
-                self._pending_raw_image = {"image_url": image_url, "ts": time.time()}
-                print(f"[MQTT RAW IMAGE] Buffered for the next alert with no image of its own "
-                      f"(TTL {self.PENDING_IMAGE_TTL_S}s): {image_url}")
+                # detection. Two orderings are possible: the alert may already
+                # be sitting there waiting for its image (backfill it now), or
+                # the image beat the alert here (buffer it for the alert to
+                # claim when it arrives) — either way, never invent a fake
+                # device event for it, that only gets auth-rejected and
+                # orphans the photo.
+                asyncio.run_coroutine_threadsafe(
+                    self.handle_standalone_image(image_url),
+                    self.app.state.loop
+                )
                 return
 
             print(f"[MQTT] Non-JSON payload received on '{msg.topic}': {raw_text}")
@@ -341,8 +345,19 @@ class MQTTClientManager:
             # Import dynamically to avoid circular import issues
             from server import _ingest_event
             event, incident = await _ingest_event(event_body, source="device")
-            
+
             print(f"[MQTT] Successfully ingested event: {event['id']} (Incident: {incident['id'] if incident else 'None'})")
+
+            # This alert landed with no image of its own (not even a claimed
+            # buffered one) — remember it so a standalone image arriving
+            # moments later (the gateway can publish in either order) can
+            # still be backfilled onto it instead of being orphaned.
+            if not event.get("image_url"):
+                self._pending_awaiting_image = {
+                    "event_id": event["id"],
+                    "incident_id": incident["id"] if incident else None,
+                    "ts": time.time(),
+                }
 
             # 3. Actuate hardware based on evaluated incident severity
             if incident:
@@ -361,6 +376,34 @@ class MQTTClientManager:
 
         except Exception as e:
             print(f"[MQTT] Error processing ingested event: {e}")
+
+    async def handle_standalone_image(self, image_url: str) -> None:
+        """An image arrived on its own topic, decoupled from any alert. If an
+        alert already came in moments ago with no image, backfill it directly;
+        otherwise buffer this image for the next image-less alert to claim."""
+        pending = self._pending_awaiting_image
+        if pending and (time.time() - pending["ts"]) <= self.PENDING_IMAGE_TTL_S:
+            try:
+                import data_store
+                from server import broadcast, _enrich_incident
+
+                data_store.update("detection_events", pending["event_id"], {"image_url": image_url})
+                incident_id = pending.get("incident_id")
+                if incident_id:
+                    inc = data_store.get_by_id("incidents", incident_id)
+                    if inc and not inc.get("image_url"):
+                        inc = data_store.update("incidents", incident_id, {"image_url": image_url})
+                        broadcast("incident_updated", _enrich_incident(inc))
+                print(f"[MQTT IMAGE] Backfilled late-arriving image onto "
+                      f"{pending['event_id']} / {incident_id}: {image_url}")
+                self._pending_awaiting_image = None
+                return
+            except Exception as e:
+                print(f"[MQTT IMAGE] Failed to backfill pending event with image: {e}")
+
+        self._pending_raw_image = {"image_url": image_url, "ts": time.time()}
+        print(f"[MQTT RAW IMAGE] Buffered for the next alert with no image of its own "
+              f"(TTL {self.PENDING_IMAGE_TTL_S}s): {image_url}")
 
     def actuate_led(self, station_id, state):
         topic = f"dialog/actuators/signs/{station_id}/command"
