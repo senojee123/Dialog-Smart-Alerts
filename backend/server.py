@@ -35,6 +35,7 @@ import rule_engine
 import notifier
 import spatial
 import simulator
+import geocode
 from mqtt_client import MQTTClientManager
 
 from fastapi import FastAPI, HTTPException, Request, UploadFile, File, Form
@@ -859,19 +860,29 @@ async def _run_rule_engine(event: dict, device: dict) -> dict | None:
         _broadcast_incident("incident_updated", incident)
     else:
         zone = data_store.get_by_id("zones", event["zone_id"]) or {}
+        # A mobile citizen report's own fresh GPS fix (captured per-report)
+        # is more accurate than the phone's device record (captured once at
+        # enrolment) or the seeded zone centre — prefer it wherever present.
+        lat = event.get("lat", device.get("lat"))
+        lng = event.get("lng", device.get("lng"))
+        zone_name = zone.get("name", event.get("zone_id", ""))
+        if device.get("source") == "mobile" and lat is not None and lng is not None:
+            geocoded = await asyncio.to_thread(geocode.reverse_geocode, lat, lng)
+            if geocoded:
+                zone_name = geocoded
         incident = data_store.create("incidents", {
             "id":          f"INC-{uuid.uuid4().hex[:6].upper()}",
             "use_case_id": event["use_case_id"],
             "rule_id":     matched_rule["id"],
             "zone_id":     event["zone_id"],
-            "zone_name":   zone.get("name", event.get("zone_id", "")),
+            "zone_name":   zone_name,
             "device_id":   event["device_id"],
             "severity":    severity,
             "status":      "ACTIVE",
             "object":      event["object_type"],
             "confidence":  event["confidence"],
             "image_url":   event.get("image_url"),
-            "location":    {"lat": device.get("lat"), "lng": device.get("lng")},
+            "location":    {"lat": lat, "lng": lng},
             "opened_at":   _now(),
             "source":      "auto",
             "simulated":   event.get("source") == "simulation",
