@@ -76,6 +76,15 @@ class MQTTClientManager:
         # In-memory deduplication/processing map if needed
         self.last_processed_timestamps = {}
 
+        # The gateway can publish a detection photo as its own raw-bytes MQTT
+        # message on the image topic, decoupled from the JSON alert that opens
+        # the incident — the two carry no shared id to join them by. Buffer the
+        # most recent one and hand it to the next alert that has no image of its
+        # own, within PENDING_IMAGE_TTL_S, instead of inventing a fake device
+        # event for it (which just gets auth-rejected and orphans the photo).
+        self._pending_raw_image = None       # {"image_url": ..., "ts": float}
+        self.PENDING_IMAGE_TTL_S = 30
+
     def start(self):
         try:
             auth = f"auth={self.username or '(anon)'} tls={self.use_tls}"
@@ -159,21 +168,28 @@ class MQTTClientManager:
             # Extract and process image (Base64 string or HTTP URL)
             image_url = payload.get("image_url")
             raw_img = payload.get("image") or payload.get("image_data") or payload.get("photo") or payload.get("base64")
-            
+
+            # Always trace what actually arrived — this is the only way to tell
+            # "camera sent nothing" apart from "camera sent it, decode/broker ate it".
+            payload_kb = len(payload_str) / 1024
+            print(f"[MQTT ALERT] from '{station_id}_{entity_id}': payload={payload_kb:.1f}KB, "
+                  f"has_image_url={bool(image_url)}, has_raw_img={bool(raw_img)}"
+                  + (f", raw_img_len={len(raw_img)}chars" if isinstance(raw_img, str) else ""))
+
             if raw_img and isinstance(raw_img, str) and not image_url:
                 try:
                     b64_data = raw_img.strip()
                     if "," in b64_data:
                         b64_data = b64_data.split(",")[-1].strip()
-                    
+
                     # Fix JSON space-encoding of + characters
                     b64_data = b64_data.replace(" ", "+").replace("\n", "").replace("\r", "")
-                    
+
                     # Auto-fix missing Base64 padding (=)
                     missing_padding = len(b64_data) % 4
                     if missing_padding:
                         b64_data += "=" * (4 - missing_padding)
-                    
+
                     img_bytes = base64.b64decode(b64_data)
                     _assert_valid_image(img_bytes)
                     img_filename = f"img_mqtt_{entity_id}_{uuid.uuid4().hex[:6]}.jpg"
@@ -181,10 +197,32 @@ class MQTTClientManager:
                     with open(img_path, "wb") as f:
                         f.write(img_bytes)
                     image_url = f"/uploads/{img_filename}"
-                    print(f"[MQTT IMAGE] Decoded and saved Base64 image: {image_url}")
+                    print(f"[MQTT IMAGE] Decoded and saved Base64 image: {image_url} ({len(img_bytes)/1024:.1f}KB)")
                 except Exception as img_err:
-                    print(f"[MQTT IMAGE] Could not decode raw Base64 ({img_err}). Using default camera capture URL.")
+                    # Truncation is the usual cause: base64.b64decode() doesn't error on a
+                    # short/cut-off string, it just yields fewer valid bytes — so a payload
+                    # that got clipped in transit (MQTT broker size cap, gateway buffer limit)
+                    # decodes "successfully" and only fails once Pillow tries to open it.
+                    print(f"[MQTT IMAGE] FAILED to decode Base64 image from '{station_id}_{entity_id}' "
+                          f"({img_err}). raw_img was {len(raw_img)} chars "
+                          f"(~{len(raw_img) * 3 // 4 / 1024:.1f}KB decoded) — "
+                          f"if that's smaller than the real photo, it was likely truncated "
+                          f"in transit (check the public broker's max message size). "
+                          f"Falling back to placeholder image.")
                     image_url = "/static/placeholder.jpg"
+            elif not raw_img and not image_url:
+                # No image on this alert — claim a recently-buffered standalone
+                # image (sent separately on the image topic) if one is fresh
+                # enough to plausibly belong to this same detection.
+                pending = self._pending_raw_image
+                if pending and (time.time() - pending["ts"]) <= self.PENDING_IMAGE_TTL_S:
+                    image_url = pending["image_url"]
+                    self._pending_raw_image = None
+                    print(f"[MQTT IMAGE] Claimed pending standalone image for "
+                          f"'{station_id}_{entity_id}': {image_url}")
+                else:
+                    print(f"[MQTT IMAGE] No image field on alert from '{station_id}_{entity_id}' "
+                          f"(expected 'image'/'image_data'/'photo'/'base64' or 'image_url' in the payload).")
 
             # A roaming producer (a citizen phone) sends its own current GPS
             # fix per detection — the contract's HTTP path already documents
@@ -251,23 +289,17 @@ class MQTTClientManager:
                     image_url = f"/uploads/{img_filename}"
                     print(f"[MQTT RAW IMAGE] Decoded and saved raw image: {image_url}")
                 except Exception as b64_err:
-                    print(f"[MQTT RAW IMAGE] Error decoding raw Base64 ({b64_err}), using default sample image.")
-                    image_url = "/static/placeholder.jpg"
+                    print(f"[MQTT RAW IMAGE] Error decoding raw Base64 ({b64_err}), dropping (no image to attach).")
+                    return
 
-                event_body = {
-                    "external_id": "st_01_cam_04",
-                    "device_id": "cam_04",
-                    "object_type": "elephant",
-                    "confidence": 92.0,
-                    "image_url": image_url,
-                    "source": "device",
-                    "raw_payload": {"raw_image": True}
-                }
-
-                asyncio.run_coroutine_threadsafe(
-                    self.process_mqtt_event(event_body, "st_01", "cam_04", None),
-                    self.app.state.loop
-                )
+                # This message carries no device/station id to join it to a
+                # detection — buffer it so the next alert that arrives without
+                # its own image (within PENDING_IMAGE_TTL_S either direction)
+                # can claim it, instead of inventing a fake device event that
+                # only gets auth-rejected and leaves the photo orphaned.
+                self._pending_raw_image = {"image_url": image_url, "ts": time.time()}
+                print(f"[MQTT RAW IMAGE] Buffered for the next alert with no image of its own "
+                      f"(TTL {self.PENDING_IMAGE_TTL_S}s): {image_url}")
                 return
 
             print(f"[MQTT] Non-JSON payload received on '{msg.topic}': {raw_text}")
