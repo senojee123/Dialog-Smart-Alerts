@@ -348,16 +348,30 @@ class MQTTClientManager:
 
             print(f"[MQTT] Successfully ingested event: {event['id']} (Incident: {incident['id'] if incident else 'None'})")
 
-            # This alert landed with no image of its own (not even a claimed
-            # buffered one) — remember it so a standalone image arriving
-            # moments later (the gateway can publish in either order) can
-            # still be backfilled onto it instead of being orphaned.
+            # This alert landed with no image of its own. Ingestion here can
+            # take several seconds (SMS retries, rule evaluation), so a
+            # standalone image can arrive and get buffered *while we were
+            # still awaiting* — re-check the buffer now rather than only at
+            # the moment the alert's JSON first came in, or that image sits
+            # unclaimed forever. Claim it immediately if it's there; otherwise
+            # register as awaiting so a *later* image can still find it.
             if not event.get("image_url"):
-                self._pending_awaiting_image = {
-                    "event_id": event["id"],
-                    "incident_id": incident["id"] if incident else None,
-                    "ts": time.time(),
-                }
+                pending_img = self._pending_raw_image
+                if pending_img and (time.time() - pending_img["ts"]) <= self.PENDING_IMAGE_TTL_S:
+                    data_store.update("detection_events", event["id"], {"image_url": pending_img["image_url"]})
+                    if incident and not incident.get("image_url"):
+                        incident = data_store.update("incidents", incident["id"], {"image_url": pending_img["image_url"]})
+                        from server import broadcast as _broadcast, _enrich_incident as _enrich
+                        _broadcast("incident_updated", _enrich(incident))
+                    print(f"[MQTT IMAGE] Claimed a buffered image that arrived during ingestion "
+                          f"for {event['id']} / {incident['id'] if incident else '—'}: {pending_img['image_url']}")
+                    self._pending_raw_image = None
+                else:
+                    self._pending_awaiting_image = {
+                        "event_id": event["id"],
+                        "incident_id": incident["id"] if incident else None,
+                        "ts": time.time(),
+                    }
 
             # 3. Actuate hardware based on evaluated incident severity
             if incident:
