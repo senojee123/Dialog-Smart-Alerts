@@ -27,7 +27,7 @@ import urllib.request
 
 import paho.mqtt.client as mqtt
 
-APP_URL = "https://dialog-smart-alerts-production.up.railway.app"
+APP_URL = "https://web-production-82b07.up.railway.app"
 TEST_IMAGE_URL = f"{APP_URL}/uploads/elephant_warning.jpg"
 
 BROKER_HOST = "broker.hivemq.com"

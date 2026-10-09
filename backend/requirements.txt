@@ -8,5 +8,6 @@ alembic>=1.13
 asyncpg>=0.29        # production driver (PostgreSQL)
 aiosqlite>=0.20      # local/dev/CI driver (SQLite)
 paho-mqtt>=2.0.0
+psycopg2-binary>=2.9
 Pillow>=10.0
 
