@@ -19,6 +19,11 @@ BASE_DIR = Path(__file__).parent
 DEFAULT_SQLITE = f"sqlite+aiosqlite:///{(BASE_DIR / 'data' / 'dsa.db').as_posix()}"
 
 DATABASE_URL = os.getenv("DATABASE_URL", DEFAULT_SQLITE)
+if DATABASE_URL.startswith("postgres://"):
+    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql+asyncpg://", 1)
+elif DATABASE_URL.startswith("postgresql://") and not DATABASE_URL.startswith("postgresql+"):
+    DATABASE_URL = DATABASE_URL.replace("postgresql://", "postgresql+asyncpg://", 1)
+
 _IS_SQLITE = DATABASE_URL.startswith("sqlite")
 
 # For SQLite, make sure the parent dir exists.
