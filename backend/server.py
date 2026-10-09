@@ -264,9 +264,21 @@ async def delete_zone(id: str):
 # DEVICES
 # ════════════════════════════════════════════════════════════════════════════
 
+def _redact_device(d: dict) -> dict:
+    """Mask a device's api_key everywhere it would otherwise be broadcast
+    passively (list/get/update/SSE) — there's no admin auth on these endpoints,
+    so the full key must only ever go out through an action the caller took
+    deliberately (create, regenerate, or the explicit reveal endpoint below)."""
+    if not d or not d.get("api_key"):
+        return d
+    key = d["api_key"]
+    masked = f"{key[:4]}…{key[-4:]}" if len(key) > 8 else "…"
+    return {**d, "api_key": masked}
+
+
 @app.get("/api/devices")
 async def list_devices():
-    return _list("devices")
+    return [_redact_device(d) for d in _list("devices")]
 
 def _external_id_for(body: dict) -> str:
     """A producer's MQTT identity is "{station_id}_{entity_id}" — fall back to
@@ -285,12 +297,20 @@ async def create_device(req: Request):
         body["api_key"] = secrets.token_hex(16)   # 128-bit random, CSPRNG
     body["external_id"] = _external_id_for(body)
     device = _create("devices", body)
-    broadcast("device_created", device)
-    return device
+    broadcast("device_created", _redact_device(device))
+    return device  # full key returned once, at the moment of issuance
 
 @app.get("/api/devices/{id}")
 async def get_device(id: str):
-    return _get("devices", id)
+    return _redact_device(_get("devices", id))
+
+@app.get("/api/devices/{id}/api-key")
+async def reveal_device_key(id: str):
+    """Explicit, deliberate reveal of a device's plaintext key — separate from
+    the list/get endpoints so a routine fetch of the device table can't bulk-
+    harvest every key in one call."""
+    device = _get("devices", id)
+    return {"id": id, "api_key": device.get("api_key")}
 
 @app.put("/api/devices/{id}")
 async def update_device(id: str, req: Request):
@@ -300,8 +320,8 @@ async def update_device(id: str, req: Request):
     elif body.get("api_key") and not body.get("external_id"):
         body["external_id"] = body["api_key"]
     device = _update("devices", id, body)
-    broadcast("device_updated", device)
-    return device
+    broadcast("device_updated", _redact_device(device))
+    return _redact_device(device)
 
 
 @app.post("/api/devices/{id}/regenerate-key")
@@ -310,7 +330,7 @@ async def regenerate_device_key(id: str):
     the caller must hand it to the device operator."""
     key = secrets.token_hex(16)
     device = _update("devices", id, {"api_key": key})
-    broadcast("device_updated", device)
+    broadcast("device_updated", _redact_device(device))
     return {"id": id, "api_key": key}
 
 @app.delete("/api/devices/{id}")
@@ -719,6 +739,15 @@ async def _ingest_event(body: dict, source: str = "device") -> tuple[dict, dict 
             inc = next((i for i in data_store.get_all("incidents") if prior["id"] in (i.get("event_ids") or [])), None)
             return prior, inc
 
+    # A producer must never have its credential land in stored data — the
+    # top-level key is already stripped by the caller (intake_event /
+    # mqtt_client), but a vendor's raw_payload can carry its own nested copy
+    # of whatever the producer presented, so strip it here too, centrally,
+    # for every ingestion path (HTTP, MQTT, upload, simulator).
+    raw_payload = body.get("raw_payload")
+    if isinstance(raw_payload, dict):
+        raw_payload = {k: v for k, v in raw_payload.items() if k != "api_key"}
+
     event = data_store.create("detection_events", {
         "id":              f"EVT-{uuid.uuid4().hex[:8].upper()}",
         "device_id":       device["id"],
@@ -731,7 +760,7 @@ async def _ingest_event(body: dict, source: str = "device") -> tuple[dict, dict 
         "bbox":            body.get("bbox"),
         "vendor":          body.get("vendor", device.get("vendor")),
         "client_event_id": cid,
-        "raw_payload":     body.get("raw_payload"),
+        "raw_payload":     raw_payload,
         "source":          source,
         # Location is copied from the device so the spatial engine can light
         # nearby actuators (a drone could also send its own lat/lng here).
@@ -775,6 +804,23 @@ async def intake_event(req: Request):
 
     # never let the credential reach storage / raw_payload
     body.pop("api_key", None)
+
+    # The public contract (docs/integration-contract.md §4-5) documents
+    # object_type and confidence as REQUIRED and confidence as 0-100 — enforce
+    # that here, at the one endpoint real external producers actually call.
+    # (Upload/simulator/MQTT are internal callers that already guarantee
+    # these fields their own way, so _ingest_event itself stays permissive.)
+    if not body.get("object_type"):
+        raise HTTPException(422, "object_type is required")
+    if body.get("confidence") is None:
+        raise HTTPException(422, "confidence is required")
+    try:
+        conf = float(body["confidence"])
+    except (TypeError, ValueError):
+        raise HTTPException(422, "confidence must be a number")
+    if not (0 <= conf <= 100):
+        raise HTTPException(422, "confidence must be between 0 and 100")
+
     event, incident = await _ingest_event(body, body.get("source", "device"))
     return {
         "event_id":    event["id"],

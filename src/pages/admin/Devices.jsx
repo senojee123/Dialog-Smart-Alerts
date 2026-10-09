@@ -33,7 +33,7 @@ function pinIcon(online) {
 }
 
 export default function Devices() {
-  const { data: devices, loading, error, create, update, remove } = useApi('/api/devices')
+  const { data: devices, loading, error, create, update, remove, fetchAll } = useApi('/api/devices')
   const { data: useCases }  = useApi('/api/use-cases')
   const { data: zones }     = useApi('/api/zones')
 
@@ -63,7 +63,11 @@ export default function Devices() {
     if (!form.zone_id)         { setSaveError('Zone is required'); return }
     setSaving(true); setSaveError(null)
     try {
-      editing ? await update(editing.id, form) : await create(form)
+      // The list/get endpoints only ever return a masked api_key preview
+      // (e.g. "ab12…ff90") — never resubmit it on edit, or we'd overwrite
+      // the device's real key with that masked placeholder.
+      const { api_key, ...payload } = form
+      editing ? await update(editing.id, payload) : await create(payload)
       close()
     } catch (e) {
       setSaveError(e.message)
@@ -72,8 +76,35 @@ export default function Devices() {
     }
   }
 
-  function copyKey(key) {
-    navigator.clipboard?.writeText(key).catch(() => {})
+  // The device list/get endpoints only return a masked preview of the key
+  // (nothing here leaks every device's real key in one unauthenticated
+  // call) — copying or regenerating fetches/replaces the real value on demand.
+  async function copyKey(id) {
+    try {
+      const res = await fetch(`/api/devices/${id}/api-key`)
+      if (!res.ok) throw new Error(await res.text())
+      const { api_key } = await res.json()
+      await navigator.clipboard?.writeText(api_key)
+    } catch {
+      // clipboard/permission failures are non-critical; nothing to surface here
+    }
+  }
+
+  async function regenerateKey() {
+    if (!editing) return
+    setSaving(true); setSaveError(null)
+    try {
+      const res = await fetch(`/api/devices/${editing.id}/regenerate-key`, { method: 'POST' })
+      if (!res.ok) throw new Error(await res.text())
+      const { api_key } = await res.json()
+      await navigator.clipboard?.writeText(api_key)
+      await fetchAll()
+      close()
+    } catch (e) {
+      setSaveError(e.message)
+    } finally {
+      setSaving(false)
+    }
   }
 
   const filteredZones = zones.filter(z => !form.use_case_id || z.use_case_id === form.use_case_id)
@@ -114,8 +145,8 @@ export default function Devices() {
     { key: 'api_key', label: 'API Key',
       render: row => (
         <div className="flex items-center gap-1.5">
-          <code className="text-xs font-mono text-ink-muted bg-surface px-1.5 py-0.5 rounded">{row.api_key}</code>
-          <button onClick={() => copyKey(row.api_key)} className="text-ink-muted hover:text-ink">
+          <code className="text-xs font-mono text-ink-muted bg-surface px-1.5 py-0.5 rounded" title="Masked — click copy for the real key">{row.api_key}</code>
+          <button onClick={() => copyKey(row.id)} title="Copy real API key" className="text-ink-muted hover:text-ink">
             <Copy size={11} />
           </button>
         </div>
@@ -252,9 +283,17 @@ export default function Devices() {
             </div>
           )}
 
-          <Field label="API Key" hint="Auto-generated if left blank. Devices use this to authenticate events.">
-            <Input value={form.api_key || ''} onChange={e => set('api_key', e.target.value)}
-                   placeholder="Auto-generated on save" />
+          <Field label="API Key" hint={editing
+            ? 'Shown masked for display only — use Copy in the table, or Regenerate to issue a new one.'
+            : 'Auto-generated on save. Devices use this to authenticate events.'}>
+            {editing ? (
+              <div className="flex items-center gap-2">
+                <code className="text-xs font-mono text-ink-muted bg-surface px-2 py-1.5 rounded flex-1">{form.api_key}</code>
+                <Btn type="button" onClick={regenerateKey}>Regenerate</Btn>
+              </div>
+            ) : (
+              <Input value="Auto-generated on save" disabled />
+            )}
           </Field>
 
           <SaveBar onSave={save} onCancel={close} saving={saving} />
