@@ -1,0 +1,18 @@
+FROM mirror.ccs.tencentyun.com/library/python:3.11-slim
+
+WORKDIR /app
+
+# Python dependencies (installed from Tencent's internal mirror)
+COPY backend/requirements.txt requirements.txt
+RUN pip install --no-cache-dir \
+    -i http://mirrors.tencentyun.com/pypi/simple \
+    --trusted-host mirrors.tencentyun.com \
+    -r requirements.txt
+
+# Copy all application files
+COPY . .
+
+ENV PORT=8000
+EXPOSE 8000
+
+CMD ["python", "backend/server.py"]

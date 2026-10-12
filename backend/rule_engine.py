@@ -74,6 +74,37 @@ def _recent_matching_events(use_case_id: str, zone_id: str | None,
     return events
 
 
+def _open_incident_event_ids(use_case_id: str, zone_id: str | None, same_zone: bool,
+                              cutoff_iso: str) -> set:
+    """Event ids already attached to a still-OPEN *and recently active*
+    incident in scope.
+
+    A lower-severity immediate rule (e.g. "single detection") consumes an
+    event the moment it opens an incident with it — otherwise that same event
+    could wrongly re-confirm ANOTHER fresh incident later (see the comment
+    below). But that consumption must not also starve a higher-severity
+    confirmation rule trying to escalate THAT SAME still-open incident: the
+    event never left the story, the incident just hasn't closed yet. So an
+    event consumed by a currently-open, recently-active incident stays
+    eligible for confirmation counting; an event consumed by an incident that
+    has since closed, been deleted, or simply gone stale (no activity within
+    this same confirmation window — server.py's INCIDENT_MERGE_WINDOW_S
+    treats it as a separate sighting too, by the same cutoff) is excluded.
+    """
+    incidents = [
+        i for i in data_store.get_all("incidents")
+        if i.get("use_case_id") == use_case_id
+        and i.get("status") in ("ACTIVE", "OPERATOR_REVIEW")
+        and (i.get("last_event_at") or i.get("opened_at") or "") >= cutoff_iso
+    ]
+    if same_zone and zone_id is not None:
+        incidents = [i for i in incidents if i.get("zone_id") == zone_id]
+    ids = set()
+    for i in incidents:
+        ids.update(i.get("event_ids") or [])
+    return ids
+
+
 
 
 # ── main evaluator ────────────────────────────────────────────────────────────
@@ -112,16 +143,20 @@ async def evaluate_event(event: dict) -> tuple[dict | None, str | None]:
             bool(confirmation.get("same_zone"))
         )
 
-        # An event that already contributed to some incident (open, closed,
-        # or since-deleted) is stamped `consumed` permanently at the time it
-        # was attached — see server.py's _run_rule_engine(). This is checked
-        # on the event record itself rather than by scanning for a still-
-        # existing closed incident, so deleting an incident later can't
-        # un-consume its events and let them re-confirm a fresh one.
+        # An event that already contributed to some incident is stamped
+        # `consumed` at the time it was attached — see server.py's
+        # _run_rule_engine(). That must not block a higher-severity
+        # confirmation rule from counting an event still sitting in the SAME
+        # open incident this detection is about to (re)join: only an event
+        # consumed by an incident that has since closed (or been deleted,
+        # which leaves no open-incident record to find) stays excluded.
+        still_open_ids = _open_incident_event_ids(
+            use_case_id, event.get("zone_id"), bool(confirmation.get("same_zone")), cutoff_iso
+        )
         matching_past = [
             e for e in past
             if e.get("id") != event.get("id")
-            and not e.get("consumed")
+            and (not e.get("consumed") or e.get("id") in still_open_ids)
             and _matches_conditions(e, rule.get("conditions", []))
         ]
         required = int(confirmation.get("required_count", 2))

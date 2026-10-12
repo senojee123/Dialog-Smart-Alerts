@@ -107,6 +107,14 @@ def _parse_iso(s):
 # Re-notify the same incident at most once per this window unless it escalates.
 NOTIFY_COOLDOWN_S = 600
 
+# A new detection only merges into a still-open incident in the same zone if
+# the incident had activity within this window — matching the dual-detection
+# confirmation rule's own 15-minute window, since that's what "this is likely
+# the same ongoing sighting" actually means. Past this window, an open-but-
+# stale incident no longer absorbs new detections; a fresh one opens instead,
+# even though the old one hasn't been manually closed yet.
+INCIDENT_MERGE_WINDOW_S = 900
+
 # An incident — active or already closed — is pulled off the live dashboard
 # once it's been open this long. It isn't deleted outright: it's archived into
 # the "incident_log" store (GET /api/incidents/log) first, then removed from
@@ -872,12 +880,23 @@ async def _run_rule_engine(event: dict, device: dict) -> dict | None:
     action   = actions.get(ak, {})
     severity = action.get("incident_severity", "HIGH")
 
-    # Reuse open incident in same zone/use-case, or create new one
+    # Reuse an open incident in the same zone/use-case only if it's had
+    # activity within INCIDENT_MERGE_WINDOW_S — otherwise this detection is
+    # treated as a new, separate sighting even though the old incident is
+    # technically still unresolved (see rule_engine's confirmation counting,
+    # which this window intentionally matches).
+    now_dt = datetime.now(timezone.utc)
+
+    def _mergeable(incident: dict) -> bool:
+        last = _parse_iso(incident.get("last_event_at") or incident.get("opened_at"))
+        return last is not None and (now_dt - last).total_seconds() <= INCIDENT_MERGE_WINDOW_S
+
     open_incidents = [
         i for i in data_store.get_all("incidents")
         if i.get("zone_id") == event["zone_id"]
         and i.get("use_case_id") == event["use_case_id"]
         and i.get("status") in ("ACTIVE", "OPERATOR_REVIEW")
+        and _mergeable(i)
     ]
     sev_order = {"LOW": 0, "MEDIUM": 1, "HIGH": 2, "CRITICAL": 3}
 
@@ -888,7 +907,7 @@ async def _run_rule_engine(event: dict, device: dict) -> dict | None:
         incident = open_incidents[0]
         # Always link the new event and all contributing events; escalate severity if this rule is higher
         merged_event_ids = list(dict.fromkeys((incident.get("event_ids") or []) + contributing_ids + [event["id"]]))
-        patch = {"event_ids": merged_event_ids}
+        patch = {"event_ids": merged_event_ids, "last_event_at": _now()}
         _mark_events_consumed(contributing_ids + [event["id"]])
         if sev_order.get(severity, 0) > sev_order.get(incident.get("severity"), 0):
             patch["severity"] = severity
@@ -930,6 +949,7 @@ async def _run_rule_engine(event: dict, device: dict) -> dict | None:
             "image_url":   event.get("image_url"),
             "location":    {"lat": lat, "lng": lng},
             "opened_at":   _now(),
+            "last_event_at": _now(),
             "source":      "auto",
             "simulated":   event.get("source") == "simulation",
             "event_ids":   list(dict.fromkeys(contributing_ids + [event["id"]])),

@@ -131,7 +131,7 @@ async def dispatch(incident: dict, rule: dict, action_key: str, event: dict) -> 
             # gateway treat every send after the first as a retry and drop it.
             notif_id = f"NOTIF-{uuid.uuid4().hex[:8].upper()}"
             status = "simulated"
-            if ch_type == "sms":
+            if ch_type == "sms" and os.environ.get("SMS_ENABLED", "false").lower() == "true":
                 # Fetch credentials (defaulting to your production credentials)
                 api_url = os.environ.get("IDEABIZ_API_URL", "https://ideabiz.lk/apicall/smsmessaging/v3/outbound/87798/requests")
                 api_token = os.environ.get("IDEABIZ_TOKEN", "aec2bd31-f3ba-38e0-a4ae-3785b6af1638")
