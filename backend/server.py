@@ -108,12 +108,31 @@ def _parse_iso(s):
 NOTIFY_COOLDOWN_S = 600
 
 # A new detection only merges into a still-open incident in the same zone if
-# the incident had activity within this window — matching the dual-detection
-# confirmation rule's own 15-minute window, since that's what "this is likely
+# the incident had activity within this many seconds — matching the dual-
+# detection confirmation rule's own window, since that's what "this is likely
 # the same ongoing sighting" actually means. Past this window, an open-but-
 # stale incident no longer absorbs new detections; a fresh one opens instead,
 # even though the old one hasn't been manually closed yet.
-INCIDENT_MERGE_WINDOW_S = 900
+# Fallback only — _incident_merge_window_s() below reads the real value live
+# from whichever confirmation rule is active for the use case, so editing the
+# window in the Rules admin screen takes effect immediately, no redeploy.
+DEFAULT_INCIDENT_MERGE_WINDOW_S = 900
+
+
+def _incident_merge_window_s(use_case_id: str) -> int:
+    """The merge window to use for this use case, read live from its active
+    confirmation rule (the same one rule_engine.evaluate_event consults for
+    the dual-detection escalation) — so the two stay in lockstep no matter
+    which rule ends up matching a given event."""
+    for rule in data_store.get_all("rules"):
+        if (rule.get("use_case_id") == use_case_id
+                and rule.get("active", True)
+                and rule.get("confirmation")):
+            try:
+                return int(rule["confirmation"].get("window_seconds", DEFAULT_INCIDENT_MERGE_WINDOW_S))
+            except (TypeError, ValueError):
+                return DEFAULT_INCIDENT_MERGE_WINDOW_S
+    return DEFAULT_INCIDENT_MERGE_WINDOW_S
 
 # An incident — active or already closed — is pulled off the live dashboard
 # once it's been open this long. It isn't deleted outright: it's archived into
@@ -881,15 +900,16 @@ async def _run_rule_engine(event: dict, device: dict) -> dict | None:
     severity = action.get("incident_severity", "HIGH")
 
     # Reuse an open incident in the same zone/use-case only if it's had
-    # activity within INCIDENT_MERGE_WINDOW_S — otherwise this detection is
+    # activity within the live merge window — otherwise this detection is
     # treated as a new, separate sighting even though the old incident is
     # technically still unresolved (see rule_engine's confirmation counting,
-    # which this window intentionally matches).
+    # which this window intentionally matches — both read the same rule).
     now_dt = datetime.now(timezone.utc)
+    merge_window_s = _incident_merge_window_s(event["use_case_id"])
 
     def _mergeable(incident: dict) -> bool:
         last = _parse_iso(incident.get("last_event_at") or incident.get("opened_at"))
-        return last is not None and (now_dt - last).total_seconds() <= INCIDENT_MERGE_WINDOW_S
+        return last is not None and (now_dt - last).total_seconds() <= merge_window_s
 
     open_incidents = [
         i for i in data_store.get_all("incidents")
