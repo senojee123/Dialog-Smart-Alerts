@@ -19,16 +19,29 @@ const ACTIVE = new Set(['ACTIVE', 'OPERATOR_REVIEW'])
 const CHANNEL_WORD = { sms: 'SMS', whatsapp: 'WhatsApp', email: 'email', push: 'app notification', voice: 'voice call', radio: 'radio' }
 const NUM_WORD = ['no', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten']
 
+// Executive-tour style intro; any of it still queued is dropped once a real
+// incident arrives, so the live story starts straight away.
 const INTRO = [
   {
-    key: 'intro-1', route: '/', title: 'Live from the field',
-    text: () => 'Welcome to Dialog Smart Alerts. Everything you are about to see is live. ' +
-                'The platform is connected to the cameras on the elephant corridor, and I will describe each alert the moment it arrives.',
+    key: 'intro-welcome', intro: true, route: '/', title: 'Welcome to Dialog Smart Alerts',
+    text: () => 'Dialog Smart Alerts is a unified alerting platform. ' +
+                'It receives event triggers, and uses its built-in rules engine to launch coordinated action, in seconds. ' +
+                'Everything you are about to see is live.',
   },
   {
-    key: 'intro-2', route: '/', target: 'kpis', title: 'Listening for elephants',
-    text: () => 'These numbers are live. The system is now watching for the next elephant detection. ' +
-                'As soon as a camera spots one, I will walk you through exactly what happens.',
+    key: 'intro-devices', intro: true, route: '/devices', target: 'device-table', title: 'Connected devices',
+    text: () => 'The platform can be connected to various devices. ' +
+                'For this demo, the camera in front of you is currently connected, and labelled as Yala Corridor.',
+  },
+  {
+    key: 'intro-platform', intro: true, route: '/admin/rules', target: 'main', title: 'Configured, not coded',
+    text: () => 'All of this is configured, not coded. ' +
+                'Detection rules, responders, and road signs are set up in a few clicks.',
+  },
+  {
+    key: 'intro-listen', intro: true, route: '/', target: 'kpis', title: 'Listening for elephants',
+    text: () => 'The system is now watching. ' +
+                'As soon as the camera spots an elephant, I will show you exactly what happens.',
   },
 ]
 
@@ -79,6 +92,9 @@ export default function LiveNarrator({ muted, setMuted, onExit }) {
   const devNameRef = useRef({})
 
   const enqueue = useCallback((...items) => setQueue(q => [...q, ...items]), [])
+  // A real incident cuts the intro short: the line on screen finishes, the rest is dropped.
+  const enqueueIncident = useCallback((...items) =>
+    setQueue(q => [...q.slice(0, 1), ...q.slice(1).filter(x => !x.intro), ...items]), [])
 
   // ── narration text from real data ──────────────────────────────────────────
   const inc = (id) => incRef.current.get(id) || {}
@@ -88,48 +104,48 @@ export default function LiveNarrator({ muted, setMuted, onExit }) {
 
   const newIncidentItems = (id) => [
     {
-      key: `new-${id}`, alert: true, route: '/', target: 'recent-incidents', title: 'Live alert: elephant detected',
+      key: `new-${id}`, alert: true, route: '/', target: 'recent-incidents', title: 'A detection comes in',
       text: () => {
         const i = inc(id)
-        const dev = devNameRef.current[i.device_id] || 'a roadside camera'
         const conf = pctOf(i) ? `, with ${pctOf(i)} percent confidence` : ''
-        const crit = i.severity === 'CRITICAL' ? ', and it is already marked critical' : ''
-        return `An ${objectOf(i)} has just been detected by ${dev} on the ${zoneOf(i)}${conf}. ` +
-               `An incident was opened automatically${crit}. Nobody had to press a button.`
+        const crit = i.severity === 'CRITICAL' ? ', already marked critical' : ''
+        return `The camera on the ${zoneOf(i)} has just spotted an ${objectOf(i)}${conf}. ` +
+               `An incident opened automatically${crit}. Nobody had to press a button.`
       },
     },
     {
-      key: `resp-${id}`, route: '/incidents', target: 'incident-detail', title: 'Responders alerted',
+      key: `resp-${id}`, route: '/incidents', target: 'incident-detail', title: 'The right people, instantly',
       onEnter: () => selectIncident(id),
       text: () => {
         const s = inc(id).stakeholders || []
         const names = s.map(x => x.name).filter(Boolean)
         const chans = [...new Set(s.flatMap(x => (x.channels || []).map(c => CHANNEL_WORD[c.type] || c.type)))]
         const who = names.length
-          ? `${listWords(names)} ${names.length === 1 ? 'has' : 'have'} been alerted${chans.length ? ` by ${listWords(chans)}` : ''}.`
-          : 'The responders for this corridor are being alerted now.'
-        return `${who} The camera evidence, and every action the system has taken, are recorded here.`
+          ? `${listWords(names)} ${names.length === 1 ? 'is' : 'are'} alerted${chans.length ? ` by ${listWords(chans)}` : ''}.`
+          : 'Every responder for this corridor is being alerted.'
+        return `Operators see the camera evidence, and ${who.charAt(0).toLowerCase()}${who.slice(1)}`
       },
     },
   ]
 
   const escalationItem = (id) => ({
     key: `crit-${id}-${Date.now()}`, alert: true, route: '/incidents', target: 'incident-detail',
-    title: 'Confirmed: escalated to critical', onEnter: () => selectIncident(id),
-    text: () => `Another detection has confirmed the sighting on the ${zoneOf(inc(id))}. ` +
-                'The incident is now critical, and the escalation has gone out to the response team.',
+    title: 'Confirmed and escalated', onEnter: () => selectIncident(id),
+    text: () => 'A second detection confirms it. The system escalates to critical, on its own.',
   })
 
   const resolvedItem = (id) => ({
     key: `done-${id}-${Date.now()}`, route: '/', target: 'recent-incidents', title: 'All clear',
-    text: () => `The incident on the ${zoneOf(inc(id))} has been ${inc(id).status === 'CLOSED' ? 'closed by the operator' : 'resolved'}. ` +
-                'The corridor is back to normal monitoring.',
+    text: () => (inc(id).status === 'CLOSED'
+      ? 'The operator has closed the incident, and everyone gets the all-clear. '
+      : 'The danger has passed. The incident resolves itself, and everyone gets the all-clear. ') +
+      'Detect, decide, notify, and warn: automatically, in seconds, around the clock.',
   })
 
   const signsItem = (n) => ({
-    key: `signs-${Date.now()}`, route: '/road-signs', target: 'sign-grid', title: 'Drivers warned',
-    text: () => `${num(n).replace(/^./, c => c.toUpperCase())} road sign${n === 1 ? '' : 's'} near the elephant ${n === 1 ? 'is' : 'are'} now warning drivers to slow down. ` +
-                'As the elephant moves, the warning moves with it.',
+    key: `signs-${Date.now()}`, route: '/road-signs', target: 'sign-grid', title: 'Drivers are warned too',
+    text: () => `Drivers are warned too. ${num(n).replace(/^./, c => c.toUpperCase())} sign${n === 1 ? '' : 's'} near the elephant ${n === 1 ? 'turns' : 'turn'} red, ` +
+                'and the warning follows the elephant as it moves.',
   })
 
   // ── watcher ─────────────────────────────────────────────────────────────────
@@ -164,7 +180,7 @@ export default function LiveNarrator({ muted, setMuted, onExit }) {
             const id = i.incident_id || i.id
             const k = known.get(id)
             if (!k) {
-              if (ACTIVE.has(i.status)) { enqueue(...newIncidentItems(id)); setAlerts(n => n + 1) }
+              if (ACTIVE.has(i.status)) { enqueueIncident(...newIncidentItems(id)); setAlerts(n => n + 1) }
             } else if (ACTIVE.has(k.status) && !ACTIVE.has(i.status)) {
               enqueue(resolvedItem(id))
             } else if (k.severity !== 'CRITICAL' && i.severity === 'CRITICAL' && ACTIVE.has(i.status)) {
@@ -183,7 +199,7 @@ export default function LiveNarrator({ muted, setMuted, onExit }) {
     poll()
     return () => { stopped = true; clearTimeout(timer) }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [enqueue])
+  }, [enqueue, enqueueIncident])
 
   // Keep the screen awake while presenting.
   useEffect(() => {
