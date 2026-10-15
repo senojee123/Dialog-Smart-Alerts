@@ -17,10 +17,10 @@ import { useTargetRect, Spotlight, TourCard, CtrlButton } from './TourChrome.jsx
 const POLL_MS = 2500
 const ACTIVE = new Set(['ACTIVE', 'OPERATOR_REVIEW'])
 const CHANNEL_WORD = { sms: 'SMS', whatsapp: 'WhatsApp', email: 'email', push: 'app notification', voice: 'voice call', radio: 'radio' }
-const NUM_WORD = ['no', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten']
 
-// Executive-tour style intro; any of it still queued is dropped once a real
-// incident arrives, so the live story starts straight away.
+// Executive-tour style intro; once a real incident arrives, whatever is still
+// queued is dropped (except the mandatory devices line) so the live story
+// starts straight away.
 const INTRO = [
   {
     key: 'intro-welcome', intro: true, route: '/', title: 'Welcome to Dialog Smart Alerts',
@@ -29,14 +29,24 @@ const INTRO = [
                 'Everything you are about to see is live.',
   },
   {
-    key: 'intro-devices', intro: true, route: '/devices', target: 'device-table', title: 'Connected devices',
+    key: 'intro-devices', intro: true, mandatory: true, route: '/devices', target: 'device-table', title: 'Connected devices',
     text: () => 'The platform can be connected to various devices. ' +
                 'For this demo, the camera in front of you is currently connected, and labelled as Yala Corridor.',
   },
   {
-    key: 'intro-platform', intro: true, route: '/admin/rules', target: 'main', title: 'Configured, not coded',
-    text: () => 'All of this is configured, not coded. ' +
-                'Detection rules, responders, and road signs are set up in a few clicks.',
+    key: 'intro-incidents', intro: true, route: '/incidents', target: 'incident-table', title: 'Live Incidents',
+    text: () => 'The Live Incidents view is the operator\'s main workspace. ' +
+                'Critical incidents are pinned to the top, with severity, confidence, and notification delivery, all updating live.',
+  },
+  {
+    key: 'intro-detail', intro: true, route: '/incidents', target: 'incident-detail', title: 'The full picture',
+    onEnter: () => selectIncident(latestIncidentId()),
+    text: () => 'Opening an incident shows the full picture: the camera evidence, the confidence score, ' +
+                'the rules that fired, and every responder who was alerted.',
+  },
+  {
+    key: 'intro-people', intro: true, route: '/admin/stakeholders', target: 'main', title: 'Stakeholders',
+    text: () => 'Stakeholders are managed centrally, each with their own preferred channels, such as SMS, WhatsApp, or email.',
   },
   {
     key: 'intro-listen', intro: true, route: '/', target: 'kpis', title: 'Listening for elephants',
@@ -52,8 +62,15 @@ async function getJSON(path) {
 }
 
 const listWords = (xs) => xs.length <= 1 ? (xs[0] || '') : `${xs.slice(0, -1).join(', ')} and ${xs[xs.length - 1]}`
-const num = (n) => NUM_WORD[n] ?? String(n)
-const selectIncident = (id) => window.dispatchEvent(new CustomEvent('tour:select-incident', { detail: id }))
+const selectIncident = (id) => id && window.dispatchEvent(new CustomEvent('tour:select-incident', { detail: id }))
+
+// Most recent incident from the last poll, for showing the detail panel during the intro.
+const latestIncidents = new Map()
+const latestIncidentId = () => {
+  const all = [...latestIncidents.values()]
+  all.sort((a, b) => new Date(b.opened_at) - new Date(a.opened_at))
+  return all[0] && (all[0].incident_id || all[0].id)
+}
 
 function playChime() {
   try {
@@ -90,16 +107,36 @@ export default function LiveNarrator({ muted, setMuted, onExit }) {
   // Latest incident data by id, so narration text is built at speak time.
   const incRef = useRef(new Map())
   const devNameRef = useRef({})
+  const namedRef = useRef(new Map())      // incident id → responders already named
+  const playedRef = useRef(new Set())     // keys already shown this session
+
+  // Already narrated, or still waiting in `q`.
+  const seen = (q, prefix) =>
+    q.some(x => x.key.startsWith(prefix)) || [...playedRef.current].some(k => k.startsWith(prefix))
+
+  // After the first critical: why it escalated, the record, the map, what's next, then the close.
+  const wrapUp = (q, id) => seen(q, 'wrap-close') ? [] : [
+    rulesItem,
+    timelineItem(id),
+    mapItem(id),
+    signsItem,
+    closeItem,
+  ]
 
   const enqueue = useCallback((...items) => setQueue(q => [...q, ...items]), [])
+  const enqueueCritical = useCallback((id, ...items) =>
+    setQueue(q => { const next = [...q, ...items]; return [...next, ...wrapUp(next, id)] }), [])
   // A real incident cuts the intro short: the line on screen finishes, the rest is dropped.
-  const enqueueIncident = useCallback((...items) =>
-    setQueue(q => [...q.slice(0, 1), ...q.slice(1).filter(x => !x.intro), ...items]), [])
+  const enqueueIncident = useCallback((id, items, critical) => setQueue(q => {
+    const next = [...q.slice(0, 1), ...q.slice(1).filter(x => !x.intro || x.mandatory), ...items]
+    return critical ? [...next, ...wrapUp(next, id)] : next
+  }), [])
 
   // ── narration text from real data ──────────────────────────────────────────
   const inc = (id) => incRef.current.get(id) || {}
-  const zoneOf = (i) => i.zone || i.zone_name || 'the corridor'
+  const zoneOf = (i) => i.zone || i.zone_name || 'corridor'
   const objectOf = (i) => (!i.object || i.object === 'unknown') ? 'elephant' : String(i.object).toLowerCase()
+  const namesOf = (i) => (i.stakeholders || []).map(x => x.name).filter(Boolean)
   const pctOf = (i) => Math.round((i.confidence <= 1 ? i.confidence * 100 : i.confidence) || 0)
 
   const newIncidentItems = (id) => [
@@ -109,21 +146,23 @@ export default function LiveNarrator({ muted, setMuted, onExit }) {
         const i = inc(id)
         const conf = pctOf(i) ? `, with ${pctOf(i)} percent confidence` : ''
         const crit = i.severity === 'CRITICAL' ? ', already marked critical' : ''
-        return `The camera on the ${zoneOf(i)} has just spotted an ${objectOf(i)}${conf}. ` +
+        const obj = objectOf(i)
+        return `The camera on the ${zoneOf(i)} has just spotted ${/^[aeiou]/.test(obj) ? 'an' : 'a'} ${obj}${conf}. ` +
                `An incident opened automatically${crit}. Nobody had to press a button.`
       },
     },
     {
-      key: `resp-${id}`, route: '/incidents', target: 'incident-detail', title: 'The right people, instantly',
+      key: `resp-${id}`, route: '/incidents', target: 'incident-stakeholders', title: 'The right people, instantly',
       onEnter: () => selectIncident(id),
       text: () => {
         const s = inc(id).stakeholders || []
-        const names = s.map(x => x.name).filter(Boolean)
+        const names = namesOf(inc(id))
+        namedRef.current.set(id, new Set(names))
         const chans = [...new Set(s.flatMap(x => (x.channels || []).map(c => CHANNEL_WORD[c.type] || c.type)))]
         const who = names.length
-          ? `${listWords(names)} ${names.length === 1 ? 'is' : 'are'} alerted${chans.length ? ` by ${listWords(chans)}` : ''}.`
-          : 'Every responder for this corridor is being alerted.'
-        return `Operators see the camera evidence, and ${who.charAt(0).toLowerCase()}${who.slice(1)}`
+          ? ` Here, ${listWords(names)} ${names.length === 1 ? 'is' : 'are'} alerted${chans.length ? ` by ${listWords(chans)}` : ''}.`
+          : ''
+        return `Every stakeholder is notified instantly on their preferred channels, and each delivery is tracked here.${who}`
       },
     },
   ]
@@ -131,29 +170,63 @@ export default function LiveNarrator({ muted, setMuted, onExit }) {
   const escalationItem = (id) => ({
     key: `crit-${id}-${Date.now()}`, alert: true, route: '/incidents', target: 'incident-detail',
     title: 'Confirmed and escalated', onEnter: () => selectIncident(id),
-    text: () => 'A second detection confirms it. The system escalates to critical, on its own.',
+    text: () => {
+      // Responders added by the escalation, e.g. the second responder.
+      const named = namedRef.current.get(id) || new Set()
+      const added = namesOf(inc(id)).filter(n => !named.has(n))
+      namedRef.current.set(id, new Set([...named, ...added]))
+      const who = added.length
+        ? `${listWords(added)}, the second responder${added.length === 1 ? ', is' : 's, are'} now alerted as well.`
+        : 'the second responder is now alerted as well.'
+      return `A second detection confirms the sighting. The system escalates to critical on its own, and ${who}`
+    },
+  })
+
+  const rulesItem = {
+    key: 'rules', route: '/admin/rules', target: 'main', title: 'Configured, not coded',
+    text: () => 'That escalation was driven by the rules engine, configured without a single line of code. ' +
+                'A single detection raises a high alert, and a confirmed second detection escalates to critical, bringing in more responders.',
+  }
+
+  const timelineItem = (id) => ({
+    key: `timeline-${id}`, route: '/incidents', target: 'incident-timeline', title: 'The whole story, recorded',
+    onEnter: () => selectIncident(id),
+    text: () => 'The timeline records the whole story, time-stamped: the first detection, the confirmation, and every alert sent. ' +
+                'A complete audit trail, built automatically.',
   })
 
   const resolvedItem = (id) => ({
     key: `done-${id}-${Date.now()}`, route: '/', target: 'recent-incidents', title: 'All clear',
     text: () => (inc(id).status === 'CLOSED'
-      ? 'The operator has closed the incident, and everyone gets the all-clear. '
-      : 'The danger has passed. The incident resolves itself, and everyone gets the all-clear. ') +
-      'Detect, decide, notify, and warn: automatically, in seconds, around the clock.',
+      ? 'The operator has closed the incident. The corridor is back to normal monitoring.'
+      : 'The incident has been resolved. The corridor is back to normal monitoring.') +
+      (playedRef.current.has('wrap-close') ? '' : ' Detect, decide, notify, and warn: automatically, in seconds, around the clock.'),
   })
 
-  const signsItem = (n) => ({
-    key: `signs-${Date.now()}`, route: '/road-signs', target: 'sign-grid', title: 'Drivers are warned too',
-    text: () => `Drivers are warned too. ${num(n).replace(/^./, c => c.toUpperCase())} sign${n === 1 ? '' : 's'} near the elephant ${n === 1 ? 'turns' : 'turn'} red, ` +
-                'and the warning follows the elephant as it moves.',
+  const mapItem = (id) => ({
+    key: `map-${id}`, route: '/map', target: 'main', title: 'Map view',
+    text: () => `The map view plots every incident geographically, including this one on the ${zoneOf(inc(id))}, ` +
+                'so the operations centre sees all activity at a glance.',
   })
+
+  // No signs are connected in this demo — presented as the next step.
+  const signsItem = {
+    key: 'signs', route: '/road-signs', target: 'sign-grid', title: 'Next: warning drivers too',
+    text: () => 'The next step is smart road signs, for a complete end-to-end system. ' +
+                'Signs near the elephant would warn drivers to slow down, and the warning would follow the elephant as it moves.',
+  }
+
+  const closeItem = {
+    key: 'wrap-close', route: '/', title: 'Detect. Decide. Notify. Warn.',
+    text: () => 'Once the danger passes, the incident is closed and the corridor returns to normal monitoring. ' +
+                'Detect, decide, notify, and warn: automatically, in seconds, around the clock.',
+  }
 
   // ── watcher ─────────────────────────────────────────────────────────────────
   useEffect(() => {
     let stopped = false, timer
     const known = new Map()         // id → { severity, status }
     let baselined = false
-    let prevWarn = null
 
     getJSON('/api/devices')
       .then(ds => { devNameRef.current = Object.fromEntries((ds || []).map(d => [d.id, d.name || d.id])) })
@@ -161,18 +234,15 @@ export default function LiveNarrator({ muted, setMuted, onExit }) {
 
     const poll = async () => {
       try {
-        const [incidents, signs] = await Promise.all([
-          getJSON('/api/incidents'),
-          getJSON('/api/road-signs').catch(() => null),
-        ])
+        const incidents = await getJSON('/api/incidents')
         if (stopped) return
         setConn('live')
         incidents.forEach(i => incRef.current.set(i.incident_id || i.id, i))
-        const warn = Array.isArray(signs) ? signs.filter(s => s.state === 'WARNING').length : null
+        latestIncidents.clear()
+        incidents.forEach(i => latestIncidents.set(i.incident_id || i.id, i))
 
         if (!baselined) {
           incidents.forEach(i => known.set(i.incident_id || i.id, { severity: i.severity, status: i.status }))
-          prevWarn = warn
           baselined = true
         } else {
           const ordered = [...incidents].sort((a, b) => new Date(a.opened_at) - new Date(b.opened_at))
@@ -180,16 +250,14 @@ export default function LiveNarrator({ muted, setMuted, onExit }) {
             const id = i.incident_id || i.id
             const k = known.get(id)
             if (!k) {
-              if (ACTIVE.has(i.status)) { enqueueIncident(...newIncidentItems(id)); setAlerts(n => n + 1) }
+              if (ACTIVE.has(i.status)) { enqueueIncident(id, newIncidentItems(id), i.severity === 'CRITICAL'); setAlerts(n => n + 1) }
             } else if (ACTIVE.has(k.status) && !ACTIVE.has(i.status)) {
               enqueue(resolvedItem(id))
             } else if (k.severity !== 'CRITICAL' && i.severity === 'CRITICAL' && ACTIVE.has(i.status)) {
-              enqueue(escalationItem(id))
+              enqueueCritical(id, escalationItem(id))
             }
             known.set(id, { severity: i.severity, status: i.status })
           }
-          if (warn != null && prevWarn === 0 && warn > 0) enqueue(signsItem(warn))
-          if (warn != null) prevWarn = warn
         }
       } catch {
         if (!stopped) setConn('offline')
@@ -199,7 +267,7 @@ export default function LiveNarrator({ muted, setMuted, onExit }) {
     poll()
     return () => { stopped = true; clearTimeout(timer) }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [enqueue, enqueueIncident])
+  }, [enqueue, enqueueCritical, enqueueIncident])
 
   // Keep the screen awake while presenting.
   useEffect(() => {
@@ -226,6 +294,7 @@ export default function LiveNarrator({ muted, setMuted, onExit }) {
 
   useEffect(() => {
     if (!item) return
+    playedRef.current.add(item.key)
     if (item.route) navigate(item.route)
     if (item.alert) playChime()
     const enter = setTimeout(() => item.onEnter?.(), 350)
