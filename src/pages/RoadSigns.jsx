@@ -123,6 +123,7 @@ export default function RoadSigns() {
           </div>
 
           <div className="flex items-center gap-3 flex-wrap">
+            <div data-tour="sign-summary" className="flex items-center gap-3 flex-wrap">
             {SUMMARY_ITEMS.map(({ state, label, Icon, color }) => (
               <button
                 key={state}
@@ -135,6 +136,7 @@ export default function RoadSigns() {
                 <span className="text-xs">{label}</span>
               </button>
             ))}
+            </div>
 
             <SegmentedControl
               options={[{ value: 'grid', label: 'Grid' }, { value: 'map', label: 'Map', icon: Map }]}
@@ -148,7 +150,7 @@ export default function RoadSigns() {
       <div className="flex flex-1 overflow-hidden">
         <div className="flex-1 overflow-auto relative">
           {viewMode === 'grid' ? (
-            <div className="p-6 grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            <div data-tour="sign-grid" className="p-6 grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
               {filtered.map(({ sign, state, nearby }) => (
                 <RoadSignCard key={sign.id} sign={sign} derivedState={state}
                   nearbyIncident={nearby} selected={selected === sign.id}

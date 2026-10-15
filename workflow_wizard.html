@@ -351,19 +351,19 @@
             id: "SH-001",
             name: "Park Warden – Yala",
             role: "Wildlife Officer",
-            channels: [{ type: "sms", address: "+94771000001" }]
+            channels: []
           },
           {
             id: "SH-002",
             name: "Traffic Control – Southern Province",
             role: "Traffic Controller",
-            channels: [{ type: "sms", address: "+94771000002" }]
+            channels: []
           },
           {
             id: "SH-004",
             name: "DWC Operations Centre",
             role: "Operations Coordinator",
-            channels: [{ type: "sms", address: "+94771000004" }]
+            channels: []
           }
         ];
       }
@@ -700,7 +700,7 @@
                 <input type="text" id="sh-role" placeholder="Role (e.g. Ranger B)" class="w-full border border-line-strong bg-white rounded p-1.5 text-xs text-ink">
               </div>
               <div class="flex gap-2">
-                <input type="text" id="sh-phone" placeholder="Phone Number (e.g. +94740525967)" class="flex-1 border border-line-strong bg-white rounded p-1.5 text-xs text-ink">
+                <input type="text" id="sh-phone" placeholder="Mobile number with country code" class="flex-1 border border-line-strong bg-white rounded p-1.5 text-xs text-ink">
                 <button onclick="submitNewStakeholder()" class="px-3 py-1.5 bg-brand hover:bg-brand-hover text-white text-xs font-bold rounded-lg transition-colors">
                   Create
                 </button>

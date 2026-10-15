@@ -1,8 +1,9 @@
 import { NavLink } from 'react-router-dom'
 import {
   LayoutDashboard, AlertTriangle, Map, Camera, Cpu, Users, GitBranch,
-  Settings, Monitor, Layers, Bell, Rocket, Palette, PlayCircle, Globe, Clock,
+  Settings, Monitor, Layers, Bell, Rocket, Palette, PlayCircle, Globe, Clock, Radio,
 } from 'lucide-react'
+import { useTour } from '../../tour/TourProvider.jsx'
 
 const NAV = [
   // Operations
@@ -20,7 +21,7 @@ const NAV = [
 
   // Configuration
   { section: 'Configuration' },
-  { to: '/setup',             icon: Rocket,        label: 'Setup Wizard' },
+  { to: '/setup',             icon: Rocket,        label: 'Setup Wizard', tour: 'nav-setup' },
   { to: '/admin/use-cases',   icon: Layers,        label: 'Use Cases' },
   { to: '/admin/rules',       icon: GitBranch,     label: 'Rules Engine' },
   { to: '/admin/stakeholders',icon: Users,         label: 'Stakeholders' },
@@ -34,11 +35,20 @@ const NAV = [
   { to: '/admin/escalation',  icon: Bell,     label: 'Escalation' },
   { to: '/admin/templates',   icon: Settings, label: 'Templates' },
   { to: '/styleguide',        icon: Palette,  label: 'Design System' },
+
+  null, // divider
+
+  // Help
+  { section: 'Help' },
+  { action: 'executive',      icon: PlayCircle, label: 'Executive Tour' },
+  { action: 'full',           icon: PlayCircle, label: 'Full Tour' },
+  { action: 'live',           icon: Radio,      label: 'Live Narration' },
 ]
 
 export default function NavSidebar() {
+  const tour = useTour()
   return (
-    <nav className="w-56 bg-white border-r border-line flex flex-col gap-1.5 py-4 shrink-0 overflow-y-auto shadow-[1px_0_4px_rgba(16,24,40,0.02)]">
+    <nav data-tour="nav" className="w-56 bg-white border-r border-line flex flex-col gap-1.5 py-4 shrink-0 overflow-y-auto shadow-[1px_0_4px_rgba(16,24,40,0.02)]">
       {NAV.map((item, i) => {
         if (item === null) return <div key={i} className="my-2 border-t border-line/60 mx-3" />
         if (item.section) {
@@ -50,11 +60,25 @@ export default function NavSidebar() {
             </div>
           )
         }
+        if (item.action) {
+          return (
+            <button
+              key={i}
+              onClick={() => tour.start(item.action)}
+              disabled={tour.active}
+              className="group flex items-center gap-3.5 px-3 py-2.5 text-[13px] font-medium rounded-md mx-3 transition-all text-ink-muted hover:bg-surface-alt hover:text-ink disabled:opacity-50 text-left"
+            >
+              <item.icon size={16} className="text-brand" />
+              <span>{item.label}</span>
+            </button>
+          )
+        }
         return (
           <NavLink
             key={item.to}
             to={item.to}
             end={item.to === '/incidents'}
+            data-tour={item.tour}
             className={({ isActive }) =>
               `group flex items-center gap-3.5 px-3 py-2.5 text-[13px] font-medium rounded-md mx-3 transition-all relative
                ${isActive

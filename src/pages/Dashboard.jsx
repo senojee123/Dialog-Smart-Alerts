@@ -47,7 +47,7 @@ export default function Dashboard() {
 
   // ── Dynamic Metric Computations ─────────────────────────────────────────────
   const activeCount = useMemo(() => incidents.filter(i => i.status === 'ACTIVE' || i.status === 'OPERATOR_REVIEW').length, [incidents])
-  const criticalCount = useMemo(() => incidents.filter(i => i.severity === 'CRITICAL').length, [incidents])
+  const criticalCount = useMemo(() => incidents.filter(i => i.severity === 'CRITICAL' && (i.status === 'ACTIVE' || i.status === 'OPERATOR_REVIEW')).length, [incidents])
   const resolvedCount = useMemo(() => incidents.filter(i => i.status === 'RESOLVED' || i.status === 'CLOSED' || i.status === 'EXPIRED').length, [incidents])
   const pendingCount = useMemo(() => (events || []).filter(e => e.pending_confirmation).length, [events])
   const falsePositives = useMemo(() => (events || []).filter(e => e.false_positive).length, [events])
@@ -279,7 +279,7 @@ export default function Dashboard() {
       </div>
 
       {/* ── 1. Overview Cards (4 Summary Cards) ───────────────────────── */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <div data-tour="kpis" className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {/* Card 1: Active Elephant Incidents */}
         <div className="bg-white border border-[#EAECF0] rounded-xl p-3 shadow-sm space-y-2 flex flex-col justify-between">
           <div className="flex items-center justify-between">
@@ -338,7 +338,7 @@ export default function Dashboard() {
       </div>
 
       {/* ── 2. Detection Charts (Doughnut, Line) ────────────────── */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div data-tour="charts" className="grid grid-cols-1 md:grid-cols-2 gap-6">
 
         {/* Detection Statistics (Doughnut Chart) */}
         <div className="bg-white border border-[#EAECF0] rounded-xl p-4 shadow-sm flex flex-col justify-between">
@@ -376,7 +376,7 @@ export default function Dashboard() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         
         {/* Recent Elephant Incidents Table */}
-        <div className="lg:col-span-2 bg-white border border-[#EAECF0] rounded-xl p-4 shadow-sm space-y-3 flex flex-col">
+        <div data-tour="recent-incidents" className="lg:col-span-2 bg-white border border-[#EAECF0] rounded-xl p-4 shadow-sm space-y-3 flex flex-col">
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-sm font-extrabold text-ink">Recent Elephant Incidents</h2>
@@ -413,7 +413,7 @@ export default function Dashboard() {
                       <td className="py-2.5 px-3">{inc.zone_name || inc.zone_id}</td>
                       <td className="py-2.5 px-3">
                         <span className="inline-flex items-center gap-1 font-bold text-[#D92D20]">
-                          {inc.confidence || 94}%
+                          {inc.confidence == null ? '—' : Math.round(inc.confidence <= 1 ? inc.confidence * 100 : inc.confidence)}%
                         </span>
                       </td>
                       <td className="py-2.5 px-3 text-center font-bold text-ink">
@@ -438,7 +438,7 @@ export default function Dashboard() {
         </div>
 
         {/* 6. Activity Timeline */}
-        <div className="bg-white border border-[#EAECF0] rounded-xl p-4 shadow-sm flex flex-col h-[340px]">
+        <div data-tour="activity" className="bg-white border border-[#EAECF0] rounded-xl p-4 shadow-sm flex flex-col h-[340px]">
           <div className="flex items-center justify-between border-b border-[#EAECF0] pb-2 shrink-0">
             <h3 className="text-xs font-extrabold text-ink uppercase tracking-wider flex items-center gap-2">
               <Clock className="w-4 h-4 text-[#D92D20]" /> Activity Timeline

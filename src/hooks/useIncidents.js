@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { MOCK_INCIDENTS } from '../mock/incidents.js'
+import { useDemoCollection, isDemoActive, demoUpdate, demoRemove } from '../tour/demoStore.js'
 
 const POLL_INTERVAL_MS = 5000   // re-fetch every 5 s as a reliable fallback
 
@@ -54,6 +55,7 @@ export function useIncidents() {
   }, [])
 
   const updateIncident = useCallback(async (id, patch) => {
+    if (isDemoActive()) { demoUpdate('/api/incidents', id, patch); return }
     // Optimistic local update first…
     setIncidents(prev => prev.map(i => i.incident_id === id ? { ...i, ...patch } : i))
     // …then persist to the backend (id === incident_id) and adopt its response.
@@ -73,6 +75,7 @@ export function useIncidents() {
   }, [])
 
   const deleteIncident = useCallback(async (id) => {
+    if (isDemoActive()) { demoRemove('/api/incidents', id); return }
     // Optimistic local delete
     setIncidents(prev => prev.filter(i => i.incident_id !== id))
     try {
@@ -88,6 +91,10 @@ export function useIncidents() {
       setIncidents(latest)
     }
   }, [])
+
+  // Guided tour: serve the tour's live incidents instead of the backend's.
+  const demo = useDemoCollection('/api/incidents')
+  if (demo) return { incidents: demo, loading: false, error: null, applyEvent, updateIncident, deleteIncident }
 
   return { incidents, loading, error, applyEvent, updateIncident, deleteIncident }
 }
