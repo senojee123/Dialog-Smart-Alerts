@@ -25,6 +25,19 @@ def _render(template: str, ctx: dict) -> str:
         return template
 
 
+def _map_link(incident: dict, event: dict, zone: dict) -> str:
+    """A tappable Google Maps link to the detection's coordinates — prefers the
+    incident's own location (what the dashboard/map actually show), then the
+    raw event's lat/lng, then falls back to the zone's seeded centre point so
+    the link is never blank even if neither carried coordinates."""
+    loc = incident.get("location") or {}
+    lat = loc.get("lat", event.get("lat", zone.get("lat")))
+    lng = loc.get("lng", event.get("lng", zone.get("lng")))
+    if lat is None or lng is None:
+        return ""
+    return f"https://maps.google.com/?q={lat},{lng}"
+
+
 def _build_context(incident: dict, event: dict) -> dict:
     zone = data_store.get_by_id("zones", event.get("zone_id", "")) or {}
     device = data_store.get_by_id("devices", event.get("device_id", "")) or {}
@@ -36,6 +49,7 @@ def _build_context(incident: dict, event: dict) -> dict:
         "confidence":   round(float(event.get("confidence", 0))),
         "severity":     incident.get("severity", ""),
         "road":         zone.get("road", ""),
+        "map_link":     _map_link(incident, event, zone),
     }
 
 

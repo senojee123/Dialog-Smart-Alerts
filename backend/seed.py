@@ -120,7 +120,8 @@ async def run():
                     "actuate_sign_ids":       [],
                     "sign_state":             "CAUTION",
                     "message_template":       "[HIGH] Possible elephant near {zone_name} ({device_name}). "
-                                              "Confidence {confidence}%. Please verify. Incident {incident_id}",
+                                              "Confidence {confidence}%. Please verify. Incident {incident_id}. "
+                                              "Location: {map_link}",
                 },
             },
         },
@@ -147,7 +148,8 @@ async def run():
                     "notify_stakeholder_ids": ["SH-001"],
                     "actuate_sign_ids":       [],
                     "sign_state":             "CAUTION",
-                    "message_template":       "[HIGH] Elephant near {zone_name}. Awaiting confirmation. Incident {incident_id}",
+                    "message_template":       "[HIGH] Elephant near {zone_name}. Awaiting confirmation. "
+                                              "Incident {incident_id}. Location: {map_link}",
                 },
                 "on_confirm": {
                     "create_incident":        True,
@@ -156,7 +158,7 @@ async def run():
                     "actuate_sign_ids":       [],
                     "sign_state":             "WARNING",
                     "message_template":       "[CRITICAL] CONFIRMED elephant on {zone_name}. Multiple detections. "
-                                              "All units respond. Incident {incident_id}",
+                                              "All units respond. Incident {incident_id}. Location: {map_link}",
                 },
             },
         },
