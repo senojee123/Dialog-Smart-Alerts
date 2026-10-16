@@ -552,6 +552,8 @@ def _enrich_incident(inc: dict) -> dict:
     iid  = inc.get("id")
     zone = data_store.get_by_id("zones", inc.get("zone_id", "")) or {}
     zone_name = inc.get("zone_name") or zone.get("name") or inc.get("zone_id", "")
+    device = data_store.get_by_id("devices", inc.get("device_id", "")) or {}
+    device_name = device.get("name") or inc.get("device_id", "") or "Unknown device"
 
     event_ids = set(inc.get("event_ids", []))
     events = [e for e in data_store.get_all("detection_events") if e.get("id") in event_ids]
@@ -597,6 +599,7 @@ def _enrich_incident(inc: dict) -> dict:
         **inc,
         "incident_id":        iid,
         "zone":               zone_name,
+        "device_name":        device_name,
         "location":           loc,
         "object":             inc.get("object", "unknown"),
         "herd_size":          inc.get("herd_size", 1),

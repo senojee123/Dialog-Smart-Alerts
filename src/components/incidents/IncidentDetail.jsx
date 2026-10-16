@@ -33,6 +33,9 @@ export default function IncidentDetail({ incident, onClose, onCloseIncident, onD
             <StatusBadge status={incident.status} />
           </div>
           <div className="font-mono text-sm text-ink-muted">{incident.incident_id}</div>
+          {incident.device_name && (
+            <div className="text-xs font-medium text-ink">Detected by {incident.device_name}</div>
+          )}
           <div className="text-xs text-ink-muted">
             {incident.zone} · {incident.location?.description}
           </div>
