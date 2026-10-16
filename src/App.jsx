@@ -31,6 +31,7 @@ import SetupWizard from './pages/SetupWizard.jsx'
 import StyleGuide from './pages/StyleGuide.jsx'
 
 import KioskDisplay from './pages/KioskDisplay.jsx'
+import SignDisplay from './pages/SignDisplay.jsx'
 
 function Wrap({ children }) {
   return <ErrorBoundary>{children}</ErrorBoundary>
@@ -44,6 +45,7 @@ export default function App() {
         {/* Setup wizard & Kiosk displays — full-screen, outside the dashboard chrome */}
         <Route path="/setup" element={<Wrap><SetupWizard /></Wrap>} />
         <Route path="/device/:deviceId" element={<Wrap><KioskDisplay /></Wrap>} />
+        <Route path="/sign/:signId" element={<Wrap><SignDisplay /></Wrap>} />
 
         <Route element={<AppShell />}>
           <Route index element={<Wrap><Dashboard /></Wrap>} />

@@ -515,6 +515,21 @@ async def list_road_signs():
         sign["state"] = states.get(sign["id"], "CLEAR")
     return signs
 
+@app.get("/api/road-signs/{id}/status")
+async def get_road_sign_status(id: str):
+    """Single-sign live state for a kiosk/display client (e.g. a Pi acting as
+    a software road sign) — avoids pulling the whole board list just to show
+    one sign's colour."""
+    sign = data_store.get_by_id("road_signs", id)
+    if not sign:
+        raise HTTPException(404, f"Road sign '{id}' not found")
+    states = _compute_sign_states()
+    return {
+        "id":    sign["id"],
+        "name":  sign.get("name", sign["id"]),
+        "state": states.get(id, "CLEAR"),
+    }
+
 @app.post("/api/road-signs")
 async def create_road_sign(req: Request):
     return _create("road_signs", await req.json())

@@ -1,7 +1,7 @@
 import { useState, useRef } from 'react'
 import { MapContainer, TileLayer, Marker, Popup, useMapEvents } from 'react-leaflet'
 import L from 'leaflet'
-import { Pencil, Trash2, MapPin } from 'lucide-react'
+import { Pencil, Trash2, MapPin, Link2, Check } from 'lucide-react'
 import { useApi } from '../../hooks/useApi.js'
 import ConfirmDialog from '../../components/common/ConfirmDialog.jsx'
 
@@ -34,9 +34,17 @@ export default function AdminRoadSignBoards() {
   const [form, setForm]             = useState(EMPTY_FORM)
   const [confirmDelete, setDelete]  = useState(null)
   const [busy, setBusy]             = useState(false)
+  const [copiedId, setCopiedId]     = useState(null)
   const mapRef = useRef()
 
   const zoneName = id => zones.find(z => z.id === id)?.name || id
+
+  function copyUrl(id) {
+    const url = `${window.location.origin}/sign/${id}`
+    navigator.clipboard?.writeText(url)
+    setCopiedId(id)
+    setTimeout(() => setCopiedId(c => (c === id ? null : c)), 1500)
+  }
 
   function startPlace() { setPlacing(true); setPending(null); setEditing(null) }
 
@@ -99,7 +107,7 @@ export default function AdminRoadSignBoards() {
           <table className="w-full text-sm border-collapse">
             <thead className="sticky top-0 bg-surface-alt z-10">
               <tr>
-                {['Name', 'Road / km', 'Zone', 'Online', ''].map(h => (
+                {['Name', 'Road / km', 'Zone', 'Online', 'Sign Display URL', ''].map(h => (
                   <th key={h} className="px-3 py-2 text-left text-xs font-semibold text-ink-muted uppercase tracking-wide border-b border-line whitespace-nowrap">{h}</th>
                 ))}
               </tr>
@@ -123,6 +131,14 @@ export default function AdminRoadSignBoards() {
                     </button>
                   </td>
                   <td className="px-3 py-2.5">
+                    <button onClick={() => copyUrl(s.id)}
+                      className="flex items-center gap-1 text-xs text-ink-muted hover:text-brand"
+                      title={`${window.location.origin}/sign/${s.id}`}>
+                      {copiedId === s.id ? <Check size={12} className="text-sev-low" /> : <Link2 size={12} />}
+                      {copiedId === s.id ? 'Copied' : 'Copy link'}
+                    </button>
+                  </td>
+                  <td className="px-3 py-2.5">
                     <div className="flex gap-1">
                       <button onClick={() => openEdit(s)} className="p-1 text-ink-muted hover:text-ink rounded"><Pencil size={12} /></button>
                       <button onClick={() => setDelete(s)} className="p-1 text-ink-muted hover:text-sev-critical rounded"><Trash2 size={12} /></button>
@@ -131,7 +147,7 @@ export default function AdminRoadSignBoards() {
                 </tr>
               ))}
               {signs.length === 0 && (
-                <tr><td colSpan={5} className="px-4 py-8 text-center text-xs text-ink-muted">No boards. Click "Add Board" and place one on the map.</td></tr>
+                <tr><td colSpan={6} className="px-4 py-8 text-center text-xs text-ink-muted">No boards. Click "Add Board" and place one on the map.</td></tr>
               )}
             </tbody>
           </table>
