@@ -21,7 +21,7 @@ function ChannelBadge({ ch }) {
   return (
     <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs bg-surface-alt text-ink-muted border border-line">
       <Icon size={10} />
-      {ch.address}
+      {ch.address || ch.type}
     </span>
   )
 }
@@ -183,7 +183,7 @@ export default function Stakeholders() {
               </div>
               <div className="flex-1">
                 <Input value={newCh.address} onChange={e => setNewCh(c => ({ ...c, address: e.target.value }))}
-                       placeholder={newCh.type === 'email' ? 'user@example.com' : '+94771234567'}
+                       placeholder={newCh.type === 'email' ? 'Email address' : 'Mobile number with country code'}
                        onKeyDown={e => e.key === 'Enter' && addChannel()} />
               </div>
               <div className="w-16">

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useOutletContext } from 'react-router-dom'
 import IncidentTable from '../components/incidents/IncidentTable.jsx'
 import IncidentDetail from '../components/incidents/IncidentDetail.jsx'
@@ -13,6 +13,13 @@ export default function LiveIncidents() {
   const streamStatus = useIncidentStream(applyEvent)
   const { toasts, addToast, removeToast } = useToast()
   const [selected, setSelected] = useState(null)
+
+  // The guided tour opens an incident's detail by id.
+  useEffect(() => {
+    const onSelect = (e) => { if (e.detail) setSelected({ incident_id: e.detail }) }
+    window.addEventListener('tour:select-incident', onSelect)
+    return () => window.removeEventListener('tour:select-incident', onSelect)
+  }, [])
 
   function handleSelect(incident) {
     setSelected(prev => prev?.incident_id === incident.incident_id ? null : incident)
@@ -43,7 +50,7 @@ export default function LiveIncidents() {
   return (
     <div className="flex h-full overflow-hidden">
       {/* Incident table */}
-      <div className="flex flex-col overflow-hidden flex-1">
+      <div data-tour="incident-table" className="flex flex-col overflow-hidden flex-1">
         {error && (
           <div className="px-4 py-2 bg-sev-critical/10 text-sev-critical text-sm border-b border-line">
             Failed to load incidents. <button onClick={() => window.location.reload()} className="underline">Retry</button>

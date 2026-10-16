@@ -24,7 +24,7 @@ export default function IncidentDetail({ incident, onClose, onCloseIncident, onD
     : <Clock size={14} className="text-ink-muted" />
 
   return (
-    <aside className="w-[480px] shrink-0 border-l border-line bg-white flex flex-col shadow-sm overflow-hidden">
+    <aside data-tour="incident-detail" className="w-[480px] shrink-0 border-l border-line bg-white flex flex-col shadow-sm overflow-hidden">
       {/* Header */}
       <div className="flex items-start justify-between p-4 border-b border-line">
         <div className="flex flex-col gap-1.5">
@@ -122,7 +122,7 @@ export default function IncidentDetail({ incident, onClose, onCloseIncident, onD
         )}
 
         {/* Stakeholders */}
-        <section className="p-4">
+        <section data-tour="incident-stakeholders" className="p-4">
           <h4 className="text-xs font-semibold text-ink-muted uppercase tracking-wide mb-3">Stakeholders</h4>
           <StakeholderStatus stakeholders={incident.stakeholders} />
         </section>
@@ -138,7 +138,7 @@ export default function IncidentDetail({ incident, onClose, onCloseIncident, onD
         </section>
 
         {/* Timeline */}
-        <section className="p-4">
+        <section data-tour="incident-timeline" className="p-4">
           <h4 className="text-xs font-semibold text-ink-muted uppercase tracking-wide mb-3">Timeline</h4>
           <Timeline entries={incident.timeline} />
         </section>

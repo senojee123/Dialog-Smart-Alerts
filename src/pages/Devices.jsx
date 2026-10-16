@@ -41,7 +41,7 @@ export default function Devices() {
 
       {loading && devices.length === 0 && <p className="text-sm text-ink-muted">Loading…</p>}
 
-      <table className="w-full text-sm border-collapse">
+      <table data-tour="device-table" className="w-full text-sm border-collapse">
         <thead>
           <tr className="bg-surface-alt border-b border-line">
             {['Device ID', 'Name', 'Type', 'Zone', 'Last Seen', 'Status'].map(h => (

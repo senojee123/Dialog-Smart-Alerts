@@ -39,7 +39,7 @@ export default function AppShell() {
       />
       <div className="flex flex-1 overflow-hidden">
         {sidebarOpen && <NavSidebar />}
-        <main className="flex-1 overflow-auto bg-surface">
+        <main data-tour="main" className="flex-1 overflow-auto bg-surface">
           <Outlet context={{ playCriticalCue, muteAlerts }} />
         </main>
       </div>

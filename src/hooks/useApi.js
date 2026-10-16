@@ -1,8 +1,10 @@
 import { useState, useCallback, useEffect } from 'react'
+import { useDemoCollection, isDemoActive, demoUpdate, demoRemove } from '../tour/demoStore.js'
 
 /**
  * Generic CRUD hook for any REST collection.
  * useApi('/api/devices') → { data, loading, error, fetchAll, create, update, remove }
+ * While the guided tour runs, reads (and edits) come from the tour data layer.
  */
 export function useApi(endpoint, { autoFetch = true } = {}) {
   const [data, setData]       = useState([])
@@ -40,6 +42,7 @@ export function useApi(endpoint, { autoFetch = true } = {}) {
   }, [endpoint])
 
   const update = useCallback(async (id, patch) => {
+    if (isDemoActive()) return demoUpdate(endpoint, id, patch)
     const res = await fetch(`${endpoint}/${id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
@@ -52,10 +55,14 @@ export function useApi(endpoint, { autoFetch = true } = {}) {
   }, [endpoint])
 
   const remove = useCallback(async (id) => {
+    if (isDemoActive()) return demoRemove(endpoint, id)
     const res = await fetch(`${endpoint}/${id}`, { method: 'DELETE' })
     if (!res.ok) throw new Error(await res.text())
     setData(prev => prev.filter(x => x.id !== id))
   }, [endpoint])
+
+  const demo = useDemoCollection(endpoint)
+  if (demo) return { data: demo, loading: false, error: null, fetchAll, create, update, remove, setData }
 
   return { data, loading, error, fetchAll, create, update, remove, setData }
 }

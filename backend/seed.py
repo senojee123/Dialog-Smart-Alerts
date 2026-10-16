@@ -54,44 +54,36 @@ async def run():
     # issues each a random api_key. MQTT/HTTP producers must present that key.
 
     # ── Stakeholders ────────────────────────────────────────────────────────
+    # Seeded WITHOUT contact details: the notifier sends real SMS, so no phone
+    # numbers or addresses are hardcoded. Add real contacts in the Stakeholders
+    # admin page (/admin/stakeholders) or via POST/PUT /api/stakeholders.
     stakeholders = [
         {
             "id": "SH-001", "name": "Park Warden – Yala",
             "role": "Wildlife Officer", "org": "Department of Wildlife Conservation",
             "use_case_ids": ["UC-001"],
-            "channels": [
-                {"type": "sms",      "address": "+94771000001", "language": "en"},
-                {"type": "whatsapp", "address": "+94771000001", "language": "en"},
-            ],
+            "channels": [],
             "on_call": True,
         },
         {
             "id": "SH-002", "name": "Traffic Control – Southern Province",
             "role": "Traffic Controller", "org": "Road Development Authority",
             "use_case_ids": ["UC-001"],
-            "channels": [
-                {"type": "sms",   "address": "+94771000002", "language": "en"},
-                {"type": "email", "address": "traffic@rda.lk", "language": "en"},
-            ],
+            "channels": [],
             "on_call": True,
         },
         {
             "id": "SH-003", "name": "Police – Tissamaharama",
             "role": "Law Enforcement", "org": "Sri Lanka Police",
             "use_case_ids": ["UC-001"],
-            "channels": [
-                {"type": "sms", "address": "+94771000003", "language": "en"},
-            ],
+            "channels": [],
             "on_call": False,
         },
         {
             "id": "SH-004", "name": "DWC Operations Centre",
             "role": "Operations", "org": "Department of Wildlife Conservation",
             "use_case_ids": ["UC-001"],
-            "channels": [
-                {"type": "sms",      "address": "+94771000004", "language": "en"},
-                {"type": "whatsapp", "address": "+94771000004", "language": "en"},
-            ],
+            "channels": [],
             "on_call": True,
         },
     ]

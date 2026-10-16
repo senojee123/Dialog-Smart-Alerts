@@ -18,6 +18,9 @@ The platform is **use-case driven** — the elephant scenario is seeded data, no
 ## Conventions & gotchas
 - **lucide-react is pinned at 0.400.0** — many icon names DON'T exist and render `<undefined/>` which white-screens the page. Confirmed missing: `MonitorDot`, `TriangleAlert`, `LayoutGrid`, `Grid`; `CheckCircle2` is risky (use `CheckCircle`). Verify any new icon import.
 - Every route is wrapped in `ErrorBoundary` so a crash shows the error in-UI instead of a blank screen.
+- **Running the backend locally sends REAL SMS** (Ideabiz; `notifier.py` has a live URL + token as
+  defaults) and connects to the public HiveMQ broker (publishes sign commands). For local testing set
+  `IDEABIZ_API_URL=http://127.0.0.1:1/sms MQTT_BROKER_HOST=127.0.0.1 MQTT_BROKER_PORT=1`.
 - Backend forces UTF-8 stdout (Windows cp1252 would crash on `→` in logs). `python server.py` has a `__main__` launcher.
 - Storage is JSON files via `data_store.py` (generic CRUD). `backend/data/`, `backend/uploads/`, `__pycache__/` are gitignored.
 - Frontend CRUD goes through `useApi(endpoint)`; admin pages share `components/admin/CrudShell.jsx`.
@@ -44,6 +47,19 @@ The platform is **use-case driven** — the elephant scenario is seeded data, no
 - **Engine precision:** notifications only fire on open / escalation / after `NOTIFY_COOLDOWN_S`
   (no storms); confirmation ignores events consumed by closed incidents; `/api/system/health`
   returns liveness fields so the top-bar dot is green when healthy.
+
+## Guided tour
+- Top-bar **Guided Tour** dropdown (and sidebar **Help**): Executive Tour, Full Tour, Live Narration.
+  Code in `src/tour/`: `steps.js` (both scripts: route, `data-tour` target, narration, scripted action),
+  `TourProvider.jsx` (scripted overlay + `TOUR_OPTIONS`, mounted around `<Routes>`), `TourChrome.jsx`
+  (shared spotlight + caption card), `narrator.js` (Web Speech, prefers soft female voices),
+  `demoStore.js` (in-memory scenario data), `LiveNarrator.jsx` (live mode).
+- **Live Narration** uses REAL data (no demoStore): baselines on start, polls `/api/incidents` +
+  `/api/road-signs`, and narrates new incidents, escalation to CRITICAL, signs going to WARNING, and
+  resolution — text is templated from the incident's actual values. Narration is elephant-only by design.
+- While the tour runs, `useApi` / `useIncidents` serve `demoStore` data instead of the backend — nothing
+  is written to the real store; exiting hands pages back to live data. The UI never labels it as demo.
+- Spotlight targets are `data-tour="…"` attributes on page elements — keep them when refactoring pages.
 
 ## Current status / next step
 Setup Wizard rebuilt (`/setup`, 5 steps: Scenario → Sensors → Signs → Response → Review&Test),
