@@ -98,12 +98,9 @@ export default function KioskDisplay() {
             </div>
           </div>
 
-          <h1 className="text-5xl font-extrabold tracking-tight text-white mb-4">
+          <h1 className="text-5xl font-extrabold tracking-tight text-white">
             Monitoring Area
           </h1>
-          <p className="text-2xl text-slate-300 max-w-2xl leading-relaxed">
-            No active elephant alerts in this road sector.
-          </p>
         </div>
       </div>
     )
