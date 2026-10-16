@@ -706,7 +706,23 @@ def verify_device_key(device: dict | None, api_key: str | None) -> str | None:
     if str(device.get("status", "")).lower() == "disabled":
         return "disabled"
     expected = device.get("api_key")
-    if not expected or not api_key or not secrets.compare_digest(str(api_key), str(expected)):
+    if not expected or not api_key:
+        return "bad_key"
+    # Reject keys that are obviously the masked/redacted form returned by
+    # _redact_device() — they contain non-ASCII chars ("…" U+2026 or "•")
+    # that secrets.compare_digest() cannot handle and will raise TypeError.
+    presented = str(api_key)
+    stored    = str(expected)
+    _MASK_CHARS = ("…", "•", "\u2026")
+    if any(c in presented for c in _MASK_CHARS) or any(c in stored for c in _MASK_CHARS):
+        print("[AUTH] warn: masked/redacted api_key presented — rejecting as bad_key")
+        return "bad_key"
+    try:
+        if not secrets.compare_digest(presented, stored):
+            return "bad_key"
+    except TypeError:
+        # Non-ASCII chars somehow slipped through — treat as bad key rather than crash.
+        print("[AUTH] warn: compare_digest TypeError (non-ASCII key) — rejecting as bad_key")
         return "bad_key"
     return None
 
