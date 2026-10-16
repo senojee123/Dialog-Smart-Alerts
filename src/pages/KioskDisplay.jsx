@@ -16,9 +16,10 @@ export default function KioskDisplay() {
   }, [])
 
   // Function to fetch active status
+  const API_BASE = import.meta.env.VITE_API_BASE || '/api'
   const fetchStatus = async () => {
     try {
-      const res = await fetch(`/api/kiosks/${deviceId}/status`)
+      const res = await fetch(`${API_BASE}/kiosks/${deviceId}/status`)
       if (!res.ok) {
         if (res.status === 404) {
           throw new Error(`Device '${deviceId}' not registered in registry mapping.`)
@@ -40,7 +41,6 @@ export default function KioskDisplay() {
     fetchStatus()
 
     // 1. Live real-time stream using Server-Sent Events (SSE)
-    const API_BASE = import.meta.env.VITE_API_BASE || '/api'
     const stream = new EventSource(`${API_BASE}/stream`)
 
     const handleStreamUpdate = () => {

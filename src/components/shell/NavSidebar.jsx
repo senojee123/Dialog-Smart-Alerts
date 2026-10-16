@@ -2,6 +2,7 @@ import { NavLink } from 'react-router-dom'
 import {
   LayoutDashboard, AlertTriangle, Map, Camera, Cpu, Users, GitBranch,
   Settings, Monitor, Layers, Bell, Rocket, Palette, PlayCircle, Globe, Clock,
+  MonitorDot,
 } from 'lucide-react'
 
 const NAV = [
@@ -26,6 +27,7 @@ const NAV = [
   { to: '/admin/stakeholders',icon: Users,         label: 'Stakeholders' },
   { to: '/admin/devices',     icon: Camera,        label: 'Device Registry' },
   { to: '/admin/road-signs',  icon: Monitor,       label: 'Sign Board Registry' },
+  { to: '/admin/kiosks',      icon: MonitorDot,    label: 'Displays' },
 
   null, // divider
 

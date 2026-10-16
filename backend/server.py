@@ -380,6 +380,17 @@ async def create_kiosk(req: Request):
     broadcast("kiosk_created", kiosk)
     return kiosk
 
+@app.put("/api/kiosks/{id}")
+async def update_kiosk(id: str, req: Request):
+    body = await req.json()
+    kiosk = _update("kiosk_displays", id, body)
+    broadcast("kiosk_updated", kiosk)
+    return kiosk
+
+@app.delete("/api/kiosks/{id}")
+async def delete_kiosk(id: str):
+    return _delete("kiosk_displays", id)
+
 @app.get("/api/kiosks/{device_id}/status")
 async def get_kiosk_status(device_id: str):
     kiosk = data_store.get_by_id("kiosk_displays", device_id)
