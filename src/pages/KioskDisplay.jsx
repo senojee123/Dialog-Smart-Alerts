@@ -7,13 +7,6 @@ export default function KioskDisplay() {
   const [state, setState] = useState({ status: 'CLEAR', incident: null })
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
-  const [currentTime, setCurrentTime] = useState(new Date())
-
-  // Keep ticking local clock
-  useEffect(() => {
-    const timer = setInterval(() => setCurrentTime(new Date()), 1000)
-    return () => clearInterval(timer)
-  }, [])
 
   // Function to fetch active status
   const API_BASE = import.meta.env.VITE_API_BASE || '/api'
@@ -96,18 +89,6 @@ export default function KioskDisplay() {
   if (status === 'CLEAR') {
     return (
       <div className="flex flex-col min-h-screen bg-slate-950 text-slate-100 font-sans select-none overflow-hidden">
-        {/* Top bar */}
-        <div className="bg-slate-900/80 border-b border-slate-800 px-8 py-5 flex justify-between items-center">
-          <div className="flex items-center gap-3">
-            <span className="h-3.5 w-3.5 rounded-full bg-emerald-500 animate-ping"></span>
-            <span className="text-xl font-bold tracking-wider text-emerald-400 uppercase">DIALOG SMART ALERTS</span>
-          </div>
-          <div className="text-slate-400 font-mono text-xl flex items-center gap-2">
-            <Clock size={20} className="text-slate-500" />
-            {currentTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
-          </div>
-        </div>
-
         {/* Main Content */}
         <div className="flex-1 flex flex-col items-center justify-center text-center p-8">
           <div className="relative mb-8">
@@ -123,15 +104,6 @@ export default function KioskDisplay() {
           <p className="text-2xl text-slate-300 max-w-2xl leading-relaxed">
             No active elephant alerts in this road sector.
           </p>
-        </div>
-
-        {/* Footer */}
-        <div className="bg-slate-900/40 border-t border-slate-900/60 px-8 py-5 flex justify-between items-center text-sm text-slate-500">
-          <div>Display: <span className="font-mono text-slate-300">{deviceId}</span></div>
-          <div className="flex items-center gap-2">
-            <span className="h-2 w-2 rounded-full bg-emerald-500"></span>
-            System Live & Connected
-          </div>
         </div>
       </div>
     )
