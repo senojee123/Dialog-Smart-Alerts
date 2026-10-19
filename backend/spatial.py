@@ -94,6 +94,43 @@ def _zone_state(sign, incidents) -> str:
     return "CLEAR"
 
 
+def active_object_type(sign, use_cases, zones, events, now=None) -> str | None:
+    """Object type of the detection currently lighting this sign (None if CLEAR/OFFLINE).
+
+    Lets a display render e.g. "ELEPHANT AHEAD" instead of a generic "HAZARD AHEAD"
+    without hardcoding any one use case's object type.
+    """
+    if now is None:
+        now = datetime.now(timezone.utc)
+
+    zone_by_id = {z["id"]: z for z in zones}
+    uc_by_id   = {u["id"]: u for u in use_cases}
+    zone = zone_by_id.get(sign.get("zone_id"), {})
+    uc   = uc_by_id.get(zone.get("use_case_id"))
+    spatial = (uc or {}).get("spatial") or DEFAULT_SPATIAL
+    if spatial.get("mode") != "radius" or not sign.get("online", True):
+        return None
+
+    radius     = float(spatial.get("propagation_radius_m", 120))
+    amber_hold = float(spatial.get("amber_hold_s", 420))
+    min_conf   = float(spatial.get("min_confidence", 0))
+
+    s_lat, s_lng = sign.get("lat"), sign.get("lng")
+    best_age, best_type = None, None
+    for e in events:
+        if float(e.get("confidence", 0)) < min_conf:
+            continue
+        if haversine_m(s_lat, s_lng, e.get("lat"), e.get("lng")) > radius:
+            continue
+        age = (now - _parse_dt(e.get("received_at"))).total_seconds()
+        if age < 0:
+            age = 0
+        if age <= amber_hold and (best_age is None or age < best_age):
+            best_age, best_type = age, e.get("object_type")
+
+    return best_type
+
+
 def compute_states(signs, use_cases, zones, events, incidents, now=None) -> dict:
     """
     Returns { sign_id: state } for every sign.

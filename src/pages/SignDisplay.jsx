@@ -10,10 +10,16 @@ const SIGN_STATE = {
   OFFLINE: { bg: '#1e293b', label: 'OFFLINE',       sub: '',                 pulse: false },
 }
 
+// Object type codes -> display words. No entry falls back to the generic label.
+const OBJECT_LABELS = {
+  elephant: 'ELEPHANT',
+}
+
 export default function SignDisplay() {
   const { signId } = useParams()
   const [state, setState] = useState(null)
   const [name, setName] = useState('')
+  const [objectType, setObjectType] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
@@ -31,6 +37,7 @@ export default function SignDisplay() {
       const data = await res.json()
       setState(data.state || 'CLEAR')
       setName(data.name || signId)
+      setObjectType(data.object_type || null)
       setError(null)
     } catch (err) {
       setError(err.message)
@@ -79,6 +86,9 @@ export default function SignDisplay() {
   const isLit = state === 'WARNING' || state === 'CAUTION'
   const Icon = state === 'OFFLINE' ? WifiOff : isLit ? AlertTriangle : CheckCircle
 
+  const objectWord = objectType && OBJECT_LABELS[objectType]
+  const label = isLit && objectWord ? `${objectWord} AHEAD` : cfg.label
+
   return (
     <div
       className="flex flex-col items-center justify-center min-h-screen select-none overflow-hidden transition-colors duration-700"
@@ -89,7 +99,7 @@ export default function SignDisplay() {
         className={`text-white stroke-[1.5] ${cfg.pulse ? 'animate-pulse' : ''}`}
       />
       <h1 className="text-6xl font-black tracking-widest text-white mt-8 uppercase text-center px-8">
-        {cfg.label}
+        {label}
       </h1>
       {cfg.sub && (
         <p className="text-3xl font-semibold text-white/90 mt-4 tracking-wide">{cfg.sub}</p>

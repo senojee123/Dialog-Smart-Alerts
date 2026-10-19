@@ -524,10 +524,17 @@ async def get_road_sign_status(id: str):
     if not sign:
         raise HTTPException(404, f"Road sign '{id}' not found")
     states = _compute_sign_states()
+    state = states.get(id, "CLEAR")
+    object_type = None
+    if state in ("WARNING", "CAUTION"):
+        object_type = spatial.active_object_type(
+            sign, _list("use_cases"), _list("zones"), _list("detection_events"),
+        )
     return {
-        "id":    sign["id"],
-        "name":  sign.get("name", sign["id"]),
-        "state": states.get(id, "CLEAR"),
+        "id":          sign["id"],
+        "name":        sign.get("name", sign["id"]),
+        "state":       state,
+        "object_type": object_type,
     }
 
 @app.post("/api/road-signs")
