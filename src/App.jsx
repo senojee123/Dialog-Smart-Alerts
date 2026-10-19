@@ -20,7 +20,6 @@ import AdminRules from './pages/admin/Rules.jsx'
 import AdminStakeholders from './pages/admin/Stakeholders.jsx'
 import AdminDevices from './pages/admin/Devices.jsx'
 import AdminRoadSignBoards from './pages/admin/RoadSignBoards.jsx'
-import AdminKioskDisplays from './pages/admin/KioskDisplays.jsx'
 
 // Admin – system
 import AdminEscalation from './pages/admin/EscalationPolicies.jsx'
@@ -67,7 +66,6 @@ export default function App() {
           <Route path="/admin/stakeholders" element={<Wrap><AdminStakeholders /></Wrap>} />
           <Route path="/admin/devices"      element={<Wrap><AdminDevices /></Wrap>} />
           <Route path="/admin/road-signs"   element={<Wrap><AdminRoadSignBoards /></Wrap>} />
-          <Route path="/admin/kiosks"       element={<Wrap><AdminKioskDisplays /></Wrap>} />
 
           {/* System admin */}
           <Route path="/admin/escalation" element={<Wrap><AdminEscalation /></Wrap>} />
