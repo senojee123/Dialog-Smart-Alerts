@@ -34,7 +34,7 @@ async def run():
             "mode":                 "radius",
             "propagation_radius_m": 120,   # signs within this of a detection react
             "red_hold_s":           90,    # RED while last detection < 90s ago
-            "amber_hold_s":         420,   # AMBER until 7 min after last detection
+            "amber_hold_s":         300,   # AMBER until 5 min after last detection
             "min_confidence":       55,    # ignore weak detections
         },
     })
