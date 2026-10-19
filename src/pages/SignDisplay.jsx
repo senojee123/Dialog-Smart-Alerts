@@ -95,14 +95,14 @@ export default function SignDisplay() {
       style={{ background: cfg.bg }}
     >
       <Icon
-        size={160}
+        size={280}
         className={`text-white stroke-[1.5] ${cfg.pulse ? 'animate-pulse' : ''}`}
       />
-      <h1 className="text-6xl font-black tracking-widest text-white mt-8 uppercase text-center px-8">
+      <h1 className="text-8xl md:text-9xl font-black tracking-widest text-white mt-10 uppercase text-center px-8">
         {label}
       </h1>
       {cfg.sub && (
-        <p className="text-3xl font-semibold text-white/90 mt-4 tracking-wide">{cfg.sub}</p>
+        <p className="text-5xl font-semibold text-white/90 mt-6 tracking-wide">{cfg.sub}</p>
       )}
     </div>
   )
