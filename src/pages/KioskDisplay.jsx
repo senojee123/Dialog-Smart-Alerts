@@ -193,15 +193,6 @@ export default function KioskDisplay() {
 
       </div>
 
-      {/* Footer Info */}
-      <div className="bg-slate-900 border-t border-slate-800 px-10 py-4 flex justify-between items-center text-xs text-slate-500">
-        <div>Kiosk Unit: <span className="font-mono text-slate-300">{deviceId}</span></div>
-        <div className="flex items-center gap-2">
-          <span className="h-2.5 w-2.5 rounded-full bg-rose-500 animate-ping"></span>
-          Emergency Broadcasting Mode
-        </div>
-      </div>
-
       <style>{`
         .animate-pulse-emergency {
           animation: pulse-bg 2.5s infinite alternate;
