@@ -1,10 +1,11 @@
 import { useMemo } from 'react'
 import { useSearchParams } from 'react-router-dom'
+import { resolveMediaUrl } from '../api/client'
 
 // The GIS instance's map (services/gis), served by the backend at /gis-app/ (gis_client.py) and shown
-// here in a frame: same origin, its own React and MapLibre, independent of this app's versions. What is
-// clicked on it is shown in the map's own popup.
-const GIS_APP = '/gis-app/'
+// here in a frame. In split deployments (Vercel + Railway), resolveMediaUrl ensures the iframe points
+// to the Railway backend rather than Vercel's static origin.
+const GIS_APP = resolveMediaUrl('/gis-app/')
 
 /** The frame's address: opened at a position when the link names one (`?lat=..&lng=..`). */
 function frameSource(params) {
