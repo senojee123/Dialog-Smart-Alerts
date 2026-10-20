@@ -1,0 +1,9 @@
+{
+  "file": "dev_risk_zones.geojson",
+  "retrievedAt": "2026-09-24T08:23:41.927663+00:00",
+  "retrievedBasis": "file modification time (the file is kept next to the profile)",
+  "sha256": "c82032f7d498c22b7566608a0efaaf772d07e3bb1f9e0a81386e223040985f45",
+  "sizeBytes": 6497,
+  "source": "gis-core-dev-placeholders",
+  "url": null
+}

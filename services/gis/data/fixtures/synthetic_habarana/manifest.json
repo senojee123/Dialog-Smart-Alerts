@@ -1,0 +1,140 @@
+{
+  "release": {
+    "code": "ref-2026.09-fixture",
+    "purpose": "test",
+    "description": "Synthetic fixture world near Habarana (tests only)"
+  },
+  "sources": [
+    {
+      "code": "gis-core-fixtures",
+      "name": "GIS Core Service synthetic test fixtures",
+      "publisher": "GIS Core Service project",
+      "licence": "CC0-1.0",
+      "attribution": "Synthetic data; not a real place",
+      "commercialUseAllowed": true,
+      "redistributionAllowed": true,
+      "notes": "Constructed geometry for automated tests. Not for operational use."
+    }
+  ],
+  "files": [
+    {
+      "path": "admin_level1.geojson",
+      "layer": "ref.admin_area",
+      "source": "gis-core-fixtures",
+      "sourceReference": "data/fixtures/synthetic_habarana/build.py (constructed geometry)",
+      "sourceVersion": "1",
+      "transformation": "none: constructed in EPSG:4326",
+      "geometrySource": "synthetic",
+      "geometryAccuracyM": 0.01,
+      "properties": {
+        "level": 1
+      }
+    },
+    {
+      "path": "admin_level2.geojson",
+      "layer": "ref.admin_area",
+      "source": "gis-core-fixtures",
+      "sourceReference": "data/fixtures/synthetic_habarana/build.py (constructed geometry)",
+      "sourceVersion": "1",
+      "transformation": "none: constructed in EPSG:4326",
+      "geometrySource": "synthetic",
+      "geometryAccuracyM": 0.01,
+      "properties": {
+        "level": 2
+      },
+      "parentBy": "code"
+    },
+    {
+      "path": "admin_level3.geojson",
+      "layer": "ref.admin_area",
+      "source": "gis-core-fixtures",
+      "sourceReference": "data/fixtures/synthetic_habarana/build.py (constructed geometry)",
+      "sourceVersion": "1",
+      "transformation": "none: constructed in EPSG:4326",
+      "geometrySource": "synthetic",
+      "geometryAccuracyM": 0.01,
+      "properties": {
+        "level": 3
+      },
+      "parentBy": "code"
+    },
+    {
+      "path": "admin_level4.geojson",
+      "layer": "ref.admin_area",
+      "source": "gis-core-fixtures",
+      "sourceReference": "data/fixtures/synthetic_habarana/build.py (constructed geometry)",
+      "sourceVersion": "1",
+      "transformation": "none: constructed in EPSG:4326",
+      "geometrySource": "synthetic",
+      "geometryAccuracyM": 0.01,
+      "properties": {
+        "level": 4
+      },
+      "parentBy": "code"
+    },
+    {
+      "path": "protected_areas.geojson",
+      "layer": "ref.protected_area",
+      "source": "gis-core-fixtures",
+      "sourceReference": "data/fixtures/synthetic_habarana/build.py (constructed geometry)",
+      "sourceVersion": "1",
+      "transformation": "none: constructed in EPSG:4326",
+      "geometrySource": "synthetic",
+      "geometryAccuracyM": 0.01
+    },
+    {
+      "path": "risk_zones.geojson",
+      "layer": "ref.risk_zone",
+      "source": "gis-core-fixtures",
+      "sourceReference": "data/fixtures/synthetic_habarana/build.py (constructed geometry)",
+      "sourceVersion": "1",
+      "transformation": "none: constructed in EPSG:4326",
+      "geometrySource": "synthetic",
+      "geometryAccuracyM": 0.01
+    },
+    {
+      "path": "settlements.geojson",
+      "layer": "ref.settlement",
+      "source": "gis-core-fixtures",
+      "sourceReference": "data/fixtures/synthetic_habarana/build.py (constructed geometry)",
+      "sourceVersion": "1",
+      "transformation": "none: constructed in EPSG:4326",
+      "geometrySource": "synthetic",
+      "geometryAccuracyM": 0.01,
+      "adminAreaBy": "location"
+    },
+    {
+      "path": "facilities.geojson",
+      "layer": "ref.facility",
+      "source": "gis-core-fixtures",
+      "sourceReference": "data/fixtures/synthetic_habarana/build.py (constructed geometry)",
+      "sourceVersion": "1",
+      "transformation": "none: constructed in EPSG:4326",
+      "geometrySource": "synthetic",
+      "geometryAccuracyM": 0.01,
+      "qa": {
+        "maxRejectedRatio": 1.0
+      }
+    },
+    {
+      "path": "roads.geojson",
+      "layer": "ref.road",
+      "source": "gis-core-fixtures",
+      "sourceReference": "data/fixtures/synthetic_habarana/build.py (constructed geometry)",
+      "sourceVersion": "1",
+      "transformation": "none: constructed in EPSG:4326",
+      "geometrySource": "synthetic",
+      "geometryAccuracyM": 0.01
+    },
+    {
+      "path": "water_bodies.geojson",
+      "layer": "ref.water_body",
+      "source": "gis-core-fixtures",
+      "sourceReference": "data/fixtures/synthetic_habarana/build.py (constructed geometry)",
+      "sourceVersion": "1",
+      "transformation": "none: constructed in EPSG:4326",
+      "geometrySource": "synthetic",
+      "geometryAccuracyM": 0.01
+    }
+  ]
+}

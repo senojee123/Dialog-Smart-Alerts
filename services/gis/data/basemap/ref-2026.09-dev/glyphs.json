@@ -1,0 +1,8 @@
+{
+ "font": "Noto Sans Regular",
+ "files": {
+  "fonts/Noto Sans Regular/0-255.pbf": "62c6d49b15fa836eb6aa45e259c7ca6762f44b011b09e47776efbe4a6db1b397",
+  "fonts/Noto Sans Regular/256-511.pbf": "2eca7561f9f566bcacfda5dd04fb5880baec1328ec0f5484678289a13994de8a",
+  "fonts/Noto Sans Regular/8192-8447.pbf": "8ea977a587352fe31b4159ffdbc9a40be79056f2472017c742ea1e4a931864b9"
+ }
+}

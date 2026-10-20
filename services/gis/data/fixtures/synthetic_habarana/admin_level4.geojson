@@ -1,0 +1,77 @@
+{
+ "type": "FeatureCollection",
+ "features": [
+  {
+   "type": "Feature",
+   "id": "SYN-G1",
+   "properties": {
+    "name": "Fixture GN West",
+    "code": "SYN-G1",
+    "parent_code": "SYN-S1"
+   },
+   "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+     [
+      [
+       80.725,
+       7.98
+      ],
+      [
+       80.725,
+       8.03
+      ],
+      [
+       80.7,
+       8.03
+      ],
+      [
+       80.7,
+       7.98
+      ],
+      [
+       80.725,
+       7.98
+      ]
+     ]
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "id": "SYN-G2",
+   "properties": {
+    "name": "Fixture GN East",
+    "code": "SYN-G2",
+    "parent_code": "SYN-S1"
+   },
+   "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+     [
+      [
+       80.75,
+       7.98
+      ],
+      [
+       80.75,
+       8.03
+      ],
+      [
+       80.725,
+       8.03
+      ],
+      [
+       80.725,
+       7.98
+      ],
+      [
+       80.75,
+       7.98
+      ]
+     ]
+    ]
+   }
+  }
+ ]
+}

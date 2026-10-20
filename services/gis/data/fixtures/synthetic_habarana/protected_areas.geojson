@@ -1,0 +1,138 @@
+{
+ "type": "FeatureCollection",
+ "features": [
+  {
+   "type": "Feature",
+   "id": "SYN-PA1",
+   "properties": {
+    "name": "Fixture National Park",
+    "designation": "National Park",
+    "managing_authority": "DWC",
+    "iucn_category": "II"
+   },
+   "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+     [
+      [
+       80.76,
+       8.04
+      ],
+      [
+       80.79,
+       8.04
+      ],
+      [
+       80.79,
+       8.07
+      ],
+      [
+       80.76,
+       8.07
+      ],
+      [
+       80.76,
+       8.04
+      ]
+     ],
+     [
+      [
+       80.77,
+       8.05
+      ],
+      [
+       80.77,
+       8.06
+      ],
+      [
+       80.78,
+       8.06
+      ],
+      [
+       80.78,
+       8.05
+      ],
+      [
+       80.77,
+       8.05
+      ]
+     ]
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "id": "SYN-PA2",
+   "properties": {
+    "name": "Fixture Bow-tie Reserve",
+    "designation": "Forest Reserve",
+    "managing_authority": "FD",
+    "iucn_category": "not_reported"
+   },
+   "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+     [
+      [
+       80.785,
+       7.985
+      ],
+      [
+       80.795,
+       7.995
+      ],
+      [
+       80.795,
+       7.985
+      ],
+      [
+       80.785,
+       7.995
+      ],
+      [
+       80.785,
+       7.985
+      ]
+     ]
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "id": "SYN-PA3",
+   "properties": {
+    "name": "Fixture Sanctuary",
+    "designation": "Sanctuary",
+    "managing_authority": "DWC",
+    "iucn_category": "IV"
+   },
+   "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+     [
+      [
+       80.765,
+       8.005
+      ],
+      [
+       80.765,
+       8.018
+      ],
+      [
+       80.755,
+       8.018
+      ],
+      [
+       80.755,
+       8.005
+      ],
+      [
+       80.765,
+       8.005
+      ]
+     ]
+    ]
+   }
+  }
+ ]
+}

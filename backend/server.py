@@ -36,6 +36,7 @@ import notifier
 import spatial
 import simulator
 import geocode
+import gis_client
 from mqtt_client import MQTTClientManager
 
 from fastapi import FastAPI, HTTPException, Request, UploadFile, File, Form
@@ -64,8 +65,12 @@ async def lifespan(app: FastAPI):
     
     _print_local_ip()
     task = asyncio.create_task(_decay_tick())
+    # Place the registered devices on the GIS map (waits for the GIS instance if it is still starting).
+    gis_sync = asyncio.create_task(gis_client.sync_all_devices())
     yield
     task.cancel()
+    gis_sync.cancel()
+    await gis_client.close()
     if hasattr(app.state, "mqtt_client") and app.state.mqtt_client:
         app.state.mqtt_client.stop()
 
@@ -325,6 +330,7 @@ async def create_device(req: Request):
     body["external_id"] = _external_id_for(body)
     device = _create("devices", body)
     broadcast("device_created", _redact_device(device))
+    asyncio.create_task(gis_client.sync_device(device))
     return device  # full key returned once, at the moment of issuance
 
 @app.get("/api/devices/{id}")
@@ -348,6 +354,7 @@ async def update_device(id: str, req: Request):
         body["external_id"] = body["api_key"]
     device = _update("devices", id, body)
     broadcast("device_updated", _redact_device(device))
+    asyncio.create_task(gis_client.sync_device(device))
     return _redact_device(device)
 
 
@@ -362,7 +369,11 @@ async def regenerate_device_key(id: str):
 
 @app.delete("/api/devices/{id}")
 async def delete_device(id: str):
-    return _delete("devices", id)
+    device = data_store.get_by_id("devices", id)
+    result = _delete("devices", id)
+    if device:
+        asyncio.create_task(gis_client.retire_device(device))
+    return result
 
 
 # ════════════════════════════════════════════════════════════════════════════
@@ -613,6 +624,9 @@ def _enrich_incident(inc: dict) -> dict:
         timeline.append({"ts": inc.get("updated_at"), "event": "Incident expired (no activity for 3 hours)"})
     timeline.sort(key=lambda t: t.get("ts") or "")
 
+    # Where it happened, from the GIS instance (district, nearest town and road, parks, geofences).
+    gis = gis_client.incident_gis(events)
+
     raw_conf   = float(inc.get("confidence", 0) or 0)
     confidence = raw_conf / 100 if raw_conf > 1 else raw_conf   # UI expects 0–1
     loc = {**(inc.get("location") or {}), "description": zone_name}
@@ -631,7 +645,9 @@ def _enrich_incident(inc: dict) -> dict:
                               f"{str(inc.get('object', 'Object')).capitalize()} detected with "
                               f"{round(raw_conf)}% confidence in {zone_name}.",
         "risk_factors":       inc.get("risk_factors", []),
-        "distance_to_road_m": inc.get("distance_to_road_m"),
+        "distance_to_road_m": inc.get("distance_to_road_m") if inc.get("distance_to_road_m") is not None
+                              else (gis or {}).get("road_distance_m"),
+        "gis":                gis,
         "is_night":           inc.get("is_night", False),
         "detections_in_zone": len(events),
         "incident_media":     inc.get("image_url"),
@@ -858,6 +874,12 @@ async def _ingest_event(body: dict, source: str = "device") -> tuple[dict, dict 
         dev_patch["status"] = st
         dev_patch["online"] = st not in ("offline", "disconnected", "down", "error", "dead")
     data_store.update("devices", device["id"], dev_patch)
+
+    # Geo-context from the GIS instance, before the rules run so the incident carries it from the start.
+    # Never blocks the detection: a slow or absent GIS just leaves it out (gis_client.ENRICH_TIMEOUT_S).
+    geo_context = await gis_client.enrich_event(event, device)
+    if geo_context:
+        event = data_store.update("detection_events", event["id"], {"geo_context": geo_context}) or event
 
     incident = await _run_rule_engine(event, device)
     broadcast("event_received", {**event, "incident_id": incident["id"] if incident else None})
@@ -1252,6 +1274,7 @@ async def system_health():
         "devices_online":   sum(1 for d in devices if d.get("online")),
         "devices_total":    len(devices),
         "sse_clients":      len(_sse_queues),
+        "gis_ok":           await gis_client.ready() if gis_client.GIS_ENABLED else None,
         "timestamp":        _now(),
     }
 
@@ -1337,6 +1360,13 @@ async function upload() {
 </script>
 </body>
 </html>"""
+
+
+# ════════════════════════════════════════════════════════════════════════════
+# GIS INSTANCE  —  /api/gis, /gis-app and /basemap proxied to the GIS service (gis_client.py)
+# ════════════════════════════════════════════════════════════════════════════
+
+app.include_router(gis_client.router)
 
 
 # ════════════════════════════════════════════════════════════════════════════

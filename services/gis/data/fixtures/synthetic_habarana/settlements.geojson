@@ -1,0 +1,56 @@
+{
+ "type": "FeatureCollection",
+ "features": [
+  {
+   "type": "Feature",
+   "id": "SYN-T1",
+   "properties": {
+    "name": "Fixture Town",
+    "settlement_type": "town",
+    "population": 4200
+   },
+   "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+     [
+      [
+       80.755,
+       8.025
+      ],
+      [
+       80.755,
+       8.035
+      ],
+      [
+       80.745,
+       8.035
+      ],
+      [
+       80.745,
+       8.025
+      ],
+      [
+       80.755,
+       8.025
+      ]
+     ]
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "id": "SYN-V1",
+   "properties": {
+    "name": "Fixture Village",
+    "settlement_type": "village"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     80.71,
+     8.06
+    ]
+   }
+  }
+ ]
+}

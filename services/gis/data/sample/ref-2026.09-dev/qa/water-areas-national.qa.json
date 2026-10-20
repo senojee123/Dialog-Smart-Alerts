@@ -1,0 +1,98 @@
+{
+ "file": "water-areas-national.geojson.gz",
+ "sha256": "72626399e63bc673841e93d2b1298f8e97da0660b9f02360a2ab315cd41715f0",
+ "status": "warnings",
+ "checks": [
+  "crs.storage",
+  "crs.operation",
+  "geometry.empty",
+  "geometry.type",
+  "geometry.invalid",
+  "geometry.unrepairable",
+  "identifier.missing",
+  "identifier.duplicate",
+  "identifier.name_missing",
+  "duplicate.geometry",
+  "outlier.service_area",
+  "outlier.extent",
+  "outlier.coverage",
+  "outlier.vertices",
+  "outlier.count",
+  "outlier.rejected",
+  "transform.skipped",
+  "transform.merged"
+ ],
+ "counts": {
+  "read": 2045,
+  "extracted": 2045,
+  "written": 2045,
+  "leftOut": 0,
+  "invalidPolygons": 2,
+  "errors": 0,
+  "warnings": 2,
+  "infos": 1
+ },
+ "findings": [
+  {
+   "check": "crs.operation",
+   "severity": "info",
+   "message": "source CRS EPSG:4326: none: EPSG:4326 coordinates are WGS 84 longitude/latitude",
+   "sourceFeatureId": null,
+   "details": {
+    "points": 0,
+    "note": "OpenStreetMap coordinates are WGS 84"
+   },
+   "location": null
+  },
+  {
+   "check": "geometry.invalid",
+   "severity": "warning",
+   "message": "invalid polygon (Self-intersection[81.8511687 7.1892465]); the database repairs it on load and logs the original",
+   "sourceFeatureId": "osm-relation-16821313",
+   "details": {
+    "reason": "Self-intersection[81.8511687 7.1892465]"
+   },
+   "location": {
+    "type": "Point",
+    "coordinates": [
+     81.8550635,
+     7.1879182
+    ]
+   }
+  },
+  {
+   "check": "geometry.invalid",
+   "severity": "warning",
+   "message": "invalid polygon (Self-intersection[81.4661962 7.7674077]); the database repairs it on load and logs the original",
+   "sourceFeatureId": "osm-relation-21388164",
+   "details": {
+    "reason": "Self-intersection[81.4661962 7.7674077]"
+   },
+   "location": {
+    "type": "Point",
+    "coordinates": [
+     81.4662795,
+     7.7630589
+    ]
+   }
+  }
+ ],
+ "findingCount": 3,
+ "parameters": {
+  "expectations": {
+   "expected_bbox": [
+    79.44,
+    5.66,
+    82.15,
+    10.08
+   ],
+   "min_features": 200
+  },
+  "findingsPerCheck": {
+   "crs.operation": 1,
+   "geometry.invalid": 2
+  }
+ },
+ "toolVersion": "gis-core-service 0.1.0 pipeline",
+ "checkedAt": "2026-09-24T10:52:18.055405Z"
+}

@@ -1,0 +1,466 @@
+{
+ "file": "water-areas-pilot.geojson.gz",
+ "sha256": "84db6407526c953c7d12f762746b200c3c8ab777b72273103eca14f05468dc09",
+ "status": "passed",
+ "checks": [
+  "crs.storage",
+  "crs.operation",
+  "geometry.empty",
+  "geometry.type",
+  "geometry.invalid",
+  "geometry.unrepairable",
+  "identifier.missing",
+  "identifier.duplicate",
+  "identifier.name_missing",
+  "duplicate.geometry",
+  "outlier.service_area",
+  "outlier.extent",
+  "outlier.coverage",
+  "outlier.vertices",
+  "outlier.count",
+  "outlier.rejected",
+  "transform.skipped",
+  "transform.merged"
+ ],
+ "counts": {
+  "read": 667,
+  "extracted": 469,
+  "written": 469,
+  "leftOut": 0,
+  "invalidPolygons": 0,
+  "errors": 0,
+  "warnings": 0,
+  "infos": 199
+ },
+ "findings": [
+  {
+   "check": "crs.operation",
+   "severity": "info",
+   "message": "source CRS EPSG:4326: none: EPSG:4326 coordinates are WGS 84 longitude/latitude",
+   "sourceFeatureId": null,
+   "details": {
+    "points": 0,
+    "note": "OpenStreetMap coordinates are WGS 84"
+   },
+   "location": null
+  },
+  {
+   "check": "transform.skipped",
+   "severity": "info",
+   "message": "already in dataset water-areas-national",
+   "sourceFeatureId": "osm-relation-1872556",
+   "details": {},
+   "location": null
+  },
+  {
+   "check": "transform.skipped",
+   "severity": "info",
+   "message": "already in dataset water-areas-national",
+   "sourceFeatureId": "osm-relation-3067507",
+   "details": {},
+   "location": null
+  },
+  {
+   "check": "transform.skipped",
+   "severity": "info",
+   "message": "already in dataset water-areas-national",
+   "sourceFeatureId": "osm-relation-5613297",
+   "details": {},
+   "location": null
+  },
+  {
+   "check": "transform.skipped",
+   "severity": "info",
+   "message": "already in dataset water-areas-national",
+   "sourceFeatureId": "osm-relation-5683490",
+   "details": {},
+   "location": null
+  },
+  {
+   "check": "transform.skipped",
+   "severity": "info",
+   "message": "already in dataset water-areas-national",
+   "sourceFeatureId": "osm-relation-5683597",
+   "details": {},
+   "location": null
+  },
+  {
+   "check": "transform.skipped",
+   "severity": "info",
+   "message": "already in dataset water-areas-national",
+   "sourceFeatureId": "osm-relation-5706713",
+   "details": {},
+   "location": null
+  },
+  {
+   "check": "transform.skipped",
+   "severity": "info",
+   "message": "already in dataset water-areas-national",
+   "sourceFeatureId": "osm-relation-6182305",
+   "details": {},
+   "location": null
+  },
+  {
+   "check": "transform.skipped",
+   "severity": "info",
+   "message": "already in dataset water-areas-national",
+   "sourceFeatureId": "osm-relation-6182306",
+   "details": {},
+   "location": null
+  },
+  {
+   "check": "transform.skipped",
+   "severity": "info",
+   "message": "already in dataset water-areas-national",
+   "sourceFeatureId": "osm-relation-7321262",
+   "details": {},
+   "location": null
+  },
+  {
+   "check": "transform.skipped",
+   "severity": "info",
+   "message": "already in dataset water-areas-national",
+   "sourceFeatureId": "osm-relation-7322116",
+   "details": {},
+   "location": null
+  },
+  {
+   "check": "transform.skipped",
+   "severity": "info",
+   "message": "already in dataset water-areas-national",
+   "sourceFeatureId": "osm-relation-7322118",
+   "details": {},
+   "location": null
+  },
+  {
+   "check": "transform.skipped",
+   "severity": "info",
+   "message": "already in dataset water-areas-national",
+   "sourceFeatureId": "osm-relation-7322119",
+   "details": {},
+   "location": null
+  },
+  {
+   "check": "transform.skipped",
+   "severity": "info",
+   "message": "already in dataset water-areas-national",
+   "sourceFeatureId": "osm-relation-7322120",
+   "details": {},
+   "location": null
+  },
+  {
+   "check": "transform.skipped",
+   "severity": "info",
+   "message": "already in dataset water-areas-national",
+   "sourceFeatureId": "osm-relation-7331569",
+   "details": {},
+   "location": null
+  },
+  {
+   "check": "transform.skipped",
+   "severity": "info",
+   "message": "already in dataset water-areas-national",
+   "sourceFeatureId": "osm-relation-7395560",
+   "details": {},
+   "location": null
+  },
+  {
+   "check": "transform.skipped",
+   "severity": "info",
+   "message": "already in dataset water-areas-national",
+   "sourceFeatureId": "osm-relation-7623805",
+   "details": {},
+   "location": null
+  },
+  {
+   "check": "transform.skipped",
+   "severity": "info",
+   "message": "already in dataset water-areas-national",
+   "sourceFeatureId": "osm-relation-9134264",
+   "details": {},
+   "location": null
+  },
+  {
+   "check": "transform.skipped",
+   "severity": "info",
+   "message": "already in dataset water-areas-national",
+   "sourceFeatureId": "osm-relation-9134266",
+   "details": {},
+   "location": null
+  },
+  {
+   "check": "transform.skipped",
+   "severity": "info",
+   "message": "already in dataset water-areas-national",
+   "sourceFeatureId": "osm-relation-9134267",
+   "details": {},
+   "location": null
+  },
+  {
+   "check": "transform.skipped",
+   "severity": "info",
+   "message": "already in dataset water-areas-national",
+   "sourceFeatureId": "osm-relation-10631311",
+   "details": {},
+   "location": null
+  },
+  {
+   "check": "transform.skipped",
+   "severity": "info",
+   "message": "already in dataset water-areas-national",
+   "sourceFeatureId": "osm-relation-18077365",
+   "details": {},
+   "location": null
+  },
+  {
+   "check": "transform.skipped",
+   "severity": "info",
+   "message": "already in dataset water-areas-national",
+   "sourceFeatureId": "osm-way-48744237",
+   "details": {},
+   "location": null
+  },
+  {
+   "check": "transform.skipped",
+   "severity": "info",
+   "message": "already in dataset water-areas-national",
+   "sourceFeatureId": "osm-way-108178325",
+   "details": {},
+   "location": null
+  },
+  {
+   "check": "transform.skipped",
+   "severity": "info",
+   "message": "already in dataset water-areas-national",
+   "sourceFeatureId": "osm-way-108180284",
+   "details": {},
+   "location": null
+  },
+  {
+   "check": "transform.skipped",
+   "severity": "info",
+   "message": "already in dataset water-areas-national",
+   "sourceFeatureId": "osm-way-139190378",
+   "details": {},
+   "location": null
+  },
+  {
+   "check": "transform.skipped",
+   "severity": "info",
+   "message": "already in dataset water-areas-national",
+   "sourceFeatureId": "osm-way-139190687",
+   "details": {},
+   "location": null
+  },
+  {
+   "check": "transform.skipped",
+   "severity": "info",
+   "message": "already in dataset water-areas-national",
+   "sourceFeatureId": "osm-way-158821479",
+   "details": {},
+   "location": null
+  },
+  {
+   "check": "transform.skipped",
+   "severity": "info",
+   "message": "already in dataset water-areas-national",
+   "sourceFeatureId": "osm-way-158821483",
+   "details": {},
+   "location": null
+  },
+  {
+   "check": "transform.skipped",
+   "severity": "info",
+   "message": "already in dataset water-areas-national",
+   "sourceFeatureId": "osm-way-176563989",
+   "details": {},
+   "location": null
+  },
+  {
+   "check": "transform.skipped",
+   "severity": "info",
+   "message": "already in dataset water-areas-national",
+   "sourceFeatureId": "osm-way-190654786",
+   "details": {},
+   "location": null
+  },
+  {
+   "check": "transform.skipped",
+   "severity": "info",
+   "message": "already in dataset water-areas-national",
+   "sourceFeatureId": "osm-way-194625845",
+   "details": {},
+   "location": null
+  },
+  {
+   "check": "transform.skipped",
+   "severity": "info",
+   "message": "already in dataset water-areas-national",
+   "sourceFeatureId": "osm-way-194625846",
+   "details": {},
+   "location": null
+  },
+  {
+   "check": "transform.skipped",
+   "severity": "info",
+   "message": "already in dataset water-areas-national",
+   "sourceFeatureId": "osm-way-194625847",
+   "details": {},
+   "location": null
+  },
+  {
+   "check": "transform.skipped",
+   "severity": "info",
+   "message": "already in dataset water-areas-national",
+   "sourceFeatureId": "osm-way-195259360",
+   "details": {},
+   "location": null
+  },
+  {
+   "check": "transform.skipped",
+   "severity": "info",
+   "message": "already in dataset water-areas-national",
+   "sourceFeatureId": "osm-way-195259362",
+   "details": {},
+   "location": null
+  },
+  {
+   "check": "transform.skipped",
+   "severity": "info",
+   "message": "already in dataset water-areas-national",
+   "sourceFeatureId": "osm-way-195819717",
+   "details": {},
+   "location": null
+  },
+  {
+   "check": "transform.skipped",
+   "severity": "info",
+   "message": "already in dataset water-areas-national",
+   "sourceFeatureId": "osm-way-196178508",
+   "details": {},
+   "location": null
+  },
+  {
+   "check": "transform.skipped",
+   "severity": "info",
+   "message": "already in dataset water-areas-national",
+   "sourceFeatureId": "osm-way-217586983",
+   "details": {},
+   "location": null
+  },
+  {
+   "check": "transform.skipped",
+   "severity": "info",
+   "message": "already in dataset water-areas-national",
+   "sourceFeatureId": "osm-way-275502165",
+   "details": {},
+   "location": null
+  },
+  {
+   "check": "transform.skipped",
+   "severity": "info",
+   "message": "already in dataset water-areas-national",
+   "sourceFeatureId": "osm-way-278891666",
+   "details": {},
+   "location": null
+  },
+  {
+   "check": "transform.skipped",
+   "severity": "info",
+   "message": "already in dataset water-areas-national",
+   "sourceFeatureId": "osm-way-278891669",
+   "details": {},
+   "location": null
+  },
+  {
+   "check": "transform.skipped",
+   "severity": "info",
+   "message": "already in dataset water-areas-national",
+   "sourceFeatureId": "osm-way-278892663",
+   "details": {},
+   "location": null
+  },
+  {
+   "check": "transform.skipped",
+   "severity": "info",
+   "message": "already in dataset water-areas-national",
+   "sourceFeatureId": "osm-way-279069455",
+   "details": {},
+   "location": null
+  },
+  {
+   "check": "transform.skipped",
+   "severity": "info",
+   "message": "already in dataset water-areas-national",
+   "sourceFeatureId": "osm-way-360643969",
+   "details": {},
+   "location": null
+  },
+  {
+   "check": "transform.skipped",
+   "severity": "info",
+   "message": "already in dataset water-areas-national",
+   "sourceFeatureId": "osm-way-361123575",
+   "details": {},
+   "location": null
+  },
+  {
+   "check": "transform.skipped",
+   "severity": "info",
+   "message": "already in dataset water-areas-national",
+   "sourceFeatureId": "osm-way-361223864",
+   "details": {},
+   "location": null
+  },
+  {
+   "check": "transform.skipped",
+   "severity": "info",
+   "message": "already in dataset water-areas-national",
+   "sourceFeatureId": "osm-way-364187017",
+   "details": {},
+   "location": null
+  },
+  {
+   "check": "transform.skipped",
+   "severity": "info",
+   "message": "already in dataset water-areas-national",
+   "sourceFeatureId": "osm-way-364188994",
+   "details": {},
+   "location": null
+  },
+  {
+   "check": "transform.skipped",
+   "severity": "info",
+   "message": "already in dataset water-areas-national",
+   "sourceFeatureId": "osm-way-364440295",
+   "details": {},
+   "location": null
+  },
+  {
+   "check": "transform.skipped",
+   "severity": "info",
+   "message": "already in dataset water-areas-national",
+   "sourceFeatureId": "osm-way-364443511",
+   "details": {},
+   "location": null
+  }
+ ],
+ "findingCount": 199,
+ "parameters": {
+  "expectations": {
+   "expected_bbox": [
+    79.44,
+    5.66,
+    82.15,
+    10.08
+   ],
+   "min_features": 50
+  },
+  "findingsPerCheck": {
+   "crs.operation": 1,
+   "transform.skipped": 198
+  }
+ },
+ "toolVersion": "gis-core-service 0.1.0 pipeline",
+ "checkedAt": "2026-09-24T10:52:18.303500Z"
+}

@@ -1,0 +1,12 @@
+# Normalise line endings. Shell scripts and container files must stay LF even on Windows checkouts,
+# otherwise the PostGIS init script fails inside the container.
+* text=auto eol=lf
+*.sh text eol=lf
+*.Dockerfile text eol=lf
+*.bat text eol=crlf
+*.cmd text eol=crlf
+*.png binary
+*.jpg binary
+*.pmtiles binary
+*.gpkg binary
+*.zip binary

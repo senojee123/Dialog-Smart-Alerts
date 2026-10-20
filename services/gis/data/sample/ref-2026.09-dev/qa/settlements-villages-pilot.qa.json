@@ -1,0 +1,74 @@
+{
+ "file": "settlements-villages-pilot.geojson.gz",
+ "sha256": "82210a02199d4616e978d1027b9c68c067123e375960a3c79afaefb841164536",
+ "status": "passed",
+ "checks": [
+  "crs.storage",
+  "crs.operation",
+  "geometry.empty",
+  "geometry.type",
+  "geometry.invalid",
+  "geometry.unrepairable",
+  "identifier.missing",
+  "identifier.duplicate",
+  "identifier.name_missing",
+  "duplicate.geometry",
+  "outlier.service_area",
+  "outlier.extent",
+  "outlier.coverage",
+  "outlier.vertices",
+  "outlier.count",
+  "outlier.rejected",
+  "transform.skipped",
+  "transform.merged"
+ ],
+ "counts": {
+  "read": 202,
+  "extracted": 201,
+  "written": 201,
+  "leftOut": 0,
+  "invalidPolygons": 0,
+  "errors": 0,
+  "warnings": 0,
+  "infos": 2
+ },
+ "findings": [
+  {
+   "check": "crs.operation",
+   "severity": "info",
+   "message": "source CRS EPSG:4326: none: EPSG:4326 coordinates are WGS 84 longitude/latitude",
+   "sourceFeatureId": null,
+   "details": {
+    "points": 0,
+    "note": "OpenStreetMap coordinates are WGS 84"
+   },
+   "location": null
+  },
+  {
+   "check": "transform.skipped",
+   "severity": "info",
+   "message": "place without a name left out",
+   "sourceFeatureId": "osm-node-11581631173",
+   "details": {},
+   "location": null
+  }
+ ],
+ "findingCount": 2,
+ "parameters": {
+  "expectations": {
+   "expected_bbox": [
+    79.44,
+    5.66,
+    82.15,
+    10.08
+   ],
+   "min_features": 50
+  },
+  "findingsPerCheck": {
+   "crs.operation": 1,
+   "transform.skipped": 1
+  }
+ },
+ "toolVersion": "gis-core-service 0.1.0 pipeline",
+ "checkedAt": "2026-09-24T10:52:00.439630Z"
+}

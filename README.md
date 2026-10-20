@@ -106,7 +106,7 @@ backend/
   seed.py          Elephant Detection seed data (runs once when data/ empty)
   requirements.txt
 src/
-  pages/           LiveIncidents, MapView, RoadSigns, Devices, HardwareUnits,
+  pages/           LiveIncidents, GIS, RoadSigns, Devices, HardwareUnits,
                    SetupWizard, admin/{UseCases,Rules,Stakeholders,Devices,RoadSignBoards,...}
   components/      shell/, incidents/, roadsigns/, map/, admin/CrudShell, wizard/
   hooks/           useApi (generic CRUD), useIncidents, useIncidentStream, useSystemHealth
@@ -136,6 +136,24 @@ src/
 - Real hardware / the middle ingestion layer POST to the same `/api/events` contract (`source` field)
 - Local-only stubs not yet wired to backend: **Hardware Units**, **Escalation Policies**, **Templates**
 - Admin screens still render via the CrudShell→`ui/` shim (functional; not yet fully redesigned)
+
+---
+
+## GIS instance (`services/gis`)
+
+The **GIS** page and the **Location (GIS)** section of an incident come from the platform's GIS instance:
+a separate service with its own PostgreSQL + PostGIS database, reached only through this backend
+(`backend/gis_client.py` proxies `/api/gis`, `/gis-app` and `/basemap`). Every detection with a position is
+sent to it for its district, nearest town and road, national parks and geofences; registered devices are
+placed on its map. Rules and notifications are unchanged; if GIS is down, detections go on without it.
+
+```powershell
+cd services\gis; .\setup.ps1     # once: GIS database + API on :8100 (Docker Desktop)
+```
+
+Then run the platform as usual. Settings: `GIS_ENABLED`, `GIS_API_URL` (default `http://localhost:8100`),
+`GIS_TENANT_ID`, `GIS_ENRICH_TIMEOUT_S` (`.env.example`). Guides: [services/gis/docs/integration.md](services/gis/docs/integration.md)
+(short) and [integration-details.md](services/gis/docs/integration-details.md) (local setup, Railway, settings).
 
 ---
 

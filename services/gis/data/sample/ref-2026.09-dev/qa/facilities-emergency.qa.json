@@ -1,0 +1,467 @@
+{
+ "file": "facilities-emergency.geojson.gz",
+ "sha256": "c650cfd26a46326b06b78172233451e61369d7ed9f1ce2c196c946221999370b",
+ "status": "passed",
+ "checks": [
+  "crs.storage",
+  "crs.operation",
+  "geometry.empty",
+  "geometry.type",
+  "geometry.invalid",
+  "geometry.unrepairable",
+  "identifier.missing",
+  "identifier.duplicate",
+  "identifier.name_missing",
+  "duplicate.geometry",
+  "outlier.service_area",
+  "outlier.extent",
+  "outlier.coverage",
+  "outlier.vertices",
+  "outlier.count",
+  "outlier.rejected",
+  "transform.skipped",
+  "transform.merged"
+ ],
+ "counts": {
+  "read": 1333,
+  "extracted": 1333,
+  "written": 1333,
+  "leftOut": 0,
+  "invalidPolygons": 0,
+  "errors": 0,
+  "warnings": 0,
+  "infos": 127
+ },
+ "findings": [
+  {
+   "check": "crs.operation",
+   "severity": "info",
+   "message": "source CRS EPSG:4326: none: EPSG:4326 coordinates are WGS 84 longitude/latitude",
+   "sourceFeatureId": null,
+   "details": {
+    "points": 0,
+    "note": "OpenStreetMap coordinates are WGS 84"
+   },
+   "location": null
+  },
+  {
+   "check": "transform.merged",
+   "severity": "info",
+   "message": "area-mapped hospital dropped in favour of node osm-node-9972579478 133 m away",
+   "sourceFeatureId": "osm-relation-9156255",
+   "details": {},
+   "location": null
+  },
+  {
+   "check": "transform.merged",
+   "severity": "info",
+   "message": "area-mapped hospital dropped in favour of node osm-node-10936388555 68 m away",
+   "sourceFeatureId": "osm-way-198120803",
+   "details": {},
+   "location": null
+  },
+  {
+   "check": "transform.merged",
+   "severity": "info",
+   "message": "area-mapped hospital dropped in favour of node osm-node-1292992413 145 m away",
+   "sourceFeatureId": "osm-way-204765569",
+   "details": {},
+   "location": null
+  },
+  {
+   "check": "transform.merged",
+   "severity": "info",
+   "message": "area-mapped police_station dropped in favour of node osm-node-11950647771 68 m away",
+   "sourceFeatureId": "osm-way-238423275",
+   "details": {},
+   "location": null
+  },
+  {
+   "check": "transform.merged",
+   "severity": "info",
+   "message": "area-mapped hospital dropped in favour of node osm-node-11939687607 14 m away",
+   "sourceFeatureId": "osm-way-261215185",
+   "details": {},
+   "location": null
+  },
+  {
+   "check": "transform.merged",
+   "severity": "info",
+   "message": "area-mapped hospital dropped in favour of node osm-node-9771162663 70 m away",
+   "sourceFeatureId": "osm-way-287439574",
+   "details": {},
+   "location": null
+  },
+  {
+   "check": "transform.merged",
+   "severity": "info",
+   "message": "area-mapped hospital dropped in favour of node osm-node-2913891490 26 m away",
+   "sourceFeatureId": "osm-way-287815898",
+   "details": {},
+   "location": null
+  },
+  {
+   "check": "transform.merged",
+   "severity": "info",
+   "message": "area-mapped hospital dropped in favour of node osm-node-11155256557 101 m away",
+   "sourceFeatureId": "osm-way-311966785",
+   "details": {},
+   "location": null
+  },
+  {
+   "check": "transform.merged",
+   "severity": "info",
+   "message": "area-mapped police_station dropped in favour of node osm-node-3200284658 112 m away",
+   "sourceFeatureId": "osm-way-319225605",
+   "details": {},
+   "location": null
+  },
+  {
+   "check": "transform.merged",
+   "severity": "info",
+   "message": "area-mapped hospital dropped in favour of node osm-node-4704694322 67 m away",
+   "sourceFeatureId": "osm-way-327539755",
+   "details": {},
+   "location": null
+  },
+  {
+   "check": "transform.merged",
+   "severity": "info",
+   "message": "area-mapped hospital dropped in favour of node osm-node-3521708167 63 m away",
+   "sourceFeatureId": "osm-way-330060990",
+   "details": {},
+   "location": null
+  },
+  {
+   "check": "transform.merged",
+   "severity": "info",
+   "message": "area-mapped hospital dropped in favour of node osm-node-1378988163 135 m away",
+   "sourceFeatureId": "osm-way-355252669",
+   "details": {},
+   "location": null
+  },
+  {
+   "check": "transform.merged",
+   "severity": "info",
+   "message": "area-mapped hospital dropped in favour of node osm-node-1292992413 41 m away",
+   "sourceFeatureId": "osm-way-366604317",
+   "details": {},
+   "location": null
+  },
+  {
+   "check": "transform.merged",
+   "severity": "info",
+   "message": "area-mapped hospital dropped in favour of node osm-node-11754464123 17 m away",
+   "sourceFeatureId": "osm-way-369163686",
+   "details": {},
+   "location": null
+  },
+  {
+   "check": "transform.merged",
+   "severity": "info",
+   "message": "area-mapped police_station dropped in favour of node osm-node-2151471652 18 m away",
+   "sourceFeatureId": "osm-way-385219211",
+   "details": {},
+   "location": null
+  },
+  {
+   "check": "transform.merged",
+   "severity": "info",
+   "message": "area-mapped police_station dropped in favour of node osm-node-2034206082 31 m away",
+   "sourceFeatureId": "osm-way-406402315",
+   "details": {},
+   "location": null
+  },
+  {
+   "check": "transform.merged",
+   "severity": "info",
+   "message": "area-mapped hospital dropped in favour of node osm-node-4084471911 49 m away",
+   "sourceFeatureId": "osm-way-424238163",
+   "details": {},
+   "location": null
+  },
+  {
+   "check": "transform.merged",
+   "severity": "info",
+   "message": "area-mapped hospital dropped in favour of node osm-node-2831625523 143 m away",
+   "sourceFeatureId": "osm-way-434308951",
+   "details": {},
+   "location": null
+  },
+  {
+   "check": "transform.merged",
+   "severity": "info",
+   "message": "area-mapped hospital dropped in favour of node osm-node-3727831288 89 m away",
+   "sourceFeatureId": "osm-way-439337673",
+   "details": {},
+   "location": null
+  },
+  {
+   "check": "transform.merged",
+   "severity": "info",
+   "message": "area-mapped hospital dropped in favour of node osm-node-3727831288 29 m away",
+   "sourceFeatureId": "osm-way-439643437",
+   "details": {},
+   "location": null
+  },
+  {
+   "check": "transform.merged",
+   "severity": "info",
+   "message": "area-mapped hospital dropped in favour of node osm-node-9779584112 1 m away",
+   "sourceFeatureId": "osm-way-446752783",
+   "details": {},
+   "location": null
+  },
+  {
+   "check": "transform.merged",
+   "severity": "info",
+   "message": "area-mapped police_station dropped in favour of node osm-node-2380386360 28 m away",
+   "sourceFeatureId": "osm-way-454610347",
+   "details": {},
+   "location": null
+  },
+  {
+   "check": "transform.merged",
+   "severity": "info",
+   "message": "area-mapped hospital dropped in favour of node osm-node-4438936190 31 m away",
+   "sourceFeatureId": "osm-way-455892012",
+   "details": {},
+   "location": null
+  },
+  {
+   "check": "transform.merged",
+   "severity": "info",
+   "message": "area-mapped hospital dropped in favour of node osm-node-4561921830 20 m away",
+   "sourceFeatureId": "osm-way-455892494",
+   "details": {},
+   "location": null
+  },
+  {
+   "check": "transform.merged",
+   "severity": "info",
+   "message": "area-mapped hospital dropped in favour of node osm-node-4524348589 12 m away",
+   "sourceFeatureId": "osm-way-456155138",
+   "details": {},
+   "location": null
+  },
+  {
+   "check": "transform.merged",
+   "severity": "info",
+   "message": "area-mapped hospital dropped in favour of node osm-node-4451163156 3 m away",
+   "sourceFeatureId": "osm-way-457552087",
+   "details": {},
+   "location": null
+  },
+  {
+   "check": "transform.merged",
+   "severity": "info",
+   "message": "area-mapped hospital dropped in favour of node osm-node-4547311821 23 m away",
+   "sourceFeatureId": "osm-way-458780943",
+   "details": {},
+   "location": null
+  },
+  {
+   "check": "transform.merged",
+   "severity": "info",
+   "message": "area-mapped hospital dropped in favour of node osm-node-4449065628 15 m away",
+   "sourceFeatureId": "osm-way-458984551",
+   "details": {},
+   "location": null
+  },
+  {
+   "check": "transform.merged",
+   "severity": "info",
+   "message": "area-mapped hospital dropped in favour of node osm-node-4451031394 42 m away",
+   "sourceFeatureId": "osm-way-459464422",
+   "details": {},
+   "location": null
+  },
+  {
+   "check": "transform.merged",
+   "severity": "info",
+   "message": "area-mapped police_station dropped in favour of node osm-node-4559454589 34 m away",
+   "sourceFeatureId": "osm-way-477427448",
+   "details": {},
+   "location": null
+  },
+  {
+   "check": "transform.merged",
+   "severity": "info",
+   "message": "area-mapped hospital dropped in favour of node osm-node-8307765317 55 m away",
+   "sourceFeatureId": "osm-way-513773173",
+   "details": {},
+   "location": null
+  },
+  {
+   "check": "transform.merged",
+   "severity": "info",
+   "message": "area-mapped police_station dropped in favour of node osm-node-3213614419 10 m away",
+   "sourceFeatureId": "osm-way-513856844",
+   "details": {},
+   "location": null
+  },
+  {
+   "check": "transform.merged",
+   "severity": "info",
+   "message": "area-mapped hospital dropped in favour of node osm-node-191815840 138 m away",
+   "sourceFeatureId": "osm-way-516555755",
+   "details": {},
+   "location": null
+  },
+  {
+   "check": "transform.merged",
+   "severity": "info",
+   "message": "area-mapped hospital dropped in favour of node osm-node-253022237 25 m away",
+   "sourceFeatureId": "osm-way-528112120",
+   "details": {},
+   "location": null
+  },
+  {
+   "check": "transform.merged",
+   "severity": "info",
+   "message": "area-mapped hospital dropped in favour of node osm-node-5019110507 146 m away",
+   "sourceFeatureId": "osm-way-533724967",
+   "details": {},
+   "location": null
+  },
+  {
+   "check": "transform.merged",
+   "severity": "info",
+   "message": "area-mapped hospital dropped in favour of node osm-node-5019110507 63 m away",
+   "sourceFeatureId": "osm-way-533725659",
+   "details": {},
+   "location": null
+  },
+  {
+   "check": "transform.merged",
+   "severity": "info",
+   "message": "area-mapped police_station dropped in favour of node osm-node-9630826517 72 m away",
+   "sourceFeatureId": "osm-way-537304757",
+   "details": {},
+   "location": null
+  },
+  {
+   "check": "transform.merged",
+   "severity": "info",
+   "message": "area-mapped fire_station dropped in favour of node osm-node-1837389472 1 m away",
+   "sourceFeatureId": "osm-way-562749160",
+   "details": {},
+   "location": null
+  },
+  {
+   "check": "transform.merged",
+   "severity": "info",
+   "message": "area-mapped hospital dropped in favour of node osm-node-4448911930 10 m away",
+   "sourceFeatureId": "osm-way-575454505",
+   "details": {},
+   "location": null
+  },
+  {
+   "check": "transform.merged",
+   "severity": "info",
+   "message": "area-mapped fire_station dropped in favour of node osm-node-3564749671 10 m away",
+   "sourceFeatureId": "osm-way-581529246",
+   "details": {},
+   "location": null
+  },
+  {
+   "check": "transform.merged",
+   "severity": "info",
+   "message": "area-mapped fire_station dropped in favour of node osm-node-12949812319 4 m away",
+   "sourceFeatureId": "osm-way-594752261",
+   "details": {},
+   "location": null
+  },
+  {
+   "check": "transform.merged",
+   "severity": "info",
+   "message": "area-mapped police_station dropped in favour of node osm-node-4359583750 11 m away",
+   "sourceFeatureId": "osm-way-606723741",
+   "details": {},
+   "location": null
+  },
+  {
+   "check": "transform.merged",
+   "severity": "info",
+   "message": "area-mapped hospital dropped in favour of node osm-node-5907970351 88 m away",
+   "sourceFeatureId": "osm-way-616373760",
+   "details": {},
+   "location": null
+  },
+  {
+   "check": "transform.merged",
+   "severity": "info",
+   "message": "area-mapped police_station dropped in favour of node osm-node-10121900178 14 m away",
+   "sourceFeatureId": "osm-way-626567019",
+   "details": {},
+   "location": null
+  },
+  {
+   "check": "transform.merged",
+   "severity": "info",
+   "message": "area-mapped police_station dropped in favour of node osm-node-10121900178 13 m away",
+   "sourceFeatureId": "osm-way-626567020",
+   "details": {},
+   "location": null
+  },
+  {
+   "check": "transform.merged",
+   "severity": "info",
+   "message": "area-mapped police_station dropped in favour of node osm-node-10121900178 9 m away",
+   "sourceFeatureId": "osm-way-626567022",
+   "details": {},
+   "location": null
+  },
+  {
+   "check": "transform.merged",
+   "severity": "info",
+   "message": "area-mapped hospital dropped in favour of node osm-node-2739103173 16 m away",
+   "sourceFeatureId": "osm-way-627096374",
+   "details": {},
+   "location": null
+  },
+  {
+   "check": "transform.merged",
+   "severity": "info",
+   "message": "area-mapped hospital dropped in favour of node osm-node-2739103173 50 m away",
+   "sourceFeatureId": "osm-way-627096375",
+   "details": {},
+   "location": null
+  },
+  {
+   "check": "transform.merged",
+   "severity": "info",
+   "message": "area-mapped hospital dropped in favour of node osm-node-2739103173 35 m away",
+   "sourceFeatureId": "osm-way-627096376",
+   "details": {},
+   "location": null
+  },
+  {
+   "check": "transform.merged",
+   "severity": "info",
+   "message": "area-mapped hospital dropped in favour of node osm-node-2739103173 44 m away",
+   "sourceFeatureId": "osm-way-627096377",
+   "details": {},
+   "location": null
+  }
+ ],
+ "findingCount": 127,
+ "parameters": {
+  "expectations": {
+   "expected_bbox": [
+    79.44,
+    5.66,
+    82.15,
+    10.08
+   ],
+   "min_features": 300,
+   "max_rejected_ratio": 0.05
+  },
+  "findingsPerCheck": {
+   "crs.operation": 1,
+   "transform.merged": 126
+  }
+ },
+ "toolVersion": "gis-core-service 0.1.0 pipeline",
+ "checkedAt": "2026-09-24T10:52:01.124935Z"
+}

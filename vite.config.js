@@ -26,6 +26,10 @@ export default defineConfig({
       '/api':     { target: 'http://localhost:8000', changeOrigin: true, ws: true },
       '/uploads': { target: 'http://localhost:8000', changeOrigin: true },
       '/upload':  { target: 'http://localhost:8000', changeOrigin: true },
+      // The GIS instance's map and basemap, proxied by the backend to the GIS service (gis_client.py).
+      // /api/gis/* (its API) already goes through '/api' above.
+      '/gis-app': { target: 'http://localhost:8000', changeOrigin: true },
+      '/basemap': { target: 'http://localhost:8000', changeOrigin: true },
     },
   },
 })

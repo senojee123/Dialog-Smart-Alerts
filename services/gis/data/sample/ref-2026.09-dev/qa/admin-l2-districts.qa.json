@@ -1,0 +1,68 @@
+{
+ "file": "admin-l2-districts.geojson.gz",
+ "sha256": "607b4e1ed40d8ef4566cc106754b971fadfd435e604ab521ffc09964b72a1443",
+ "status": "passed",
+ "checks": [
+  "crs.storage",
+  "crs.operation",
+  "geometry.empty",
+  "geometry.type",
+  "geometry.invalid",
+  "geometry.unrepairable",
+  "identifier.missing",
+  "identifier.duplicate",
+  "identifier.name_missing",
+  "duplicate.geometry",
+  "outlier.service_area",
+  "outlier.extent",
+  "outlier.coverage",
+  "outlier.vertices",
+  "outlier.count",
+  "outlier.rejected",
+  "transform.skipped",
+  "transform.merged"
+ ],
+ "counts": {
+  "read": 25,
+  "extracted": 25,
+  "written": 25,
+  "leftOut": 0,
+  "invalidPolygons": 0,
+  "errors": 0,
+  "warnings": 0,
+  "infos": 1
+ },
+ "findings": [
+  {
+   "check": "crs.operation",
+   "severity": "info",
+   "message": "source CRS EPSG:4326: none: EPSG:4326 coordinates are WGS 84 longitude/latitude",
+   "sourceFeatureId": null,
+   "details": {
+    "points": 0,
+    "maxDeviationDeg": 0.0,
+    "controlPoints": 0
+   },
+   "location": null
+  }
+ ],
+ "findingCount": 1,
+ "parameters": {
+  "expectations": {
+   "expected_bbox": [
+    79.44,
+    5.66,
+    82.15,
+    10.08
+   ],
+   "min_features": 25,
+   "max_features": 25,
+   "code_pattern": "^LK-[1-9][0-9]$"
+  },
+  "findingsPerCheck": {
+   "crs.operation": 1
+  }
+ },
+ "toolVersion": "gis-core-service 0.1.0 pipeline",
+ "checkedAt": "2026-09-24T10:51:58.243736Z"
+}

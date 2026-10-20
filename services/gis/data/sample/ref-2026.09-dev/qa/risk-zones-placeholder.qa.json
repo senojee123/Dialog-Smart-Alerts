@@ -1,0 +1,65 @@
+{
+ "file": "risk-zones-placeholder.geojson.gz",
+ "sha256": "98768a5552412eb107b07a0eb38b617019959da45d4f11b9ce1f0253fdbafa0e",
+ "status": "passed",
+ "checks": [
+  "crs.storage",
+  "crs.operation",
+  "geometry.empty",
+  "geometry.type",
+  "geometry.invalid",
+  "geometry.unrepairable",
+  "identifier.missing",
+  "identifier.duplicate",
+  "identifier.name_missing",
+  "duplicate.geometry",
+  "outlier.service_area",
+  "outlier.extent",
+  "outlier.coverage",
+  "outlier.vertices",
+  "outlier.count",
+  "outlier.rejected",
+  "transform.skipped",
+  "transform.merged"
+ ],
+ "counts": {
+  "read": 5,
+  "extracted": 5,
+  "written": 5,
+  "leftOut": 0,
+  "invalidPolygons": 0,
+  "errors": 0,
+  "warnings": 0,
+  "infos": 1
+ },
+ "findings": [
+  {
+   "check": "crs.operation",
+   "severity": "info",
+   "message": "source CRS EPSG:4326: none: EPSG:4326 coordinates are WGS 84 longitude/latitude",
+   "sourceFeatureId": null,
+   "details": {
+    "points": 0,
+    "note": "constructed in EPSG:4326"
+   },
+   "location": null
+  }
+ ],
+ "findingCount": 1,
+ "parameters": {
+  "expectations": {
+   "expected_bbox": [
+    80.45,
+    7.75,
+    81.1,
+    8.3
+   ],
+   "min_features": 1
+  },
+  "findingsPerCheck": {
+   "crs.operation": 1
+  }
+ },
+ "toolVersion": "gis-core-service 0.1.0 pipeline",
+ "checkedAt": "2026-09-24T10:52:19.214325Z"
+}

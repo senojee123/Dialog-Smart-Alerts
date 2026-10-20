@@ -91,8 +91,8 @@ export const FULL_TOUR_STEPS = [
     text: 'The summary chips give an instant count of boards in warning, caution, clear, or offline, and a map view shows exactly where each board stands.',
   },
   {
-    id: 'map', route: '/map', target: 'main', title: 'Map view',
-    text: 'The map view plots every incident geographically, so the operations centre can see activity across the Yala corridor, the Southern Highway, and Kataragama Road, at a glance.',
+    id: 'map', route: '/gis', target: 'main', title: 'GIS view',
+    text: 'The GIS view plots every incident geographically, so the operations centre can see activity across the Yala corridor, the Southern Highway, and Kataragama Road, at a glance.',
   },
   {
     id: 'devices', route: '/devices', target: 'device-table', title: 'Connected devices',

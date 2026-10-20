@@ -1,0 +1,114 @@
+{
+ "type": "FeatureCollection",
+ "features": [
+  {
+   "type": "Feature",
+   "id": "SYN-RZ1",
+   "properties": {
+    "name": "Fixture Elephant Corridor",
+    "risk_type": "elephant_corridor",
+    "severity": 4
+   },
+   "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+     [
+      [
+       80.76,
+       8.0
+      ],
+      [
+       80.76,
+       8.02
+      ],
+      [
+       80.74,
+       8.02
+      ],
+      [
+       80.74,
+       8.0
+      ],
+      [
+       80.76,
+       8.0
+      ]
+     ]
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "id": "SYN-RZ2",
+   "properties": {
+    "name": "Fixture Flood Zone",
+    "risk_type": "flood",
+    "severity": 3,
+    "valid_during": "[2025-10-01 00:00:00+05:30,2026-01-01 00:00:00+05:30)"
+   },
+   "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+     [
+      [
+       80.72,
+       7.98
+      ],
+      [
+       80.72,
+       8.0
+      ],
+      [
+       80.7,
+       8.0
+      ],
+      [
+       80.7,
+       7.98
+      ],
+      [
+       80.72,
+       7.98
+      ]
+     ]
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "id": "SYN-RZ3",
+   "properties": {
+    "name": "Fixture Drought Zone",
+    "risk_type": "drought",
+    "severity": 2
+   },
+   "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+     [
+      [
+       80.77,
+       8.012
+      ],
+      [
+       80.77,
+       8.025
+      ],
+      [
+       80.75,
+       8.025
+      ],
+      [
+       80.75,
+       8.012
+      ],
+      [
+       80.77,
+       8.012
+      ]
+     ]
+    ]
+   }
+  }
+ ]
+}

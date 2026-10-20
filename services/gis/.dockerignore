@@ -1,0 +1,19 @@
+**/.git
+**/.env
+**/.env.*
+!.env.example
+.local
+**/__pycache__
+**/*.py[cod]
+**/.venv
+**/.pytest_cache
+**/.mypy_cache
+**/.ruff_cache
+**/node_modules
+frontend/dist
+# Source and derived geodata stay out of images; the fixtures and the sample release are copied into the
+# test image, the pipeline service mounts data/, and the platform image carries data/basemap and
+# data/sample (the map's offline basemap and the development reference data release).
+data/raw
+data/processed
+docs

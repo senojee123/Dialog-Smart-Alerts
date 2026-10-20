@@ -1,0 +1,344 @@
+# Production profile TEMPLATE: agency datasets, configured per deployment.
+#
+#   cp production.example.toml production.toml     # kept out of git if it names internal locations
+#   cd backend
+#   python -m app.pipeline sources --profile ../data/pipeline/profiles/production.toml
+#   python -m app.pipeline run --profile ../data/pipeline/profiles/production.toml --basemap --publish
+#
+# As it stands this profile REFUSES TO BUILD, on purpose. Nothing about the licence of a production dataset
+# is assumed: for every source, record what the data-sharing agreement or published licence actually says
+# and who reviewed it, then set review.status = "approved". Until then:
+#
+#   * licence is a placeholder (LicenseRef-...-pending) and commercial_use_allowed / redistribution_allowed
+#     are false - the pipeline refuses a source that does not permit commercial use unless the licensor's
+#     written permission is recorded in permission_reference;
+#   * a production profile needs review.status = "approved" for every source it uses;
+#   * placeholder or synthetic data is refused in a production release.
+#
+# The database QA repeats these checks on the loaded release (licence.unreviewed, licence.restricted,
+# content.synthetic are errors that cannot be waived), and a production environment (GIS_ENV=production)
+# only makes a production release current.
+#
+# Where the files are: every source is a file in the raw data directory (data/raw by default, or
+# --raw-dir). An agency delivery is placed there by hand, and its SHA-256 is recorded below so that a
+# changed file is noticed. Where a source can be downloaded, the URL and any Authorization header come
+# from environment variables (download_env, auth_header_env), never from this file.
+#
+# Field names (fields, id_field, input_layer) must match the delivered data: run
+#   ogrinfo -so <file>
+# and adjust them. Those below are examples of the mapping, not the agencies' schemas.
+#
+# WDPA: the World Database on Protected Areas may not be used commercially or redistributed without
+# written permission from UNEP-WCMC. Use the Department of Wildlife Conservation and Forest Department
+# boundaries below. If a deployment does obtain permission, add the source with licence "WDPA-terms",
+# the permission's reference in permission_reference and an approved review (see the commented block).
+
+[profile]
+name = "production"
+purpose = "production"
+release = "ref-{year}.{month}"
+description = "Production reference data from Sri Lankan agencies (see SOURCES.md of the release)"
+
+[areas]
+national = [79.44, 5.66, 82.15, 10.08]
+pilot = [80.45, 7.75, 81.10, 8.30]
+
+# --- sources -----------------------------------------------------------------------------------------------
+
+[sources.survey-dept-admin]
+name = "Administrative boundaries (provinces, districts, DS and GN divisions)"
+publisher = "Survey Department of Sri Lanka"
+url = "https://www.survey.gov.lk/"
+licence = "LicenseRef-survey-department-agreement-pending"
+attribution = "Survey Department of Sri Lanka"
+commercial_use_allowed = false
+redistribution_allowed = false
+review = { status = "unreviewed" }
+file = "agency/survey-department/admin_boundaries.gpkg"
+# sha256 = "<sha256 of the delivered file>"
+version = "<edition or delivery date stated by the Survey Department>"
+source_crs = "EPSG:5235"   # SLD99 / Sri Lanka Grid 1999; checked against the file's own CRS
+geometry_source = "survey"
+# Surveyed points that must land within tolerance after the transformation to WGS 84 (optional):
+# [[sources.survey-dept-admin.control_points]]
+# name = "<trig station>"
+# source = [<easting>, <northing>]
+# wgs84 = [<longitude>, <latitude>]
+# tolerance_m = 1.0
+
+[sources.dcs-settlements]
+name = "Settlements and census population"
+publisher = "Department of Census and Statistics"
+url = "http://www.statistics.gov.lk/"
+licence = "LicenseRef-dcs-agreement-pending"
+attribution = "Department of Census and Statistics, Sri Lanka"
+commercial_use_allowed = false
+redistribution_allowed = false
+review = { status = "unreviewed" }
+file = "agency/dcs/settlements.gpkg"
+version = "<census year and delivery date>"
+geometry_source = "survey"
+
+[sources.moh-facilities]
+name = "Health and emergency facilities"
+publisher = "Ministry of Health; Sri Lanka Police; Fire services (as agreed)"
+licence = "LicenseRef-facilities-agreement-pending"
+attribution = "Ministry of Health, Sri Lanka"
+commercial_use_allowed = false
+redistribution_allowed = false
+review = { status = "unreviewed" }
+file = "agency/facilities/facilities.gpkg"
+version = "<delivery date>"
+geometry_source = "gps"
+
+[sources.rda-roads]
+name = "National road network (A and B class roads)"
+publisher = "Road Development Authority"
+url = "https://www.rda.gov.lk/"
+licence = "LicenseRef-rda-agreement-pending"
+attribution = "Road Development Authority, Sri Lanka"
+commercial_use_allowed = false
+redistribution_allowed = false
+review = { status = "unreviewed" }
+file = "agency/rda/national_roads.gpkg"
+version = "<delivery date>"
+source_crs = "EPSG:5235"
+geometry_source = "survey"
+
+[sources.dwc-protected-areas]
+name = "Protected areas under the Fauna and Flora Protection Ordinance"
+publisher = "Department of Wildlife Conservation"
+url = "https://www.dwc.gov.lk/"
+licence = "LicenseRef-dwc-agreement-pending"
+attribution = "Department of Wildlife Conservation, Sri Lanka"
+commercial_use_allowed = false
+redistribution_allowed = false
+review = { status = "unreviewed" }
+file = "agency/dwc/protected_areas.gpkg"
+version = "<gazette reference or delivery date>"
+source_crs = "EPSG:5235"
+geometry_source = "survey"
+
+[sources.irrigation-water]
+name = "Tanks, reservoirs, rivers and canals"
+publisher = "Irrigation Department; Mahaweli Authority of Sri Lanka (as agreed)"
+licence = "LicenseRef-irrigation-agreement-pending"
+attribution = "Irrigation Department, Sri Lanka"
+commercial_use_allowed = false
+redistribution_allowed = false
+review = { status = "unreviewed" }
+file = "agency/irrigation/water.gpkg"
+version = "<delivery date>"
+source_crs = "EPSG:5235"
+geometry_source = "survey"
+
+[sources.nbro-dmc-hazard-zones]
+name = "Hazard zones (landslide, flood) and elephant corridors"
+publisher = "National Building Research Organisation; Disaster Management Centre; DWC (as agreed)"
+licence = "LicenseRef-hazard-agreement-pending"
+attribution = "NBRO / DMC, Sri Lanka"
+commercial_use_allowed = false
+redistribution_allowed = false
+review = { status = "unreviewed" }
+file = "agency/hazards/hazard_zones.gpkg"
+version = "<edition or delivery date>"
+source_crs = "EPSG:5235"
+geometry_source = "survey"
+
+# OpenStreetMap for the basemap (ODbL: attribution and share-alike for derived databases shared outside
+# the platform). Review it for the deployment like any other source.
+[sources.osm-geofabrik-lka]
+name = "OpenStreetMap, Sri Lanka extract"
+publisher = "OpenStreetMap contributors; extract by Geofabrik GmbH"
+url = "https://www.openstreetmap.org/copyright"
+licence = "ODbL-1.0"
+licence_url = "https://opendatacommons.org/licenses/odbl/1-0/"
+attribution = "© OpenStreetMap contributors"
+commercial_use_allowed = true
+redistribution_allowed = true
+share_alike = true
+review = { status = "unreviewed" }
+file = "osm/sri-lanka-latest.osm.pbf"
+download_env = "GIS_PIPELINE_OSM_URL"   # e.g. an internal mirror of the Geofabrik extract
+version_from = "osm_replication_timestamp"
+geometry_source = "osm"
+
+# Country outline of the basemap (read as EPSG:4326, one polygon layer).
+[sources.geoboundaries-lka-adm0]
+name = "geoBoundaries gbOpen Sri Lanka ADM0 (country)"
+publisher = "William & Mary geoLab (geoBoundaries); OpenStreetMap contributors"
+url = "https://www.geoboundaries.org/"
+licence = "ODbL-1.0"
+licence_url = "https://opendatacommons.org/licenses/odbl/1-0/"
+attribution = "© OpenStreetMap contributors (ODbL); geoBoundaries, Runfola et al. (2020), PLoS ONE 15(4): e0231866"
+commercial_use_allowed = true
+redistribution_allowed = true
+share_alike = true
+review = { status = "unreviewed" }
+file = "geoboundaries/geoBoundaries-LKA-ADM0_simplified.geojson"
+download = "https://media.githubusercontent.com/media/wmgeolab/geoBoundaries/main/releaseData/gbOpen/LKA/ADM0/geoBoundaries-LKA-ADM0_simplified.geojson"
+sha256 = "e895a2e5c5fd8e1b323801dc60ab04a14bdecb3a312ecfee7952cd7c25d41bdd"
+version = "geoBoundaries gbOpen LKA-ADM0-54457186 (built 2023-12-12; source updated 2023-01-19)"
+geometry_source = "osm"
+
+[sources.protomaps-basemaps-assets]
+name = "Protomaps basemaps assets: Noto Sans glyphs"
+publisher = "Protomaps; Google (Noto fonts)"
+url = "https://github.com/protomaps/basemaps-assets"
+licence = "OFL-1.1"
+licence_url = "https://raw.githubusercontent.com/protomaps/basemaps-assets/main/fonts/OFL.txt"
+attribution = "Noto Sans (SIL Open Font License 1.1)"
+commercial_use_allowed = true
+redistribution_allowed = true
+review = { status = "unreviewed" }
+file = "fonts"
+download = "https://raw.githubusercontent.com/protomaps/basemaps-assets/main/fonts/{fontstack}/{range}.pbf"
+version = "basemaps-assets main branch (glyphs generated by maplibre/font-maker)"
+
+# Only with UNEP-WCMC's written permission for this deployment:
+# [sources.wdpa-lka]
+# name = "World Database on Protected Areas, Sri Lanka"
+# publisher = "UNEP-WCMC and IUCN"
+# url = "https://www.protectedplanet.net/"
+# licence = "WDPA-terms"
+# attribution = "UNEP-WCMC and IUCN (<year>), Protected Planet: The World Database on Protected Areas"
+# commercial_use_allowed = false
+# redistribution_allowed = false
+# permission_reference = "<reference of UNEP-WCMC's written permission>"
+# review = { status = "approved", reviewed_by = "<name>", reviewed_on = <date>, reference = "<ticket>" }
+# file = "wdpa/WDPA_LKA.gpkg"
+# version = "<WDPA monthly release, e.g. Sep 2026>"
+# geometry_source = "digitised"
+
+# --- datasets ----------------------------------------------------------------------------------------------
+# The field mappings are examples; match them to the delivered schema (ogrinfo -so <file> <layer>).
+
+[[datasets]]
+name = "admin-l1-provinces"
+layer = "ref.admin_area"
+source = "survey-dept-admin"
+adapter = "vector"
+input_layer = "provinces"
+id_field = "PROV_CODE"
+fields = { name = "PROV_NAME", code = "PROV_CODE" }
+properties = { level = 1 }
+accuracy_m = 10
+qa = { expected_area = "national", min_features = 9, max_features = 9 }
+
+[[datasets]]
+name = "admin-l2-districts"
+layer = "ref.admin_area"
+source = "survey-dept-admin"
+adapter = "vector"
+input_layer = "districts"
+id_field = "DIST_CODE"
+fields = { name = "DIST_NAME", code = "DIST_CODE" }
+properties = { level = 2 }
+parent_by = "location"
+accuracy_m = 10
+qa = { expected_area = "national", min_features = 25, max_features = 25 }
+
+[[datasets]]
+name = "admin-l3-ds-divisions"
+layer = "ref.admin_area"
+source = "survey-dept-admin"
+adapter = "vector"
+input_layer = "ds_divisions"
+id_field = "DSD_CODE"
+fields = { name = "DSD_NAME", code = "DSD_CODE" }
+properties = { level = 3 }
+parent_by = "location"
+accuracy_m = 10
+qa = { expected_area = "national", min_features = 330 }
+
+[[datasets]]
+name = "admin-l4-gn-divisions"
+layer = "ref.admin_area"
+source = "survey-dept-admin"
+adapter = "vector"
+input_layer = "gn_divisions"
+id_field = "GND_CODE"
+fields = { name = "GND_NAME", code = "GND_CODE" }
+properties = { level = 4 }
+parent_by = "location"
+accuracy_m = 10
+qa = { expected_area = "national", min_features = 14000 }
+
+[[datasets]]
+name = "settlements"
+layer = "ref.settlement"
+source = "dcs-settlements"
+adapter = "vector"
+id_field = "SETTLE_ID"
+fields = { name = "NAME", settlement_type = "TYPE", population = "POP" }
+values = { settlement_type = { "Municipal Council" = "city", "Urban Council" = "town", "Village" = "village", "Estate" = "estate" } }
+admin_area_by = "location"
+accuracy_m = 50
+qa = { expected_area = "national" }
+
+[[datasets]]
+name = "facilities"
+layer = "ref.facility"
+source = "moh-facilities"
+adapter = "vector"
+id_field = "FACILITY_ID"
+fields = { name = "NAME", facility_type = "CATEGORY" }
+values = { facility_type = { "Hospital" = "hospital", "Police" = "police_station", "Fire" = "fire_station" } }
+admin_area_by = "location"
+accuracy_m = 20
+qa = { expected_area = "national" }
+
+[[datasets]]
+name = "roads-national"
+layer = "ref.road"
+source = "rda-roads"
+adapter = "vector"
+id_field = "ROAD_ID"
+fields = { name = "ROAD_NAME", road_class = "CLASS", ref_code = "ROUTE_NO" }
+accuracy_m = 10
+qa = { expected_area = "national", min_coverage_ratio = 0.8 }
+
+[[datasets]]
+name = "protected-areas"
+layer = "ref.protected_area"
+source = "dwc-protected-areas"
+adapter = "vector"
+id_field = "PA_ID"
+fields = { name = "PA_NAME", designation = "DESIGNATION" }
+properties = { managing_authority = "DWC" }
+accuracy_m = 20
+qa = { expected_area = "national" }
+
+[[datasets]]
+name = "water-bodies"
+layer = "ref.water_body"
+source = "irrigation-water"
+adapter = "vector"
+id_field = "WATER_ID"
+fields = { name = "NAME", water_type = "TYPE" }
+values = { water_type = { "Tank" = "tank", "Reservoir" = "reservoir", "River" = "river", "Canal" = "canal" } }
+accuracy_m = 20
+qa = { expected_area = "national" }
+
+[[datasets]]
+name = "risk-zones"
+layer = "ref.risk_zone"
+source = "nbro-dmc-hazard-zones"
+adapter = "vector"
+id_field = "ZONE_ID"
+fields = { name = "ZONE_NAME", risk_type = "HAZARD", severity = "LEVEL" }
+values = { risk_type = { "Landslide" = "landslide", "Flood" = "flood", "Elephant corridor" = "elephant_corridor" } }
+accuracy_m = 50
+qa = { expected_area = "national" }
+
+# --- basemap -----------------------------------------------------------------------------------------------
+
+[basemap]
+name = "lka"
+osm_source = "osm-geofabrik-lka"
+land_source = "geoboundaries-lka-adm0"
+glyphs_source = "protomaps-basemaps-assets"
+detail_area = "national"
+min_zoom = 0
+max_zoom = 14
+public_path = "/basemap"

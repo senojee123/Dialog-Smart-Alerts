@@ -1,0 +1,61 @@
+{
+ "type": "FeatureCollection",
+ "features": [
+  {
+   "type": "Feature",
+   "id": "SYN-W1",
+   "properties": {
+    "name": "Fixture Tank",
+    "water_type": "tank"
+   },
+   "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+     [
+      [
+       80.715,
+       8.035
+      ],
+      [
+       80.715,
+       8.045
+      ],
+      [
+       80.705,
+       8.045
+      ],
+      [
+       80.705,
+       8.035
+      ],
+      [
+       80.715,
+       8.035
+      ]
+     ]
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "id": "SYN-W2",
+   "properties": {
+    "name": "Fixture Oya",
+    "water_type": "stream"
+   },
+   "geometry": {
+    "type": "LineString",
+    "coordinates": [
+     [
+      80.78,
+      7.98
+     ],
+     [
+      80.78,
+      8.03
+     ]
+    ]
+   }
+  }
+ ]
+}

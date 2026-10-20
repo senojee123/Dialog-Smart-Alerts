@@ -1,0 +1,95 @@
+{
+ "file": "roads-national.geojson.gz",
+ "sha256": "47cb2067021cf5ac52cdf066600fbb495f76fc879213e335af5fc342f6a74902",
+ "status": "warnings",
+ "checks": [
+  "crs.storage",
+  "crs.operation",
+  "geometry.empty",
+  "geometry.type",
+  "geometry.invalid",
+  "geometry.unrepairable",
+  "identifier.missing",
+  "identifier.duplicate",
+  "identifier.name_missing",
+  "duplicate.geometry",
+  "outlier.service_area",
+  "outlier.extent",
+  "outlier.coverage",
+  "outlier.vertices",
+  "outlier.count",
+  "outlier.rejected",
+  "transform.skipped",
+  "transform.merged"
+ ],
+ "counts": {
+  "read": 20840,
+  "extracted": 20840,
+  "written": 20839,
+  "leftOut": 1,
+  "invalidPolygons": 0,
+  "errors": 0,
+  "warnings": 1,
+  "infos": 2
+ },
+ "findings": [
+  {
+   "check": "crs.operation",
+   "severity": "info",
+   "message": "source CRS EPSG:4326: none: EPSG:4326 coordinates are WGS 84 longitude/latitude",
+   "sourceFeatureId": null,
+   "details": {
+    "points": 0,
+    "note": "OpenStreetMap coordinates are WGS 84"
+   },
+   "location": null
+  },
+  {
+   "check": "outlier.service_area",
+   "severity": "warning",
+   "message": "outside the service area: left out",
+   "sourceFeatureId": "osm-way-398825526",
+   "details": {
+    "bounds": [
+     79.4319217,
+     9.1506125,
+     79.4488823,
+     9.1656673
+    ],
+    "likelySwapped": false
+   },
+   "location": null
+  },
+  {
+   "check": "outlier.rejected",
+   "severity": "info",
+   "message": "1 of 20840 features left out (0.00%; at most 1.00% allowed)",
+   "sourceFeatureId": null,
+   "details": {
+    "rejected": 1,
+    "extracted": 20840
+   },
+   "location": null
+  }
+ ],
+ "findingCount": 3,
+ "parameters": {
+  "expectations": {
+   "expected_bbox": [
+    79.44,
+    5.66,
+    82.15,
+    10.08
+   ],
+   "min_coverage_ratio": 0.8,
+   "min_features": 5000
+  },
+  "findingsPerCheck": {
+   "crs.operation": 1,
+   "outlier.service_area": 1,
+   "outlier.rejected": 1
+  }
+ },
+ "toolVersion": "gis-core-service 0.1.0 pipeline",
+ "checkedAt": "2026-09-24T10:52:10.195433Z"
+}

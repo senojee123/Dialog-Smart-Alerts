@@ -1,0 +1,466 @@
+{
+ "file": "protected-areas.geojson.gz",
+ "sha256": "baf3b9e70c96ec20be997ed356e51c56b0fdc4e1630694a8a4398558a44eca10",
+ "status": "passed",
+ "checks": [
+  "crs.storage",
+  "crs.operation",
+  "geometry.empty",
+  "geometry.type",
+  "geometry.invalid",
+  "geometry.unrepairable",
+  "identifier.missing",
+  "identifier.duplicate",
+  "identifier.name_missing",
+  "duplicate.geometry",
+  "outlier.service_area",
+  "outlier.extent",
+  "outlier.coverage",
+  "outlier.vertices",
+  "outlier.count",
+  "outlier.rejected",
+  "transform.skipped",
+  "transform.merged"
+ ],
+ "counts": {
+  "read": 92,
+  "extracted": 38,
+  "written": 38,
+  "leftOut": 0,
+  "invalidPolygons": 0,
+  "errors": 0,
+  "warnings": 0,
+  "infos": 55
+ },
+ "findings": [
+  {
+   "check": "crs.operation",
+   "severity": "info",
+   "message": "source CRS EPSG:4326: none: EPSG:4326 coordinates are WGS 84 longitude/latitude",
+   "sourceFeatureId": null,
+   "details": {
+    "points": 0,
+    "note": "OpenStreetMap coordinates are WGS 84"
+   },
+   "location": null
+  },
+  {
+   "check": "transform.skipped",
+   "severity": "info",
+   "message": "protected area left out: not a recognised designation (national park, sanctuary, nature or forest reserve, ...)",
+   "sourceFeatureId": "osm-relation-6776379",
+   "details": {},
+   "location": null
+  },
+  {
+   "check": "transform.skipped",
+   "severity": "info",
+   "message": "protected area left out: not a recognised designation (national park, sanctuary, nature or forest reserve, ...)",
+   "sourceFeatureId": "osm-relation-7520095",
+   "details": {},
+   "location": null
+  },
+  {
+   "check": "transform.skipped",
+   "severity": "info",
+   "message": "protected area left out: not a recognised designation (national park, sanctuary, nature or forest reserve, ...)",
+   "sourceFeatureId": "osm-relation-9192571",
+   "details": {},
+   "location": null
+  },
+  {
+   "check": "transform.skipped",
+   "severity": "info",
+   "message": "protected area left out: not a recognised designation (national park, sanctuary, nature or forest reserve, ...)",
+   "sourceFeatureId": "osm-way-48959868",
+   "details": {},
+   "location": null
+  },
+  {
+   "check": "transform.skipped",
+   "severity": "info",
+   "message": "protected area left out: not a recognised designation (national park, sanctuary, nature or forest reserve, ...)",
+   "sourceFeatureId": "osm-way-54029773",
+   "details": {},
+   "location": null
+  },
+  {
+   "check": "transform.skipped",
+   "severity": "info",
+   "message": "protected area left out: not a recognised designation (national park, sanctuary, nature or forest reserve, ...)",
+   "sourceFeatureId": "osm-way-136819611",
+   "details": {},
+   "location": null
+  },
+  {
+   "check": "transform.skipped",
+   "severity": "info",
+   "message": "protected area left out: no name",
+   "sourceFeatureId": "osm-way-174036176",
+   "details": {},
+   "location": null
+  },
+  {
+   "check": "transform.skipped",
+   "severity": "info",
+   "message": "protected area left out: no name",
+   "sourceFeatureId": "osm-way-174036180",
+   "details": {},
+   "location": null
+  },
+  {
+   "check": "transform.skipped",
+   "severity": "info",
+   "message": "protected area left out: not a recognised designation (national park, sanctuary, nature or forest reserve, ...)",
+   "sourceFeatureId": "osm-way-174720316",
+   "details": {},
+   "location": null
+  },
+  {
+   "check": "transform.skipped",
+   "severity": "info",
+   "message": "protected area left out: not a recognised designation (national park, sanctuary, nature or forest reserve, ...)",
+   "sourceFeatureId": "osm-way-209721363",
+   "details": {},
+   "location": null
+  },
+  {
+   "check": "transform.skipped",
+   "severity": "info",
+   "message": "protected area left out: not a recognised designation (national park, sanctuary, nature or forest reserve, ...)",
+   "sourceFeatureId": "osm-way-230406235",
+   "details": {},
+   "location": null
+  },
+  {
+   "check": "transform.skipped",
+   "severity": "info",
+   "message": "protected area left out: no name",
+   "sourceFeatureId": "osm-way-288582016",
+   "details": {},
+   "location": null
+  },
+  {
+   "check": "transform.skipped",
+   "severity": "info",
+   "message": "protected area left out: no name",
+   "sourceFeatureId": "osm-way-288582018",
+   "details": {},
+   "location": null
+  },
+  {
+   "check": "transform.skipped",
+   "severity": "info",
+   "message": "protected area left out: not a recognised designation (national park, sanctuary, nature or forest reserve, ...)",
+   "sourceFeatureId": "osm-way-314613662",
+   "details": {},
+   "location": null
+  },
+  {
+   "check": "transform.skipped",
+   "severity": "info",
+   "message": "protected area left out: not a recognised designation (national park, sanctuary, nature or forest reserve, ...)",
+   "sourceFeatureId": "osm-way-355210005",
+   "details": {},
+   "location": null
+  },
+  {
+   "check": "transform.skipped",
+   "severity": "info",
+   "message": "protected area left out: no name",
+   "sourceFeatureId": "osm-way-451276462",
+   "details": {},
+   "location": null
+  },
+  {
+   "check": "transform.skipped",
+   "severity": "info",
+   "message": "protected area left out: no name",
+   "sourceFeatureId": "osm-way-451288591",
+   "details": {},
+   "location": null
+  },
+  {
+   "check": "transform.skipped",
+   "severity": "info",
+   "message": "protected area left out: no name",
+   "sourceFeatureId": "osm-way-452025142",
+   "details": {},
+   "location": null
+  },
+  {
+   "check": "transform.skipped",
+   "severity": "info",
+   "message": "protected area left out: no name",
+   "sourceFeatureId": "osm-way-453662779",
+   "details": {},
+   "location": null
+  },
+  {
+   "check": "transform.skipped",
+   "severity": "info",
+   "message": "protected area left out: no name",
+   "sourceFeatureId": "osm-way-453928530",
+   "details": {},
+   "location": null
+  },
+  {
+   "check": "transform.skipped",
+   "severity": "info",
+   "message": "protected area left out: no name",
+   "sourceFeatureId": "osm-way-456543298",
+   "details": {},
+   "location": null
+  },
+  {
+   "check": "transform.skipped",
+   "severity": "info",
+   "message": "protected area left out: not a recognised designation (national park, sanctuary, nature or forest reserve, ...)",
+   "sourceFeatureId": "osm-way-467373493",
+   "details": {},
+   "location": null
+  },
+  {
+   "check": "transform.skipped",
+   "severity": "info",
+   "message": "protected area left out: not a recognised designation (national park, sanctuary, nature or forest reserve, ...)",
+   "sourceFeatureId": "osm-way-467373513",
+   "details": {},
+   "location": null
+  },
+  {
+   "check": "transform.skipped",
+   "severity": "info",
+   "message": "protected area left out: no name",
+   "sourceFeatureId": "osm-way-531627418",
+   "details": {},
+   "location": null
+  },
+  {
+   "check": "transform.skipped",
+   "severity": "info",
+   "message": "protected area left out: not a recognised designation (national park, sanctuary, nature or forest reserve, ...)",
+   "sourceFeatureId": "osm-way-531627419",
+   "details": {},
+   "location": null
+  },
+  {
+   "check": "transform.skipped",
+   "severity": "info",
+   "message": "protected area left out: no name",
+   "sourceFeatureId": "osm-way-544945926",
+   "details": {},
+   "location": null
+  },
+  {
+   "check": "transform.skipped",
+   "severity": "info",
+   "message": "protected area left out: no name",
+   "sourceFeatureId": "osm-way-544947473",
+   "details": {},
+   "location": null
+  },
+  {
+   "check": "transform.skipped",
+   "severity": "info",
+   "message": "protected area smaller than 10000 m² left out",
+   "sourceFeatureId": "osm-way-547013201",
+   "details": {},
+   "location": null
+  },
+  {
+   "check": "transform.skipped",
+   "severity": "info",
+   "message": "protected area left out: not a recognised designation (national park, sanctuary, nature or forest reserve, ...)",
+   "sourceFeatureId": "osm-way-547575960",
+   "details": {},
+   "location": null
+  },
+  {
+   "check": "transform.skipped",
+   "severity": "info",
+   "message": "protected area left out: not a recognised designation (national park, sanctuary, nature or forest reserve, ...)",
+   "sourceFeatureId": "osm-way-547575962",
+   "details": {},
+   "location": null
+  },
+  {
+   "check": "transform.skipped",
+   "severity": "info",
+   "message": "protected area left out: not a recognised designation (national park, sanctuary, nature or forest reserve, ...)",
+   "sourceFeatureId": "osm-way-547575963",
+   "details": {},
+   "location": null
+  },
+  {
+   "check": "transform.skipped",
+   "severity": "info",
+   "message": "protected area left out: no name",
+   "sourceFeatureId": "osm-way-549266622",
+   "details": {},
+   "location": null
+  },
+  {
+   "check": "transform.skipped",
+   "severity": "info",
+   "message": "protected area left out: no name",
+   "sourceFeatureId": "osm-way-549266632",
+   "details": {},
+   "location": null
+  },
+  {
+   "check": "transform.skipped",
+   "severity": "info",
+   "message": "protected area left out: no name",
+   "sourceFeatureId": "osm-way-550817807",
+   "details": {},
+   "location": null
+  },
+  {
+   "check": "transform.skipped",
+   "severity": "info",
+   "message": "protected area left out: no name",
+   "sourceFeatureId": "osm-way-550996891",
+   "details": {},
+   "location": null
+  },
+  {
+   "check": "transform.skipped",
+   "severity": "info",
+   "message": "protected area left out: no name",
+   "sourceFeatureId": "osm-way-551031968",
+   "details": {},
+   "location": null
+  },
+  {
+   "check": "transform.skipped",
+   "severity": "info",
+   "message": "protected area left out: no name",
+   "sourceFeatureId": "osm-way-552034526",
+   "details": {},
+   "location": null
+  },
+  {
+   "check": "transform.skipped",
+   "severity": "info",
+   "message": "protected area left out: no name",
+   "sourceFeatureId": "osm-way-553418878",
+   "details": {},
+   "location": null
+  },
+  {
+   "check": "transform.skipped",
+   "severity": "info",
+   "message": "protected area left out: no name",
+   "sourceFeatureId": "osm-way-553418879",
+   "details": {},
+   "location": null
+  },
+  {
+   "check": "transform.skipped",
+   "severity": "info",
+   "message": "protected area left out: no name",
+   "sourceFeatureId": "osm-way-553683929",
+   "details": {},
+   "location": null
+  },
+  {
+   "check": "transform.skipped",
+   "severity": "info",
+   "message": "protected area left out: no name",
+   "sourceFeatureId": "osm-way-554216871",
+   "details": {},
+   "location": null
+  },
+  {
+   "check": "transform.skipped",
+   "severity": "info",
+   "message": "protected area left out: no name",
+   "sourceFeatureId": "osm-way-561139964",
+   "details": {},
+   "location": null
+  },
+  {
+   "check": "transform.skipped",
+   "severity": "info",
+   "message": "protected area left out: not a recognised designation (national park, sanctuary, nature or forest reserve, ...)",
+   "sourceFeatureId": "osm-way-666080543",
+   "details": {},
+   "location": null
+  },
+  {
+   "check": "transform.skipped",
+   "severity": "info",
+   "message": "protected area left out: no name",
+   "sourceFeatureId": "osm-way-757102054",
+   "details": {},
+   "location": null
+  },
+  {
+   "check": "transform.skipped",
+   "severity": "info",
+   "message": "protected area left out: no name",
+   "sourceFeatureId": "osm-way-757461815",
+   "details": {},
+   "location": null
+  },
+  {
+   "check": "transform.skipped",
+   "severity": "info",
+   "message": "protected area left out: no name",
+   "sourceFeatureId": "osm-way-1183588302",
+   "details": {},
+   "location": null
+  },
+  {
+   "check": "transform.skipped",
+   "severity": "info",
+   "message": "protected area left out: no name",
+   "sourceFeatureId": "osm-way-1207929780",
+   "details": {},
+   "location": null
+  },
+  {
+   "check": "transform.skipped",
+   "severity": "info",
+   "message": "protected area left out: not a recognised designation (national park, sanctuary, nature or forest reserve, ...)",
+   "sourceFeatureId": "osm-way-1207929781",
+   "details": {},
+   "location": null
+  },
+  {
+   "check": "transform.skipped",
+   "severity": "info",
+   "message": "protected area left out: no name",
+   "sourceFeatureId": "osm-way-1222989435",
+   "details": {},
+   "location": null
+  },
+  {
+   "check": "transform.skipped",
+   "severity": "info",
+   "message": "protected area left out: no name",
+   "sourceFeatureId": "osm-way-1223250132",
+   "details": {},
+   "location": null
+  }
+ ],
+ "findingCount": 55,
+ "parameters": {
+  "expectations": {
+   "expected_bbox": [
+    79.44,
+    5.66,
+    82.15,
+    10.08
+   ],
+   "min_features": 20
+  },
+  "findingsPerCheck": {
+   "crs.operation": 1,
+   "transform.skipped": 54
+  }
+ },
+ "toolVersion": "gis-core-service 0.1.0 pipeline",
+ "checkedAt": "2026-09-24T10:52:19.201221Z"
+}

@@ -1,0 +1,46 @@
+# Secrets
+.env
+.env.*
+!.env.example
+# Development signing keys (app.tools.dev_auth)
+.local/
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+build/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Node
+node_modules/
+frontend/dist/
+frontend/coverage/
+frontend/test-results/
+frontend/playwright-report/
+*.tsbuildinfo
+
+# Data (source and derived geodata are not versioned in git; see data/README.md)
+data/raw/*
+!data/raw/.gitkeep
+data/processed/*
+!data/processed/.gitkeep
+# Built basemaps (22 MB per release) are rebuilt by the pipeline. The development release's basemap is
+# committed: the platform image serves it (docker/backend.Dockerfile, target platform). Move it to Git LFS
+# or an object store if releases multiply.
+data/basemap/*
+!data/basemap/.gitkeep
+!data/basemap/ref-2026.09-dev/
+
+# OS / editors
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/extensions.json

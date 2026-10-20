@@ -204,8 +204,8 @@ export default function LiveNarrator({ muted, setMuted, onExit }) {
   })
 
   const mapItem = (id) => ({
-    key: `map-${id}`, route: '/map', target: 'main', title: 'Map view',
-    text: () => `The map view plots every incident geographically, including this one on the ${zoneOf(inc(id))}, ` +
+    key: `map-${id}`, route: '/gis', target: 'main', title: 'GIS view',
+    text: () => `The GIS view plots every incident on the map, including this one on the ${zoneOf(inc(id))}, ` +
                 'so the operations centre sees all activity at a glance.',
   })
 

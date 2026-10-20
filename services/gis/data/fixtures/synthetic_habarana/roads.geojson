@@ -1,0 +1,50 @@
+{
+ "type": "FeatureCollection",
+ "features": [
+  {
+   "type": "Feature",
+   "id": "SYN-R1",
+   "properties": {
+    "name": "Fixture Road",
+    "road_class": "A",
+    "ref_code": "A99"
+   },
+   "geometry": {
+    "type": "LineString",
+    "coordinates": [
+     [
+      80.7,
+      8.01
+     ],
+     [
+      80.8,
+      8.01
+     ]
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "id": "SYN-R2",
+   "properties": {
+    "name": "Fixture Track",
+    "road_class": "track"
+   },
+   "geometry": {
+    "type": "MultiLineString",
+    "coordinates": [
+     [
+      [
+       80.73,
+       8.05
+      ],
+      [
+       80.73,
+       8.07
+      ]
+     ]
+    ]
+   }
+  }
+ ]
+}

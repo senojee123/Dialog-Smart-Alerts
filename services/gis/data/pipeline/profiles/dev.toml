@@ -1,0 +1,367 @@
+# Development profile: a reference data release that lets the whole GIS application run locally.
+#
+#   cd backend
+#   python -m app.pipeline build --profile ../data/pipeline/profiles/dev.toml
+#
+# Openly licensed data only, with its licence stated for every source (nothing is assumed):
+#
+#   * administrative boundaries: geoBoundaries gbOpen (ADM0-ADM2 from OpenStreetMap, ODbL; ADM3-ADM4 from
+#     OCHA ROAP and the Survey Department of Sri Lanka, CC BY 3.0 IGO)
+#   * settlements, facilities, roads, rivers and water bodies, protected areas, basemap: OpenStreetMap
+#     (Geofabrik extract), ODbL
+#   * risk zones: labelled development placeholders (CC0) - there is no open source for Sri Lanka
+#
+# National coverage for the main layers; full detail (GN divisions, villages, local roads, streams, small
+# tanks, schools) in the pilot area around Habarana, Dambulla, Sigiriya, Minneriya and Polonnaruwa.
+#
+# Licence reviews are "unreviewed": this is a development release. WDPA is not used (its licence forbids
+# commercial use and redistribution without written permission from UNEP-WCMC). Production profiles name
+# agency datasets and carry approved reviews; see production.example.toml.
+
+[profile]
+name = "dev"
+purpose = "development"
+release = "ref-{year}.{month}-dev"
+description = "Development sample: geoBoundaries and OpenStreetMap (open data) with labelled placeholder risk zones; not for operational use"
+
+[areas]
+national = [79.44, 5.66, 82.15, 10.08]
+pilot = [80.45, 7.75, 81.10, 8.30]
+
+# --- sources -----------------------------------------------------------------------------------------------
+
+[sources.geoboundaries-lka-adm0]
+name = "geoBoundaries gbOpen Sri Lanka ADM0 (country)"
+publisher = "William & Mary geoLab (geoBoundaries); OpenStreetMap contributors"
+url = "https://www.geoboundaries.org/"
+licence = "ODbL-1.0"
+licence_url = "https://opendatacommons.org/licenses/odbl/1-0/"
+attribution = "© OpenStreetMap contributors (ODbL); geoBoundaries, Runfola et al. (2020), PLoS ONE 15(4): e0231866"
+commercial_use_allowed = true
+redistribution_allowed = true
+share_alike = true
+file = "geoboundaries/geoBoundaries-LKA-ADM0_simplified.geojson"
+download = "https://media.githubusercontent.com/media/wmgeolab/geoBoundaries/main/releaseData/gbOpen/LKA/ADM0/geoBoundaries-LKA-ADM0_simplified.geojson"
+sha256 = "e895a2e5c5fd8e1b323801dc60ab04a14bdecb3a312ecfee7952cd7c25d41bdd"
+version = "geoBoundaries gbOpen LKA-ADM0-54457186 (built 2023-12-12; source updated 2023-01-19)"
+geometry_source = "osm"
+notes = "Simplified geometry. Source: OpenStreetMap (Wambacher)."
+
+[sources.geoboundaries-lka-adm1]
+name = "geoBoundaries gbOpen Sri Lanka ADM1 (provinces)"
+publisher = "William & Mary geoLab (geoBoundaries); OpenStreetMap contributors"
+url = "https://www.geoboundaries.org/"
+licence = "ODbL-1.0"
+licence_url = "https://opendatacommons.org/licenses/odbl/1-0/"
+attribution = "© OpenStreetMap contributors (ODbL); geoBoundaries, Runfola et al. (2020), PLoS ONE 15(4): e0231866"
+commercial_use_allowed = true
+redistribution_allowed = true
+share_alike = true
+file = "geoboundaries/geoBoundaries-LKA-ADM1_simplified.geojson"
+download = "https://media.githubusercontent.com/media/wmgeolab/geoBoundaries/main/releaseData/gbOpen/LKA/ADM1/geoBoundaries-LKA-ADM1_simplified.geojson"
+sha256 = "aef852a66d3502fa98d02e0c361ab7aef614cfd62f7f05d7c8da1f16dfa6f4d0"
+version = "geoBoundaries gbOpen LKA-ADM1-99731895 (built 2023-12-12; source updated 2023-01-19)"
+geometry_source = "osm"
+notes = "Simplified geometry. Source: OpenStreetMap (Wambacher)."
+
+[sources.geoboundaries-lka-adm2]
+name = "geoBoundaries gbOpen Sri Lanka ADM2 (districts)"
+publisher = "William & Mary geoLab (geoBoundaries); OpenStreetMap contributors"
+url = "https://www.geoboundaries.org/"
+licence = "ODbL-1.0"
+licence_url = "https://opendatacommons.org/licenses/odbl/1-0/"
+attribution = "© OpenStreetMap contributors (ODbL); geoBoundaries, Runfola et al. (2020), PLoS ONE 15(4): e0231866"
+commercial_use_allowed = true
+redistribution_allowed = true
+share_alike = true
+file = "geoboundaries/geoBoundaries-LKA-ADM2_simplified.geojson"
+download = "https://media.githubusercontent.com/media/wmgeolab/geoBoundaries/main/releaseData/gbOpen/LKA/ADM2/geoBoundaries-LKA-ADM2_simplified.geojson"
+sha256 = "90c7e2940f78f85d9810a1f0915627b660a2b6efe381c2becf245b4cbaa8286c"
+version = "geoBoundaries gbOpen LKA-ADM2-46371173 (built 2023-12-12; source updated 2023-01-19)"
+geometry_source = "osm"
+notes = "Simplified geometry. Source: OpenStreetMap (Wambacher)."
+
+[sources.geoboundaries-lka-adm3]
+name = "geoBoundaries gbOpen Sri Lanka ADM3 (divisional secretariat divisions)"
+publisher = "William & Mary geoLab (geoBoundaries); OCHA ROAP; Survey Department of Sri Lanka"
+url = "https://data.humdata.org/dataset/cod-ab-lka"
+licence = "CC-BY-3.0-IGO"
+licence_url = "https://creativecommons.org/licenses/by/3.0/igo/"
+attribution = "OCHA ROAP; Survey Department of Sri Lanka (CC BY 3.0 IGO); geoBoundaries, Runfola et al. (2020)"
+commercial_use_allowed = true
+redistribution_allowed = true
+file = "geoboundaries/geoBoundaries-LKA-ADM3_simplified.geojson"
+download = "https://media.githubusercontent.com/media/wmgeolab/geoBoundaries/main/releaseData/gbOpen/LKA/ADM3/geoBoundaries-LKA-ADM3_simplified.geojson"
+sha256 = "8b7ada3e7df25c43a422e40f9005b8e1ec378dbe87599c192dc663de4f409e9d"
+version = "geoBoundaries gbOpen LKA-ADM3-8540358 (built 2023-12-12; source updated 2023-01-19)"
+geometry_source = "digitised"
+notes = "Simplified geometry. The extract carries no official P-codes; the geoBoundaries shape ID is the code."
+
+[sources.geoboundaries-lka-adm4]
+name = "geoBoundaries gbOpen Sri Lanka ADM4 (Grama Niladhari divisions)"
+publisher = "William & Mary geoLab (geoBoundaries); OCHA ROAP; Survey Department of Sri Lanka"
+url = "https://data.humdata.org/dataset/cod-ab-lka"
+licence = "CC-BY-3.0-IGO"
+licence_url = "https://creativecommons.org/licenses/by/3.0/igo/"
+attribution = "OCHA ROAP; Survey Department of Sri Lanka (CC BY 3.0 IGO); geoBoundaries, Runfola et al. (2020)"
+commercial_use_allowed = true
+redistribution_allowed = true
+file = "geoboundaries/geoBoundaries-LKA-ADM4_simplified.geojson"
+download = "https://media.githubusercontent.com/media/wmgeolab/geoBoundaries/main/releaseData/gbOpen/LKA/ADM4/geoBoundaries-LKA-ADM4_simplified.geojson"
+sha256 = "82b3c6caea09c9cfe5286b05272499e11a2c52dd8b8b85fab56e6b097a90bfe9"
+version = "geoBoundaries gbOpen LKA-ADM4-91002919 (built 2023-12-12; source updated 2023-01-19)"
+geometry_source = "digitised"
+notes = "Simplified geometry. The extract carries no official P-codes; the geoBoundaries shape ID is the code."
+
+[sources.osm-geofabrik-lka]
+name = "OpenStreetMap, Sri Lanka extract"
+publisher = "OpenStreetMap contributors; extract by Geofabrik GmbH"
+url = "https://www.openstreetmap.org/copyright"
+licence = "ODbL-1.0"
+licence_url = "https://opendatacommons.org/licenses/odbl/1-0/"
+attribution = "© OpenStreetMap contributors"
+commercial_use_allowed = true
+redistribution_allowed = true
+share_alike = true
+file = "osm/sri-lanka-latest.osm.pbf"
+download = "https://download.geofabrik.de/asia/sri-lanka-latest.osm.pbf"
+version_from = "osm_replication_timestamp"
+geometry_source = "osm"
+notes = "Crowd-sourced; not authoritative. Replaced by agency data in production profiles."
+
+[sources.gis-core-dev-placeholders]
+name = "GIS Core Service development placeholders"
+publisher = "GIS Core Service project"
+licence = "CC0-1.0"
+licence_url = "https://creativecommons.org/publicdomain/zero/1.0/"
+attribution = "Development placeholders; not real data"
+commercial_use_allowed = true
+redistribution_allowed = true
+file = "../placeholders/dev_risk_zones.geojson"
+base = "profile"
+sha256 = "c82032f7d498c22b7566608a0efaaf772d07e3bb1f9e0a81386e223040985f45"
+version = "1 (data/pipeline/placeholders/build.py)"
+geometry_source = "synthetic"
+notes = "Artificial shapes so that risk zones can be exercised locally. Not real hazard zones."
+
+[sources.protomaps-basemaps-assets]
+name = "Protomaps basemaps assets: Noto Sans glyphs"
+publisher = "Protomaps; Google (Noto fonts)"
+url = "https://github.com/protomaps/basemaps-assets"
+licence = "OFL-1.1"
+licence_url = "https://raw.githubusercontent.com/protomaps/basemaps-assets/main/fonts/OFL.txt"
+attribution = "Noto Sans (SIL Open Font License 1.1)"
+commercial_use_allowed = true
+redistribution_allowed = true
+file = "fonts"
+download = "https://raw.githubusercontent.com/protomaps/basemaps-assets/main/fonts/{fontstack}/{range}.pbf"
+version = "basemaps-assets main branch (glyphs generated by maplibre/font-maker)"
+geometry_source = "unknown"
+
+# --- datasets ----------------------------------------------------------------------------------------------
+
+[[datasets]]
+name = "admin-l0-country"
+layer = "ref.admin_area"
+source = "geoboundaries-lka-adm0"
+adapter = "vector"
+id_field = "shapeID"
+id_prefix = "gb-"
+fields = { name = "shapeName", code = "shapeISO" }
+properties = { level = 0 }
+accuracy_m = 100
+qa = { expected_area = "national", min_features = 1, max_features = 1 }
+
+[[datasets]]
+name = "admin-l1-provinces"
+layer = "ref.admin_area"
+source = "geoboundaries-lka-adm1"
+adapter = "vector"
+id_field = "shapeID"
+id_prefix = "gb-"
+fields = { name = "shapeName", code = "shapeISO" }
+properties = { level = 1 }
+accuracy_m = 100
+qa = { expected_area = "national", min_features = 9, max_features = 9, code_pattern = "^LK-[1-9]$" }
+
+[[datasets]]
+name = "admin-l2-districts"
+layer = "ref.admin_area"
+source = "geoboundaries-lka-adm2"
+adapter = "vector"
+id_field = "shapeID"
+id_prefix = "gb-"
+fields = { name = "shapeName", code = "shapeISO" }
+properties = { level = 2 }
+parent_by = "location"
+accuracy_m = 100
+qa = { expected_area = "national", min_features = 25, max_features = 25, code_pattern = "^LK-[1-9][0-9]$" }
+
+[[datasets]]
+name = "admin-l3-ds-divisions"
+layer = "ref.admin_area"
+source = "geoboundaries-lka-adm3"
+adapter = "vector"
+id_field = "shapeID"
+id_prefix = "gb-"
+fields = { name = "shapeName", code = "shapeID" }
+properties = { level = 3 }
+parent_by = "location"
+accuracy_m = 100
+qa = { expected_area = "national", min_features = 300, max_features = 360, min_coverage_ratio = 0.8 }
+
+[[datasets]]
+name = "admin-l4-gn-divisions-pilot"
+layer = "ref.admin_area"
+source = "geoboundaries-lka-adm4"
+adapter = "vector"
+area = "pilot"
+select = "representative_point"
+id_field = "shapeID"
+id_prefix = "gb-"
+fields = { name = "shapeName", code = "shapeID" }
+properties = { level = 4 }
+parent_by = "location"
+accuracy_m = 50
+qa = { expected_area = "national", min_features = 100, max_area_m2 = 500000000 }
+
+[[datasets]]
+name = "settlements-towns"
+layer = "ref.settlement"
+source = "osm-geofabrik-lka"
+adapter = "osm"
+theme = "settlements"
+classes = ["city", "town"]
+admin_area_by = "location"
+accuracy_m = 250
+qa = { expected_area = "national", min_features = 200 }
+
+[[datasets]]
+name = "settlements-villages-pilot"
+layer = "ref.settlement"
+source = "osm-geofabrik-lka"
+adapter = "osm"
+theme = "settlements"
+area = "pilot"
+classes = ["village", "hamlet"]
+admin_area_by = "location"
+accuracy_m = 250
+qa = { expected_area = "national", min_features = 50 }
+
+[[datasets]]
+name = "facilities-emergency"
+layer = "ref.facility"
+source = "osm-geofabrik-lka"
+adapter = "osm"
+theme = "facilities"
+classes = ["police_station", "hospital", "fire_station", "wildlife_office", "forest_office"]
+accuracy_m = 50
+qa = { expected_area = "national", min_features = 300, max_rejected_ratio = 0.05 }
+
+[[datasets]]
+name = "facilities-civic-pilot"
+layer = "ref.facility"
+source = "osm-geofabrik-lka"
+adapter = "osm"
+theme = "facilities"
+area = "pilot"
+classes = ["school", "government_office", "place_of_worship"]
+accuracy_m = 50
+qa = { expected_area = "national", min_features = 20, max_rejected_ratio = 0.05 }
+
+[[datasets]]
+name = "roads-national"
+layer = "ref.road"
+source = "osm-geofabrik-lka"
+adapter = "osm"
+theme = "roads"
+classes = ["motorway", "motorway_link", "trunk", "trunk_link", "primary", "primary_link", "secondary", "secondary_link", "tertiary", "tertiary_link"]
+accuracy_m = 20
+qa = { expected_area = "national", min_features = 5000, min_coverage_ratio = 0.8 }
+
+[[datasets]]
+name = "roads-local-pilot"
+layer = "ref.road"
+source = "osm-geofabrik-lka"
+adapter = "osm"
+theme = "roads"
+area = "pilot"
+classes = ["unclassified", "residential", "living_street", "track"]
+accuracy_m = 20
+qa = { expected_area = "national", min_features = 500 }
+
+[[datasets]]
+name = "rivers-national"
+layer = "ref.water_body"
+source = "osm-geofabrik-lka"
+adapter = "osm"
+theme = "water_lines"
+classes = ["river"]
+accuracy_m = 50
+qa = { expected_area = "national", min_features = 200 }
+
+[[datasets]]
+name = "waterways-pilot"
+layer = "ref.water_body"
+source = "osm-geofabrik-lka"
+adapter = "osm"
+theme = "water_lines"
+area = "pilot"
+classes = ["canal", "stream"]
+accuracy_m = 50
+qa = { expected_area = "national", min_features = 50 }
+
+[[datasets]]
+name = "water-areas-national"
+layer = "ref.water_body"
+source = "osm-geofabrik-lka"
+adapter = "osm"
+theme = "water_areas"
+classes = ["reservoir", "tank", "lake", "lagoon", "wetland"]
+min_area_m2 = 100000
+accuracy_m = 50
+qa = { expected_area = "national", min_features = 200 }
+
+[[datasets]]
+name = "water-areas-pilot"
+layer = "ref.water_body"
+source = "osm-geofabrik-lka"
+adapter = "osm"
+theme = "water_areas"
+area = "pilot"
+classes = ["reservoir", "tank", "lake", "lagoon", "wetland", "river", "other"]
+min_area_m2 = 1000
+accuracy_m = 50
+qa = { expected_area = "national", min_features = 50 }
+
+[[datasets]]
+name = "protected-areas"
+layer = "ref.protected_area"
+source = "osm-geofabrik-lka"
+adapter = "osm"
+theme = "protected_areas"
+min_area_m2 = 10000
+accuracy_m = 100
+qa = { expected_area = "national", min_features = 20 }
+
+[[datasets]]
+name = "risk-zones-placeholder"
+layer = "ref.risk_zone"
+source = "gis-core-dev-placeholders"
+adapter = "placeholder"
+area = "pilot"
+geometry_source = "synthetic"
+accuracy_m = 1
+qa = { expected_area = "pilot", min_features = 1 }
+
+# --- basemap -----------------------------------------------------------------------------------------------
+
+[basemap]
+name = "lka"
+osm_source = "osm-geofabrik-lka"
+land_source = "geoboundaries-lka-adm0"
+glyphs_source = "protomaps-basemaps-assets"
+detail_area = "pilot"
+min_zoom = 0
+max_zoom = 14
+public_path = "/basemap"

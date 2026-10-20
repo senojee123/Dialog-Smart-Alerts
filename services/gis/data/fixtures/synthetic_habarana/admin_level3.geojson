@@ -1,0 +1,113 @@
+{
+ "type": "FeatureCollection",
+ "features": [
+  {
+   "type": "Feature",
+   "id": "SYN-S1",
+   "properties": {
+    "name": "Fixture South-West DS",
+    "code": "SYN-S1",
+    "parent_code": "SYN-D1"
+   },
+   "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+     [
+      [
+       80.75,
+       7.98
+      ],
+      [
+       80.75,
+       8.03
+      ],
+      [
+       80.7,
+       8.03
+      ],
+      [
+       80.7,
+       7.98
+      ],
+      [
+       80.75,
+       7.98
+      ]
+     ]
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "id": "SYN-S2",
+   "properties": {
+    "name": "Fixture North-West DS",
+    "code": "SYN-S2",
+    "parent_code": "SYN-D1"
+   },
+   "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+     [
+      [
+       80.75,
+       8.03
+      ],
+      [
+       80.75,
+       8.08
+      ],
+      [
+       80.7,
+       8.08
+      ],
+      [
+       80.7,
+       8.03
+      ],
+      [
+       80.75,
+       8.03
+      ]
+     ]
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "id": "SYN-S3",
+   "properties": {
+    "name": "Fixture East DS",
+    "code": "SYN-S3",
+    "parent_code": "SYN-D2"
+   },
+   "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+     [
+      [
+       80.8,
+       7.98
+      ],
+      [
+       80.8,
+       8.08
+      ],
+      [
+       80.75,
+       8.08
+      ],
+      [
+       80.75,
+       7.98
+      ],
+      [
+       80.8,
+       7.98
+      ]
+     ]
+    ]
+   }
+  }
+ ]
+}

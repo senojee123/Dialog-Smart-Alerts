@@ -1,0 +1,218 @@
+# GIS Core Service - local development environment.
+#
+#   cp .env.example .env        # then replace every CHANGE_ME value
+#   docker compose up --build   # db -> migrate -> api -> web
+#
+# Services
+#   db             PostgreSQL 18 + PostGIS 3.6 (roles and databases created by db/init on first start)
+#   migrate        one-shot job as the migration login: Alembic to head, then registers the platform's
+#                  organisation (GIS_TENANT_ID) as a tenant
+#   api            FastAPI on http://localhost:8100 (runtime login, hot reload of backend/app); the platform
+#                  image, so it also serves the built map at /app/ and the basemaps at /basemap/ - what the
+#                  main platform proxies (/api/gis, /gis-app, /basemap)
+#   web            React + MapLibre on http://localhost:5174 (Vite dev server, proxies /api to the API)
+#   backend-tests  pytest against the gis_test database: docker compose --profile test run --rm backend-tests
+#   sample-data    loads the development sample (reference data release, basemap, a tenant's objects and
+#                  events): docker compose --profile sample run --rm sample-data
+#                  (GIS_SAMPLE_TENANT_DATA=false: the reference data release and basemap only)
+#   pipeline       the reference data pipeline with GDAL (build, basemap, load, qa, publish, ...):
+#                  docker compose --profile pipeline run --rm pipeline build --profile /srv/data/pipeline/profiles/dev.toml
+#
+# The GIS runs as an instance of the main platform (Dialog Smart Alerts), which owns users and sign-in: the
+# GIS checks no credentials, and requests act for the platform's organisation (GIS_TENANT_ID). The ports
+# leave the platform's own 8000 and 5173 free. They are bound to 127.0.0.1 only. This file is for
+# development; production deployments use the `runtime` image target with a managed database.
+
+name: dialog-gis
+
+x-backend-environment: &backend-environment
+  GIS_ENV: ${GIS_ENV:-development}
+  GIS_LOG_LEVEL: ${GIS_LOG_LEVEL:-INFO}
+  GIS_LOG_FORMAT: ${GIS_LOG_FORMAT:-console}
+  GIS_DB_HOST: db
+  GIS_DB_PORT: "5432"
+  GIS_DB_NAME: ${GIS_DB_NAME:-gis}
+  GIS_DB_SSL_MODE: disable
+  GIS_DB_APP_USER: ${GIS_DB_APP_USER:-gis_app}
+  GIS_DB_MIGRATOR_USER: ${GIS_DB_MIGRATOR_USER:-gis_migrator}
+  GIS_SERVICE_AREA_BBOX: ${GIS_SERVICE_AREA_BBOX:-79.44,5.66,82.15,10.08}
+  GIS_TENANT_ID: ${GIS_TENANT_ID:-dialog-smart-alerts}
+  GIS_TENANT_NAME: ${GIS_TENANT_NAME:-Dialog Smart Alerts}
+
+x-backend-build: &backend-build
+  context: .
+  dockerfile: docker/backend.Dockerfile
+  target: runtime
+
+services:
+  db:
+    image: postgis/postgis:18-3.6
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_SUPERUSER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_SUPERUSER_PASSWORD:?set POSTGRES_SUPERUSER_PASSWORD in .env (see .env.example)}
+      POSTGRES_DB: postgres
+      POSTGRES_INITDB_ARGS: --encoding=UTF8
+      GIS_DB_NAME: ${GIS_DB_NAME:-gis}
+      GIS_TEST_DB_NAME: ${GIS_TEST_DB_NAME:-gis_test}
+      GIS_DB_MIGRATOR_USER: ${GIS_DB_MIGRATOR_USER:-gis_migrator}
+      GIS_DB_MIGRATOR_PASSWORD: ${GIS_DB_MIGRATOR_PASSWORD:?set GIS_DB_MIGRATOR_PASSWORD in .env}
+      GIS_DB_APP_USER: ${GIS_DB_APP_USER:-gis_app}
+      GIS_DB_APP_PASSWORD: ${GIS_DB_APP_PASSWORD:?set GIS_DB_APP_PASSWORD in .env}
+    volumes:
+      # PostgreSQL 18 images keep their data under /var/lib/postgresql/<major>/docker.
+      - gis-db-data:/var/lib/postgresql
+      - ./db/init/20-gis-roles-and-databases.sh:/docker-entrypoint-initdb.d/20-gis-roles-and-databases.sh:ro
+    ports:
+      - "127.0.0.1:${GIS_DB_HOST_PORT:-5434}:5432"
+    healthcheck:
+      # TCP only answers once initialisation has finished; the socket query confirms the GIS database has PostGIS.
+      test:
+        - CMD-SHELL
+        - >-
+          pg_isready -h 127.0.0.1 -U "$${POSTGRES_USER}" -d "$${GIS_DB_NAME}" &&
+          psql -U "$${POSTGRES_USER}" -d "$${GIS_DB_NAME}" -tAc "SELECT 1 FROM pg_extension WHERE extname = 'postgis'" | grep -q 1
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 30s
+
+  migrate:
+    build: *backend-build
+    image: gis-core-service-backend:dev
+    command: ["sh", "-c", "alembic -c /srv/db/alembic.ini upgrade head && python -m app.tools.register_tenant"]
+    environment:
+      <<: *backend-environment
+      GIS_DB_MIGRATOR_PASSWORD: ${GIS_DB_MIGRATOR_PASSWORD:?set GIS_DB_MIGRATOR_PASSWORD in .env}
+    volumes:
+      # Reference data fixtures, for: docker compose run --rm migrate python -m app.tools.load_reference_data ...
+      - ./data/fixtures:/srv/data/fixtures:ro
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: "no"
+
+  api:
+    build:
+      <<: *backend-build
+      target: platform
+    image: dialog-gis-api:dev
+    command:
+      - uvicorn
+      - app.main:create_app
+      - --factory
+      - --host=0.0.0.0
+      - --port=8000
+      - --no-access-log
+      - --no-server-header
+      - --reload
+      - --reload-dir=/srv/backend/app
+    environment:
+      <<: *backend-environment
+      GIS_DB_APP_PASSWORD: ${GIS_DB_APP_PASSWORD:?set GIS_DB_APP_PASSWORD in .env}
+      GIS_CORS_ALLOW_ORIGINS: ${GIS_CORS_ALLOW_ORIGINS:-http://localhost:5174}
+      GIS_EXPORT_MAX_FEATURES: ${GIS_EXPORT_MAX_FEATURES:-10000}
+      GIS_ENRICHMENT_SETTLEMENT_RADIUS_M: ${GIS_ENRICHMENT_SETTLEMENT_RADIUS_M:-25000}
+      GIS_ENRICHMENT_ROAD_RADIUS_M: ${GIS_ENRICHMENT_ROAD_RADIUS_M:-10000}
+      GIS_ENRICHMENT_DEVICE_RADIUS_M: ${GIS_ENRICHMENT_DEVICE_RADIUS_M:-5000}
+      GIS_ENRICHMENT_DEVICE_LIMIT: ${GIS_ENRICHMENT_DEVICE_LIMIT:-5}
+      # Development only: the mounted source below takes precedence over the installed package.
+      PYTHONPATH: /srv/backend
+      WATCHFILES_FORCE_POLLING: ${WATCHFILES_FORCE_POLLING:-false}
+    volumes:
+      - ./backend/app:/srv/backend/app:ro
+    ports:
+      - "127.0.0.1:${GIS_API_HOST_PORT:-8100}:8000"
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    restart: unless-stopped
+
+  web:
+    build:
+      context: .
+      dockerfile: docker/frontend.Dockerfile
+      target: dev
+    image: gis-core-service-web:dev
+    environment:
+      GIS_API_PROXY_TARGET: http://api:8000
+      VITE_USE_POLLING: ${VITE_USE_POLLING:-false}
+      VITE_BASEMAP_STYLE_URL: ${VITE_BASEMAP_STYLE_URL:-}
+      # Basemaps built by the reference data pipeline, served at /basemap (see frontend/vite.config.ts).
+      GIS_BASEMAP_DIR: /data/basemap
+    volumes:
+      - ./frontend:/app
+      - ./data/basemap:/data/basemap:ro
+      # Keep the container's node_modules (Linux builds) instead of any host copy.
+      - /app/node_modules
+    ports:
+      - "127.0.0.1:${GIS_WEB_HOST_PORT:-5174}:5173"
+    depends_on:
+      api:
+        condition: service_healthy
+    restart: unless-stopped
+
+  sample-data:
+    profiles: ["sample"]
+    build: *backend-build
+    image: gis-core-service-backend:dev
+    command: ["sh", "/srv/dev-sample.sh"]
+    environment:
+      <<: *backend-environment
+      # Both logins: the release and the tenant are registered with the migration login, the tenant's
+      # objects and events go through the services with the runtime login (row-level security applies).
+      GIS_DB_MIGRATOR_PASSWORD: ${GIS_DB_MIGRATOR_PASSWORD:?set GIS_DB_MIGRATOR_PASSWORD in .env}
+      GIS_DB_APP_PASSWORD: ${GIS_DB_APP_PASSWORD:?set GIS_DB_APP_PASSWORD in .env}
+      GIS_SAMPLE_RELEASE: ${GIS_SAMPLE_RELEASE:-ref-2026.09-dev}
+      GIS_SAMPLE_TENANT_DATA: ${GIS_SAMPLE_TENANT_DATA:-true}
+      # The loader keeps a transaction open while it reads and checksums the files; on slow bind mounts
+      # (Docker Desktop on Windows, synced folders) that exceeds the API's 30 s idle-in-transaction limit.
+      GIS_DB_IDLE_IN_TRANSACTION_TIMEOUT_MS: ${GIS_SAMPLE_IDLE_IN_TRANSACTION_TIMEOUT_MS:-600000}
+    volumes:
+      - ./docker/dev-sample.sh:/srv/dev-sample.sh:ro
+      - ./data/sample:/srv/data/sample:ro
+      - ./data/basemap:/srv/data/basemap:ro
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    restart: "no"
+
+  pipeline:
+    profiles: ["pipeline"]
+    build:
+      <<: *backend-build
+      target: pipeline
+    image: gis-core-service-backend:pipeline
+    environment:
+      <<: *backend-environment
+      GIS_DB_MIGRATOR_PASSWORD: ${GIS_DB_MIGRATOR_PASSWORD:?set GIS_DB_MIGRATOR_PASSWORD in .env}
+      # Download locations and credentials a production profile names (download_env, auth_header_env).
+      GIS_PIPELINE_OSM_URL: ${GIS_PIPELINE_OSM_URL:-}
+    volumes:
+      # Profiles, original files (data/raw), built releases (data/processed) and basemaps (data/basemap).
+      # On Linux, run as your own user so the files it writes are yours: --user "$(id -u):$(id -g)".
+      - ./data:/srv/data
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: "no"
+
+  backend-tests:
+    profiles: ["test"]
+    build:
+      <<: *backend-build
+      target: test
+    image: gis-core-service-backend:test
+    environment:
+      <<: *backend-environment
+      GIS_ENV: test
+      GIS_DB_NAME: ${GIS_TEST_DB_NAME:-gis_test}
+      GIS_DB_APP_PASSWORD: ${GIS_DB_APP_PASSWORD:?set GIS_DB_APP_PASSWORD in .env}
+      GIS_DB_MIGRATOR_PASSWORD: ${GIS_DB_MIGRATOR_PASSWORD:?set GIS_DB_MIGRATOR_PASSWORD in .env}
+      GIS_REQUIRE_DB: "1"
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  gis-db-data:

@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { X, Image, CheckCircle, XCircle, Clock, AlertTriangle, Trash2 } from 'lucide-react'
+import { Link } from 'react-router-dom'
+import { X, Image, CheckCircle, XCircle, Clock, AlertTriangle, Trash2, Globe } from 'lucide-react'
 import SeverityChip from '../common/SeverityChip.jsx'
 import StatusBadge from '../common/StatusBadge.jsx'
 import StakeholderStatus from './StakeholderStatus.jsx'
@@ -109,6 +110,31 @@ export default function IncidentDetail({ incident, onClose, onCloseIncident, onD
           </dl>
         </section>
 
+        {/* Where it happened — from the GIS instance (services/gis), when it could be resolved */}
+        {incident.gis && (
+          <section className="p-4">
+            <div className="flex items-center justify-between mb-3">
+              <h4 className="text-xs font-semibold text-ink-muted uppercase tracking-wide">Location (GIS)</h4>
+              <Link
+                to={gisMapLink(incident)}
+                className="flex items-center gap-1 text-xs text-brand hover:underline"
+              >
+                <Globe size={12} /> Show on GIS map
+              </Link>
+            </div>
+            <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+              <Fact label="District" value={incident.gis.district} />
+              <Fact label="Province" value={incident.gis.province} />
+              <Fact label="Division" value={incident.gis.ds_division} />
+              <Fact label="Nearest town" value={withDistance(incident.gis.nearest_settlement, incident.gis.settlement_distance_m)} />
+              <Fact label="Nearest road" value={withDistance(incident.gis.nearest_road, incident.gis.road_distance_m)} />
+              <Fact label="Devices nearby" value={String(incident.gis.nearby_devices ?? '—')} />
+              <Fact label="Inside" value={incident.gis.inside_zones?.length ? incident.gis.inside_zones.join(', ') : 'No protected or risk zone'} />
+              <Fact label="Geofences" value={incident.gis.geofence_hits?.length ? incident.gis.geofence_hits.join(', ') : 'None'} />
+            </dl>
+          </section>
+        )}
+
         {/* Rules */}
         {incident.rules_triggered?.length > 0 && (
           <section className="p-4">
@@ -211,6 +237,24 @@ export default function IncidentDetail({ incident, onClose, onCloseIncident, onD
       )}
     </aside>
   )
+}
+
+/** "Habarana · 1.3km" — a GIS name with its distance, rounded to the metre. */
+function withDistance(name, metres) {
+  if (!name) return '—'
+  return metres == null ? name : `${name} · ${formatDistance(Math.round(metres))}`
+}
+
+/** The platform's GIS page, opened at the incident's position. */
+function gisMapLink(incident) {
+  const { lat, lng } = incident.location ?? {}
+  const params = new URLSearchParams()
+  if (lat != null && lng != null) {
+    params.set('lat', String(lat))
+    params.set('lng', String(lng))
+  }
+  const query = params.toString()
+  return query ? `/gis?${query}` : '/gis'
 }
 
 function Fact({ label, value }) {

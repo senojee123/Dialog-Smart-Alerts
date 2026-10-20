@@ -1,0 +1,147 @@
+{
+ "file": "facilities-civic-pilot.geojson.gz",
+ "sha256": "5582e0432f3c8f616da899758ec16d6c78e6e7fbcef0049d30f36514f61cdc7a",
+ "status": "passed",
+ "checks": [
+  "crs.storage",
+  "crs.operation",
+  "geometry.empty",
+  "geometry.type",
+  "geometry.invalid",
+  "geometry.unrepairable",
+  "identifier.missing",
+  "identifier.duplicate",
+  "identifier.name_missing",
+  "duplicate.geometry",
+  "outlier.service_area",
+  "outlier.extent",
+  "outlier.coverage",
+  "outlier.vertices",
+  "outlier.count",
+  "outlier.rejected",
+  "transform.skipped",
+  "transform.merged"
+ ],
+ "counts": {
+  "read": 269,
+  "extracted": 269,
+  "written": 269,
+  "leftOut": 0,
+  "invalidPolygons": 0,
+  "errors": 0,
+  "warnings": 0,
+  "infos": 11
+ },
+ "findings": [
+  {
+   "check": "crs.operation",
+   "severity": "info",
+   "message": "source CRS EPSG:4326: none: EPSG:4326 coordinates are WGS 84 longitude/latitude",
+   "sourceFeatureId": null,
+   "details": {
+    "points": 0,
+    "note": "OpenStreetMap coordinates are WGS 84"
+   },
+   "location": null
+  },
+  {
+   "check": "transform.merged",
+   "severity": "info",
+   "message": "area-mapped government_office dropped in favour of node osm-node-2822336417 76 m away",
+   "sourceFeatureId": "osm-way-279400869",
+   "details": {},
+   "location": null
+  },
+  {
+   "check": "transform.merged",
+   "severity": "info",
+   "message": "area-mapped place_of_worship dropped in favour of node osm-node-5909626147 44 m away",
+   "sourceFeatureId": "osm-way-398737881",
+   "details": {},
+   "location": null
+  },
+  {
+   "check": "transform.merged",
+   "severity": "info",
+   "message": "area-mapped place_of_worship dropped in favour of node osm-node-5909626147 32 m away",
+   "sourceFeatureId": "osm-way-398737882",
+   "details": {},
+   "location": null
+  },
+  {
+   "check": "transform.merged",
+   "severity": "info",
+   "message": "area-mapped place_of_worship dropped in favour of node osm-node-9502865752 17 m away",
+   "sourceFeatureId": "osm-way-660422683",
+   "details": {},
+   "location": null
+  },
+  {
+   "check": "transform.merged",
+   "severity": "info",
+   "message": "area-mapped government_office dropped in favour of node osm-node-4899267511 6 m away",
+   "sourceFeatureId": "osm-way-776133277",
+   "details": {},
+   "location": null
+  },
+  {
+   "check": "transform.merged",
+   "severity": "info",
+   "message": "area-mapped place_of_worship dropped in favour of node osm-node-11583699594 17 m away",
+   "sourceFeatureId": "osm-way-1245997282",
+   "details": {},
+   "location": null
+  },
+  {
+   "check": "transform.merged",
+   "severity": "info",
+   "message": "area-mapped place_of_worship dropped in favour of node osm-node-7291828347 56 m away",
+   "sourceFeatureId": "osm-way-1486546573",
+   "details": {},
+   "location": null
+  },
+  {
+   "check": "transform.merged",
+   "severity": "info",
+   "message": "area-mapped place_of_worship dropped in favour of node osm-node-2832934212 3 m away",
+   "sourceFeatureId": "osm-way-1517166196",
+   "details": {},
+   "location": null
+  },
+  {
+   "check": "transform.merged",
+   "severity": "info",
+   "message": "area-mapped place_of_worship dropped in favour of node osm-node-2832934212 46 m away",
+   "sourceFeatureId": "osm-way-1517166197",
+   "details": {},
+   "location": null
+  },
+  {
+   "check": "transform.merged",
+   "severity": "info",
+   "message": "area-mapped place_of_worship dropped in favour of node osm-node-4879857889 19 m away",
+   "sourceFeatureId": "osm-way-1534962619",
+   "details": {},
+   "location": null
+  }
+ ],
+ "findingCount": 11,
+ "parameters": {
+  "expectations": {
+   "expected_bbox": [
+    79.44,
+    5.66,
+    82.15,
+    10.08
+   ],
+   "min_features": 20,
+   "max_rejected_ratio": 0.05
+  },
+  "findingsPerCheck": {
+   "crs.operation": 1,
+   "transform.merged": 10
+  }
+ },
+ "toolVersion": "gis-core-service 0.1.0 pipeline",
+ "checkedAt": "2026-09-24T10:52:01.188692Z"
+}

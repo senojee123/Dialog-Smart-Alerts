@@ -1,0 +1,77 @@
+{
+ "type": "FeatureCollection",
+ "features": [
+  {
+   "type": "Feature",
+   "id": "SYN-D1",
+   "properties": {
+    "name": "Fixture West District",
+    "code": "SYN-D1",
+    "parent_code": "SYN-P1"
+   },
+   "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+     [
+      [
+       80.75,
+       7.98
+      ],
+      [
+       80.75,
+       8.08
+      ],
+      [
+       80.7,
+       8.08
+      ],
+      [
+       80.7,
+       7.98
+      ],
+      [
+       80.75,
+       7.98
+      ]
+     ]
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "id": "SYN-D2",
+   "properties": {
+    "name": "Fixture East District",
+    "code": "SYN-D2",
+    "parent_code": "SYN-P1"
+   },
+   "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+     [
+      [
+       80.8,
+       7.98
+      ],
+      [
+       80.8,
+       8.08
+      ],
+      [
+       80.75,
+       8.08
+      ],
+      [
+       80.75,
+       7.98
+      ],
+      [
+       80.8,
+       7.98
+      ]
+     ]
+    ]
+   }
+  }
+ ]
+}

@@ -1,0 +1,65 @@
+{
+ "type": "FeatureCollection",
+ "features": [
+  {
+   "type": "Feature",
+   "id": "SYN-F1",
+   "properties": {
+    "name": "Fixture Police Station",
+    "facility_type": "police_station"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     80.746,
+     8.028
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "id": "SYN-F2",
+   "properties": {
+    "name": "Fixture Wildlife Office",
+    "facility_type": "wildlife_office"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     80.77,
+     8.035
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "id": "SYN-F3",
+   "properties": {
+    "name": "Fixture Office Abroad",
+    "facility_type": "other"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     80.27,
+     13.08
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "id": "SYN-F4",
+   "properties": {
+    "name": "Fixture Swapped Office",
+    "facility_type": "other"
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     8.03,
+     80.75
+    ]
+   }
+  }
+ ]
+}

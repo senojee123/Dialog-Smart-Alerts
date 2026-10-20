@@ -1,0 +1,297 @@
+{
+  "description": "Development sample for the Habarana pilot area: one tenant, its sites, devices and geofences, and a batch of events. Positions are taken from the reference data of ref-2026.09-dev (the A6 and A11 roads, Minneriya National Park, Hiriwadunna Wewa, Palugaswewa). The installations and events are invented for development and are labelled so; they are not real deployments or observations.",
+  "tenant": {
+    "tenantId": "wildlife-dept",
+    "name": "Wildlife Department (development sample)",
+    "kind": "organisation"
+  },
+  "sites": [
+    {
+      "key": "a11-minneriya",
+      "name": "DEV A11 Minneriya boundary pole",
+      "siteType": "pole",
+      "position": { "type": "Point", "coordinates": [80.86414, 8.04931] },
+      "positionSource": "gps",
+      "positionAccuracyM": 5,
+      "attributes": { "sample": true, "placedOn": "A11, 7 m from the Minneriya National Park boundary" }
+    },
+    {
+      "key": "a11-moragaswewa",
+      "name": "DEV A11 Moragaswewa pole",
+      "siteType": "pole",
+      "position": { "type": "Point", "coordinates": [80.78432, 8.02745] },
+      "positionSource": "gps",
+      "positionAccuracyM": 5,
+      "attributes": { "sample": true, "placedOn": "A11, 3.5 km east of Habarana" }
+    },
+    {
+      "key": "a6-hiriwadunna",
+      "name": "DEV A6 Hiriwadunna tank pole",
+      "siteType": "pole",
+      "position": { "type": "Point", "coordinates": [80.74483, 8.0179] },
+      "positionSource": "gps",
+      "positionAccuracyM": 5,
+      "attributes": { "sample": true, "placedOn": "A6 towards Dambulla, 160 m from Hiriwadunna Wewa" }
+    },
+    {
+      "key": "a6-north",
+      "name": "DEV A6 north of Habarana pole",
+      "siteType": "pole",
+      "position": { "type": "Point", "coordinates": [80.77373, 8.06312] },
+      "positionSource": "gps",
+      "positionAccuracyM": 5,
+      "attributes": { "sample": true, "placedOn": "A6 towards Trincomalee, 3 km from Habarana" }
+    },
+    {
+      "key": "habarana-junction",
+      "name": "DEV Habarana junction cabinet",
+      "siteType": "junction",
+      "position": { "type": "Point", "coordinates": [80.75538, 8.03979] },
+      "positionSource": "gps",
+      "positionAccuracyM": 5,
+      "attributes": { "sample": true, "placedOn": "junction of the A6 and the A11" }
+    }
+  ],
+  "devices": [
+    {
+      "key": "hb-cam-01",
+      "site": "a11-minneriya",
+      "name": "DEV HB-CAM-01",
+      "deviceType": "camera",
+      "position": { "type": "Point", "coordinates": [80.86414, 8.04931] },
+      "positionSource": "gps",
+      "positionAccuracyM": 5,
+      "mountingHeightM": 6,
+      "installedAt": "2026-02-01T09:00:00+05:30",
+      "fieldOfView": { "method": "modelled", "bearingDeg": 95, "fovDeg": 70, "rangeM": 250 },
+      "attributes": { "sample": true }
+    },
+    {
+      "key": "hb-seis-01",
+      "site": "a11-minneriya",
+      "name": "DEV HB-SEIS-01",
+      "deviceType": "seismic_sensor",
+      "position": { "type": "Point", "coordinates": [80.86421, 8.04925] },
+      "positionSource": "gps",
+      "positionAccuracyM": 5,
+      "installedAt": "2026-02-01T09:00:00+05:30",
+      "fieldOfView": { "method": "modelled", "bearingDeg": 0, "fovDeg": 360, "rangeM": 150 },
+      "attributes": { "sample": true }
+    },
+    {
+      "key": "hb-cam-02",
+      "site": "a6-hiriwadunna",
+      "name": "DEV HB-CAM-02",
+      "deviceType": "camera",
+      "position": { "type": "Point", "coordinates": [80.74483, 8.0179] },
+      "positionSource": "gps",
+      "positionAccuracyM": 5,
+      "mountingHeightM": 6,
+      "installedAt": "2026-02-01T09:00:00+05:30",
+      "fieldOfView": { "method": "modelled", "bearingDeg": 305, "fovDeg": 90, "rangeM": 200 },
+      "attributes": { "sample": true }
+    },
+    {
+      "key": "hb-ac-01",
+      "site": "a11-moragaswewa",
+      "name": "DEV HB-AC-01",
+      "deviceType": "acoustic_sensor",
+      "position": { "type": "Point", "coordinates": [80.78432, 8.02745] },
+      "positionSource": "gps",
+      "positionAccuracyM": 5,
+      "installedAt": "2026-02-01T09:00:00+05:30",
+      "fieldOfView": { "method": "modelled", "bearingDeg": 0, "fovDeg": 360, "rangeM": 400 },
+      "attributes": { "sample": true }
+    },
+    {
+      "key": "hb-cam-03",
+      "site": "a6-north",
+      "name": "DEV HB-CAM-03",
+      "deviceType": "camera",
+      "position": { "type": "Point", "coordinates": [80.77373, 8.06312] },
+      "positionSource": "gps",
+      "positionAccuracyM": 5,
+      "mountingHeightM": 6,
+      "installedAt": "2026-02-01T09:00:00+05:30",
+      "fieldOfView": { "method": "modelled", "bearingDeg": 126, "fovDeg": 60, "rangeM": 200 },
+      "attributes": { "sample": true }
+    },
+    {
+      "key": "hb-gw-01",
+      "site": "habarana-junction",
+      "name": "DEV HB-GW-01",
+      "deviceType": "gateway",
+      "position": { "type": "Point", "coordinates": [80.75538, 8.03979] },
+      "positionSource": "gps",
+      "positionAccuracyM": 5,
+      "installedAt": "2026-02-01T09:00:00+05:30",
+      "attributes": { "sample": true }
+    }
+  ],
+  "geofences": [
+    {
+      "key": "habarana-junction",
+      "name": "DEV Habarana junction watch zone",
+      "definition": {
+        "kind": "circle",
+        "geometry": { "type": "Point", "coordinates": [80.75538, 8.03979] },
+        "radiusM": 1500
+      },
+      "status": "active",
+      "effectiveDuring": { "from": "2026-01-01T00:00:00+05:30" },
+      "attributes": { "sample": true }
+    },
+    {
+      "key": "a11-minneriya-crossing",
+      "name": "DEV A11 Minneriya crossing corridor",
+      "description": "300 m either side of the A11 where it runs along the Minneriya National Park boundary.",
+      "definition": {
+        "kind": "corridor",
+        "geometry": {
+          "type": "LineString",
+          "coordinates": [
+            [80.8513, 8.05361], [80.85205, 8.0526], [80.85209, 8.05069], [80.85229, 8.0502],
+            [80.85384, 8.04908], [80.85527, 8.04888], [80.85925, 8.04895], [80.86028, 8.04861],
+            [80.86237, 8.04847], [80.86346, 8.0487], [80.86451, 8.04983], [80.8652, 8.05127],
+            [80.86623, 8.05583], [80.86788, 8.05667], [80.87132, 8.06079]
+          ]
+        },
+        "radiusM": 300
+      },
+      "status": "active",
+      "effectiveDuring": { "from": "2026-01-01T00:00:00+05:30" },
+      "sharingPolicy": "authority_only",
+      "attributes": { "sample": true }
+    },
+    {
+      "key": "palugaswewa-perimeter",
+      "name": "DEV Palugaswewa village perimeter",
+      "description": "1 km around the Palugaswewa settlement point.",
+      "definition": {
+        "kind": "polygon",
+        "geometry": {
+          "type": "Polygon",
+          "coordinates": [[
+            [80.71816, 8.06359], [80.71695, 8.05907], [80.71363, 8.05576], [80.70909, 8.05455],
+            [80.70455, 8.05576], [80.70123, 8.05907], [80.70002, 8.06359], [80.70123, 8.06811],
+            [80.70455, 8.07142], [80.70909, 8.07263], [80.71363, 8.07142], [80.71695, 8.06811],
+            [80.71816, 8.06359]
+          ]]
+        }
+      },
+      "status": "active",
+      "effectiveDuring": { "from": "2026-01-01T00:00:00+05:30" },
+      "attributes": { "sample": true }
+    }
+  ],
+  "events": [
+    {
+      "key": "01",
+      "minutesBefore": 1260,
+      "device": "hb-cam-01",
+      "eventType": "wildlife.elephant_detected",
+      "sourceType": "device",
+      "locationSource": "estimated",
+      "location": { "type": "Point", "coordinates": [80.86523, 8.04921] },
+      "locationAccuracyM": 25,
+      "metadata": { "sample": true, "count": 1 }
+    },
+    {
+      "key": "02",
+      "minutesBefore": 1230,
+      "device": "hb-seis-01",
+      "eventType": "wildlife.elephant_detected",
+      "eventSubtype": "footfall",
+      "sourceType": "sensor",
+      "locationSource": "device",
+      "metadata": { "sample": true }
+    },
+    {
+      "key": "03",
+      "minutesBefore": 900,
+      "device": "hb-cam-02",
+      "eventType": "wildlife.elephant_detected",
+      "sourceType": "device",
+      "locationSource": "estimated",
+      "location": { "type": "Point", "coordinates": [80.74372, 8.01868] },
+      "locationAccuracyM": 25,
+      "metadata": { "sample": true, "count": 3 }
+    },
+    {
+      "key": "04",
+      "minutesBefore": 720,
+      "eventType": "wildlife.elephant_track",
+      "sourceType": "sensor",
+      "sourceRef": "dev-track-feed",
+      "locationSource": "sensor",
+      "location": {
+        "type": "LineString",
+        "coordinates": [[80.8598, 8.0431], [80.8611, 8.0467], [80.8622, 8.0502], [80.8634, 8.0531]]
+      },
+      "locationAccuracyM": 50,
+      "metadata": { "sample": true }
+    },
+    {
+      "key": "05",
+      "minutesBefore": 540,
+      "eventType": "wildlife.elephant_sighting_reported",
+      "sourceType": "manual",
+      "locationSource": "external",
+      "location": { "type": "Point", "coordinates": [80.7112, 8.0612] },
+      "locationAccuracyM": 100,
+      "metadata": { "sample": true }
+    },
+    {
+      "key": "06",
+      "minutesBefore": 360,
+      "device": "hb-ac-01",
+      "eventType": "wildlife.elephant_detected",
+      "eventSubtype": "vocalisation",
+      "sourceType": "sensor",
+      "locationSource": "device",
+      "metadata": { "sample": true }
+    },
+    {
+      "key": "07",
+      "minutesBefore": 180,
+      "device": "hb-cam-03",
+      "eventType": "wildlife.elephant_detected",
+      "sourceType": "device",
+      "locationSource": "estimated",
+      "location": { "type": "Point", "coordinates": [80.77473, 8.06246] },
+      "locationAccuracyM": 25,
+      "metadata": { "sample": true, "count": 2 }
+    },
+    {
+      "key": "08",
+      "minutesBefore": 90,
+      "eventType": "wildlife.elephant_sighting_reported",
+      "sourceType": "external",
+      "sourceRef": "dev-partner-feed",
+      "locationSource": "external",
+      "location": { "type": "Point", "coordinates": [80.7571, 8.0409] },
+      "locationAccuracyM": 50,
+      "metadata": { "sample": true }
+    },
+    {
+      "key": "09",
+      "minutesBefore": 30,
+      "device": "hb-cam-02",
+      "eventType": "device.tamper_detected",
+      "sourceType": "device",
+      "locationSource": "device",
+      "metadata": { "sample": true }
+    },
+    {
+      "key": "10",
+      "minutesBefore": 0,
+      "device": "hb-cam-01",
+      "eventType": "wildlife.elephant_detected",
+      "sourceType": "device",
+      "locationSource": "estimated",
+      "location": { "type": "Point", "coordinates": [80.86533, 8.04905] },
+      "locationAccuracyM": 25,
+      "metadata": { "sample": true, "count": 4 }
+    }
+  ]
+}
