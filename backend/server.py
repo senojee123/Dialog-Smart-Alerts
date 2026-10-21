@@ -857,6 +857,10 @@ async def _ingest_event(body: dict, source: str = "device") -> tuple[dict, dict 
         "client_event_id": cid,
         "raw_payload":     raw_payload,
         "source":          source,
+        # DEMO: a citizen phone report ("manual" device) has no reliable fixed
+        # location, so it's exempted from the spatial radius/zone match entirely
+        # and lights every sign board. Revisit before this goes past demo.
+        "roaming":         device.get("type") == "manual",
         # Location is copied from the device so the spatial engine can light
         # nearby actuators (a drone could also send its own lat/lng here).
         "lat":             body.get("lat", device.get("lat")),

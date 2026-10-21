@@ -64,9 +64,12 @@ def _radius_state(sign, spatial, events, now) -> str:
     for e in events:
         if float(e.get("confidence", 0)) < min_conf:
             continue
-        dist = haversine_m(s_lat, s_lng, e.get("lat"), e.get("lng"))
-        if dist > radius:
-            continue
+        # DEMO: a citizen ("roaming") report has no reliable fixed location,
+        # so it skips the distance check and lights every sign board.
+        if not e.get("roaming"):
+            dist = haversine_m(s_lat, s_lng, e.get("lat"), e.get("lng"))
+            if dist > radius:
+                continue
         age = (now - _parse_dt(e.get("received_at"))).total_seconds()
         if age < 0:
             age = 0
@@ -120,7 +123,7 @@ def active_object_type(sign, use_cases, zones, events, now=None) -> str | None:
     for e in events:
         if float(e.get("confidence", 0)) < min_conf:
             continue
-        if haversine_m(s_lat, s_lng, e.get("lat"), e.get("lng")) > radius:
+        if not e.get("roaming") and haversine_m(s_lat, s_lng, e.get("lat"), e.get("lng")) > radius:
             continue
         age = (now - _parse_dt(e.get("received_at"))).total_seconds()
         if age < 0:
